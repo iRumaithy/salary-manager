@@ -2479,9 +2479,9 @@
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.5.0" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.5.1" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
-        <span class="version-badge">الإصدار <b id="appVersion">3.5.0</b></span>
+        <span class="version-badge">الإصدار <b id="appVersion">3.5.1</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
         <span class="sync-pill offline" id="syncStatus">حفظ محلي</span>
       </div>
@@ -2735,6 +2735,17 @@
       <div class="changelog-list">
         <section class="changelog-entry current">
           <div class="changelog-version">
+            <strong>الإصدار 3.5.1</strong>
+            <time datetime="2026-08-17">17 أغسطس 2026</time>
+          </div>
+          <ul>
+            <li>استبدال عدّاد الأيام المتبقية من الشهر بعدّاد الأيام المتبقية حتى موعد الراتب القادم.</li>
+            <li>احتساب حد الصرف اليومي المقترح على عدد الأيام حتى الراتب القادم بدل نهاية الشهر.</li>
+            <li>الإبقاء على حساب نهاية الشهر عند استعراض شهر سابق أو مستقبلي حتى تظل تقارير الأشهر منطقية.</li>
+          </ul>
+        </section>
+        <section class="changelog-entry">
+          <div class="changelog-version">
             <strong>الإصدار 3.5.0</strong>
             <time datetime="2026-08-17">17 أغسطس 2026</time>
           </div>
@@ -2890,7 +2901,10 @@
         "تم شحن المحفظة هذا الشهر": "Wallet funded this month",
         "تم الدفع هذا الشهر": "Paid this month",
         "تم إنشاء حساب المالك مسبقًا. سجّل الدخول بحسابك.": "The owner account has already been created. Sign in with your account.",
-        "من قائمة المتصفح اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية». إذا ظهر زر التثبيت في شريط العنوان يمكنك استخدامه مباشرة.": "From the browser menu, choose Install app or Add to Home Screen. If an install button appears in the address bar, you can use it directly."
+        "من قائمة المتصفح اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية». إذا ظهر زر التثبيت في شريط العنوان يمكنك استخدامه مباشرة.": "From the browser menu, choose Install app or Add to Home Screen. If an install button appears in the address bar, you can use it directly.",
+        "يوم حتى الراتب": "day until salary",
+        "أيام حتى الراتب": "days until salary",
+        "الراتب اليوم": "salary today"
       });
 
       function translateDynamicText(value) {
@@ -2911,6 +2925,7 @@
         if ((m = s.match(/^تنبيه: تجاوزت ميزانيتك بمقدار\s+(.+)\. راجع المصروفات غير الضرورية\.$/))) return "Warning: you are over budget by " + m[1] + ". Review non-essential expenses.";
         if ((m = s.match(/^انتهى الشهر برصيد\s+(.+)\s+بعد احتساب كل ما سجلته\.$/))) return "The month ended with " + m[1] + " remaining after all recorded items.";
         if ((m = s.match(/^للبقاء ضمن الميزانية، حاول ألا يتجاوز صرفك اليومي\s+(.+)\s+خلال الأيام المتبقية\.$/))) return "To stay within budget, try to keep daily spending below " + m[1] + " for the remaining days.";
+        if ((m = s.match(/^للبقاء ضمن الميزانية، حاول ألا يتجاوز صرفك اليومي\s+(.+)\s+حتى موعد الراتب القادم\.$/))) return "To stay within budget, try to keep daily spending below " + m[1] + " until your next salary.";
         if ((m = s.match(/^(.+)\s*·\s*حتى\s+(.+)$/))) return translateDynamicText(m[1]) + " · until " + m[2];
         if ((m = s.match(/^(.+)\s*·\s*تتكرر شهريًا$/))) return translateDynamicText(m[1]) + " · repeats monthly";
         if ((m = s.match(/^(.+)\s*·\s*ينتهي\s+(.+)$/))) return translateDynamicText(m[1]) + " · ends " + m[2];
@@ -3013,7 +3028,7 @@
       }
 
 
-      var APP_VERSION = "3.5.0";
+      var APP_VERSION = "3.5.1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -3909,8 +3924,12 @@
           return sum + (item.excludeFromBudget ? safeNumber(item.amount) : 0);
         }, 0);
         var balance = state.salary - commitmentsTotal - recurringTotal - expensesTotal;
-        var daysLeft = getDaysRemaining(state.selectedMonth);
-        var daily = daysLeft > 0 ? Math.max(0, balance) / daysLeft : 0;
+        var calendarDaysLeft = getDaysRemaining(state.selectedMonth);
+        var nextSalary = metrics.nextSalary || getNextSalaryInfo();
+        var usingSalaryCountdown = state.selectedMonth === defaultMonth && nextSalary.days != null;
+        var daysLeft = usingSalaryCountdown ? nextSalary.days : calendarDaysLeft;
+        var spendingDays = usingSalaryCountdown ? Math.max(1, nextSalary.days) : daysLeft;
+        var daily = spendingDays > 0 ? Math.max(0, balance) / spendingDays : 0;
         var used = commitmentsTotal + recurringTotal + expensesTotal;
         var usedPercent = state.salary > 0 ? (used / state.salary) * 100 : 0;
         return {
@@ -3924,6 +3943,9 @@
           excludedExpensesTotal: excludedExpensesTotal,
           balance: balance,
           daysLeft: daysLeft,
+          calendarDaysLeft: calendarDaysLeft,
+          nextSalary: nextSalary,
+          usingSalaryCountdown: usingSalaryCountdown,
           daily: daily,
           used: used,
           usedPercent: usedPercent
@@ -3973,7 +3995,13 @@
         }
 
         setText("#daysRemaining", metrics.daysLeft);
-        setText("#daysLabel", state.selectedMonth < defaultMonth ? "الشهر مكتمل" : "يوم متبقٍ");
+        if (metrics.usingSalaryCountdown) {
+          if (metrics.daysLeft === 0) setText("#daysLabel", "الراتب اليوم");
+          else if (metrics.daysLeft === 1) setText("#daysLabel", "يوم حتى الراتب");
+          else setText("#daysLabel", "أيام حتى الراتب");
+        } else {
+          setText("#daysLabel", state.selectedMonth < defaultMonth ? "الشهر مكتمل" : "يوم متبقٍ");
+        }
         setText("#commitmentCountNote", metrics.activeCommitments.length ? metrics.activeCommitments.length + " التزام نشط هذا الشهر" : "لا توجد التزامات نشطة");
         setText("#recurringCountNote", metrics.activeRecurring.length ? metrics.activeRecurring.length + " دفعة · منها " + formatMoney(metrics.savingsTotal) + " ادخار" : "لا توجد دفعات ثابتة");
         setText("#expenseCountNote", metrics.monthExpenses.length ? metrics.monthExpenses.length + " عملية · المحتسب " + formatMoney(metrics.expensesTotal) : "لا توجد مصروفات مسجلة");
@@ -4035,7 +4063,7 @@
         if (state.selectedMonth < defaultMonth) {
           setText("#monthlyInsight", "انتهى الشهر برصيد " + formatMoney(metrics.balance) + " بعد احتساب كل ما سجلته.");
         } else {
-          setText("#monthlyInsight", "للبقاء ضمن الميزانية، حاول ألا يتجاوز صرفك اليومي " + formatMoney(metrics.daily) + " خلال الأيام المتبقية.");
+          setText("#monthlyInsight", metrics.usingSalaryCountdown ? "للبقاء ضمن الميزانية، حاول ألا يتجاوز صرفك اليومي " + formatMoney(metrics.daily) + " حتى موعد الراتب القادم." : "للبقاء ضمن الميزانية، حاول ألا يتجاوز صرفك اليومي " + formatMoney(metrics.daily) + " خلال الأيام المتبقية.");
         }
       }
 

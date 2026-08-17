@@ -9,8 +9,8 @@
   <meta name="apple-mobile-web-app-title" content="مدير الراتب">
   <meta name="mobile-web-app-capable" content="yes">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="apple-touch-icon" href="./icons/app-icon-180-v3.5.0.png">
-  <link rel="icon" type="image/png" href="./icons/app-icon-192-v3.5.0.png">
+  <link rel="apple-touch-icon" href="./icons/app-icon-180-v3.6.0.png">
+  <link rel="icon" type="image/png" href="./icons/app-icon-192-v3.6.0.png">
   <script src="./config.js"></script>
   <meta name="description" content="مدير شخصي للراتب والأقساط والسلف والمدفوعات الثابتة والادخار والمصروفات الشهرية">
   <title>مدير الراتب الشهري</title>
@@ -173,6 +173,12 @@
       margin-top: 3px;
       color: var(--muted);
       font-size: 11px;
+    }
+
+    .today-date-text {
+      font-weight: 700;
+      letter-spacing: 0;
+      white-space: nowrap;
     }
 
     .month-control {
@@ -1690,7 +1696,11 @@
         gap: 10px;
       }
 
-      .brand-subtitle,
+      .today-date-text {
+        font-size: 9px;
+        margin-top: 2px;
+      }
+
       #printButton {
         display: none;
       }
@@ -2183,7 +2193,7 @@
           <div class="brand-mark" aria-hidden="true"><span class="aed-symbol"></span></div>
           <div>
             <span class="brand-title">مدير الراتب</span>
-            <span class="brand-subtitle">خطّط لشهرك بثقة ووضوح</span>
+            <span class="brand-subtitle today-date-text" id="todayDateText">اليوم · 17 أغسطس 2026</span>
           </div>
         </div>
 
@@ -2479,9 +2489,9 @@
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.5.1" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.6.0" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
-        <span class="version-badge">الإصدار <b id="appVersion">3.5.1</b></span>
+        <span class="version-badge">الإصدار <b id="appVersion">3.6.0</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
         <span class="sync-pill offline" id="syncStatus">حفظ محلي</span>
       </div>
@@ -2735,6 +2745,19 @@
       <div class="changelog-list">
         <section class="changelog-entry current">
           <div class="changelog-version">
+            <strong>الإصدار 3.6.0</strong>
+            <time datetime="2026-08-17">17 أغسطس 2026</time>
+          </div>
+          <ul>
+            <li>إصلاح خطأ برمجي كان يوقف تحديث ملخص الميزانية وعدّاد الأيام حتى الراتب القادم.</li>
+            <li>إصلاح زر اللغة ليترجم محتوى الواجهة فعليًا، وليس تغيير اتجاه الصفحة فقط.</li>
+            <li>إعادة شريط الشهر إلى عرض الشهر والسنة فقط، مع وضع تاريخ اليوم بشكل منفصل وأنيق تحت اسم التطبيق.</li>
+            <li>تقوية تحميل الصفحة الرئيسية ومنع تخزين استجابة JSON بالخطأ كواجهة التطبيق داخل Service Worker.</li>
+            <li>الحفاظ على حد الصرف اليومي محسوبًا حتى موعد الراتب القادم عند عرض الشهر الحالي.</li>
+          </ul>
+        </section>
+        <section class="changelog-entry">
+          <div class="changelog-version">
             <strong>الإصدار 3.5.1</strong>
             <time datetime="2026-08-17">17 أغسطس 2026</time>
           </div>
@@ -2862,6 +2885,12 @@
       EN_TRANSLATIONS["تعديل السلفة أو القسط"] = "Edit loan or installment";
       EN_TRANSLATIONS["تعديل الدفعة الثابتة"] = "Edit fixed payment";
       EN_TRANSLATIONS["مالك الصفحة · إدارة المستخدمين مفعلة"] = "Page owner · user management enabled";
+      EN_TRANSLATIONS["اليوم"] = "Today";
+      EN_TRANSLATIONS["إصلاح خطأ برمجي كان يوقف تحديث ملخص الميزانية وعدّاد الأيام حتى الراتب القادم."] = "Fixed a code error that stopped the budget summary and salary countdown from updating.";
+      EN_TRANSLATIONS["إصلاح زر اللغة ليترجم محتوى الواجهة فعليًا، وليس تغيير اتجاه الصفحة فقط."] = "Fixed the language switch so it translates the interface instead of only changing direction.";
+      EN_TRANSLATIONS["إعادة شريط الشهر إلى عرض الشهر والسنة فقط، مع وضع تاريخ اليوم بشكل منفصل وأنيق تحت اسم التطبيق."] = "Restored the month selector to month and year only, with today's date shown separately under the app name.";
+      EN_TRANSLATIONS["تقوية تحميل الصفحة الرئيسية ومنع تخزين استجابة JSON بالخطأ كواجهة التطبيق داخل Service Worker."] = "Hardened app loading and prevented JSON responses from being cached as the app shell.";
+      EN_TRANSLATIONS["الحفاظ على حد الصرف اليومي محسوبًا حتى موعد الراتب القادم عند عرض الشهر الحالي."] = "Kept the daily spending limit calculated through the next salary date for the current month.";
 
       Object.assign(EN_TRANSLATIONS, {
         "اختيار الشهر": "Select month",
@@ -2955,6 +2984,19 @@
         return window.confirm(localizedText(value));
       }
 
+      var AR_TRANSLATIONS = Object.create(null);
+      Object.keys(EN_TRANSLATIONS).forEach(function(ar) {
+        var en = EN_TRANSLATIONS[ar];
+        if (en && !AR_TRANSLATIONS[en]) AR_TRANSLATIONS[en] = ar;
+      });
+
+      function translateStaticText(value) {
+        var s = String(value || "").trim();
+        if (!s) return s;
+        if (currentLanguage === "en") return translateDynamicText(s);
+        return AR_TRANSLATIONS[s] || s;
+      }
+
       function translateDom(root) {
         root = root || document.body;
         if (!root) return;
@@ -2968,22 +3010,19 @@
         var nodes = [];
         while (walker.nextNode()) nodes.push(walker.currentNode);
         nodes.forEach(function(node) {
-          if (node.__salaryI18nSource == null) node.__salaryI18nSource = node.nodeValue;
-          var source = node.__salaryI18nSource;
-          var trimmed = String(source).trim();
+          var raw = String(node.nodeValue || "");
+          var trimmed = raw.trim();
           if (!trimmed) return;
-          var target = currentLanguage === "en" ? translateDynamicText(trimmed) : trimmed;
-          node.nodeValue = source.replace(trimmed, target);
+          var target = translateStaticText(trimmed);
+          if (target !== trimmed) node.nodeValue = raw.replace(trimmed, target);
         });
         var attrs = ["title", "aria-label", "placeholder"];
         root.querySelectorAll("*").forEach(function(el) {
-          if (!el.__salaryI18nAttrs) el.__salaryI18nAttrs = {};
           attrs.forEach(function(attr) {
-            if (el.id === "languageToggleButton") return;
-            if (!el.hasAttribute(attr)) return;
-            if (el.__salaryI18nAttrs[attr] == null) el.__salaryI18nAttrs[attr] = el.getAttribute(attr);
-            var source = el.__salaryI18nAttrs[attr];
-            el.setAttribute(attr, currentLanguage === "en" ? translateDynamicText(source) : source);
+            if (el.id === "languageToggleButton" || !el.hasAttribute(attr)) return;
+            var source = el.getAttribute(attr);
+            var target = translateStaticText(source);
+            if (target !== source) el.setAttribute(attr, target);
           });
         });
       }
@@ -3028,7 +3067,7 @@
       }
 
 
-      var APP_VERSION = "3.5.1";
+      var APP_VERSION = "3.6.0";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -3156,9 +3195,7 @@
       }
 
       function formatMonthControl(monthKey) {
-        var current = toMonthKey(today);
-        var selected = monthDate(monthKey);
-        return monthKey === current ? formatDisplayDateObject(today, true) : formatDisplayDateObject(selected, false);
+        return formatDisplayDateObject(monthDate(monthKey), false);
       }
 
       function salaryDateFor(year, monthIndex, payDay) {
@@ -3925,7 +3962,7 @@
         }, 0);
         var balance = state.salary - commitmentsTotal - recurringTotal - expensesTotal;
         var calendarDaysLeft = getDaysRemaining(state.selectedMonth);
-        var nextSalary = metrics.nextSalary || getNextSalaryInfo();
+        var nextSalary = getNextSalaryInfo();
         var usingSalaryCountdown = state.selectedMonth === defaultMonth && nextSalary.days != null;
         var daysLeft = usingSalaryCountdown ? nextSalary.days : calendarDaysLeft;
         var spendingDays = usingSalaryCountdown ? Math.max(1, nextSalary.days) : daysLeft;
@@ -3969,6 +4006,7 @@
         var metrics = getMetrics();
         $("#monthPicker").value = state.selectedMonth;
         setText("#monthDisplayText", formatMonthControl(state.selectedMonth));
+        setText("#todayDateText", (currentLanguage === "en" ? "Today · " : "اليوم · ") + formatDisplayDateObject(today, true));
         $("#expenseDate").value = normalizeExpenseDate($("#expenseDate").value);
         setText("#monthSummaryTitle", "ملخص " + formatMonth(state.selectedMonth));
 
@@ -4802,12 +4840,15 @@
       }
 
       setText("#appVersion", APP_VERSION);
-      applyLanguage(currentLanguage, false);
+      document.documentElement.lang = currentLanguage;
+      document.documentElement.dir = currentLanguage === "en" ? "ltr" : "rtl";
+      document.body && document.body.setAttribute("dir", document.documentElement.dir);
       loadState();
       requestPersistentStorage();
       bindEvents();
       initPWA();
       render();
+      applyLanguage(currentLanguage, false);
       updateAccountUI();
       initializeAuth();
 

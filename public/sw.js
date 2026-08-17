@@ -1,7 +1,7 @@
-const CACHE = "salary-manager-v3.5.1";
+const CACHE = "salary-manager-v3.6.0";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
-const STATIC_CORE = ["./config.js", "./manifest.webmanifest", "./icons/app-icon-180-v3.4.0.png", "./icons/app-icon-192-v3.4.0.png", "./icons/app-icon-512-v3.4.0.png"];
+const STATIC_CORE = ["./config.js", "./manifest.webmanifest", "./icons/app-icon-180-v3.6.0.png", "./icons/app-icon-192-v3.6.0.png", "./icons/app-icon-512-v3.6.0.png"];
 
 function sameOrigin(url) { return url.origin === self.location.origin; }
 function inScope(url) { return sameOrigin(url) && url.href.startsWith(SCOPE); }
@@ -21,7 +21,17 @@ async function fetchFreshShell() {
   url.searchParams.set("__app_shell", Date.now());
   const response = await fetch(url.href, { cache: "no-store", redirect: "follow" });
   if (!response.ok) throw new Error("Shell HTTP " + response.status);
-  return normalizedResponse(response);
+  const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+  const body = await response.text();
+  if (!contentType.includes("text/html") || !body.includes('id="appVersionFooter"')) {
+    throw new Error("Invalid app shell response");
+  }
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  headers.delete("content-encoding");
+  headers.delete("location");
+  headers.set("cache-control", "no-store");
+  return new Response(body, { status: 200, statusText: "OK", headers });
 }
 
 async function refreshShell(cache) {
@@ -86,8 +96,8 @@ self.addEventListener("push", event => {
   const title = data.title || "مدير الراتب";
   const options = {
     body: data.body || "لديك إشعار جديد.",
-    icon: data.icon || "./icons/app-icon-192-v3.4.0.png",
-    badge: data.badge || "./icons/app-icon-192-v3.4.0.png",
+    icon: data.icon || "./icons/app-icon-192-v3.6.0.png",
+    badge: data.badge || "./icons/app-icon-192-v3.6.0.png",
     tag: data.tag || "salary-manager-owner-alert",
     renotify: true,
     data: { url: data.url || "./?open=admin" }

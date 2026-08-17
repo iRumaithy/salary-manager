@@ -2201,7 +2201,7 @@
           <button class="icon-btn" id="previousMonth" type="button" title="الشهر السابق" aria-label="الشهر السابق">→</button>
           <label class="sr-only" for="monthPicker">الشهر المعروض</label>
           <div class="month-picker-shell">
-            <span class="month-display-text" id="monthDisplayText" aria-hidden="true">August 2026</span>
+            <span class="month-display-text" id="monthDisplayText" aria-hidden="true">أغسطس 2026</span>
             <input class="month-input" id="monthPicker" type="month">
           </div>
           <button class="icon-btn" id="nextMonth" type="button" title="الشهر التالي" aria-label="الشهر التالي">←</button>
@@ -2489,9 +2489,9 @@
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.6.0" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.6.1" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
-        <span class="version-badge">الإصدار <b id="appVersion">3.6.0</b></span>
+        <span class="version-badge">الإصدار <b id="appVersion">3.6.1</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
         <span class="sync-pill offline" id="syncStatus">حفظ محلي</span>
       </div>
@@ -2745,7 +2745,13 @@
       <div class="changelog-list">
         <section class="changelog-entry current">
           <div class="changelog-version">
-            <strong>الإصدار 3.6.0</strong>
+            <strong>الإصدار 3.6.1</strong>
+            <ul>
+              <li>إصلاح عاجل لمشكلة Safari وService Worker التي كانت تمنع فتح الصفحة.</li>
+              <li>تقوية استرجاع الواجهة بحيث لا يفشل فتح التطبيق حتى عند وجود كاش تالف أو انقطاع الشبكة.</li>
+              <li>إصلاح تبديل العربية والإنجليزية ليغير النصوص والاتجاه معًا بشكل مستقر.</li>
+              <li>شريط الشهر يعرض الشهر والسنة فقط، مع عرض تاريخ اليوم بشكل مستقل تحت اسم التطبيق.</li>
+            </ul>
             <time datetime="2026-08-17">17 أغسطس 2026</time>
           </div>
           <ul>
@@ -2886,6 +2892,10 @@
       EN_TRANSLATIONS["تعديل الدفعة الثابتة"] = "Edit fixed payment";
       EN_TRANSLATIONS["مالك الصفحة · إدارة المستخدمين مفعلة"] = "Page owner · user management enabled";
       EN_TRANSLATIONS["اليوم"] = "Today";
+      EN_TRANSLATIONS["إصلاح عاجل لمشكلة Safari وService Worker التي كانت تمنع فتح الصفحة."] = "Emergency fix for the Safari and Service Worker issue that prevented the app from opening.";
+      EN_TRANSLATIONS["تقوية استرجاع الواجهة بحيث لا يفشل فتح التطبيق حتى عند وجود كاش تالف أو انقطاع الشبكة."] = "Improved app-shell recovery so the app still opens with a damaged cache or network failure.";
+      EN_TRANSLATIONS["إصلاح تبديل العربية والإنجليزية ليغير النصوص والاتجاه معًا بشكل مستقر."] = "Fixed Arabic/English switching so text and direction change together reliably.";
+      EN_TRANSLATIONS["شريط الشهر يعرض الشهر والسنة فقط، مع عرض تاريخ اليوم بشكل مستقل تحت اسم التطبيق."] = "The month bar shows month and year only, with today’s date shown separately under the app name.";
       EN_TRANSLATIONS["إصلاح خطأ برمجي كان يوقف تحديث ملخص الميزانية وعدّاد الأيام حتى الراتب القادم."] = "Fixed a code error that stopped the budget summary and salary countdown from updating.";
       EN_TRANSLATIONS["إصلاح زر اللغة ليترجم محتوى الواجهة فعليًا، وليس تغيير اتجاه الصفحة فقط."] = "Fixed the language switch so it translates the interface instead of only changing direction.";
       EN_TRANSLATIONS["إعادة شريط الشهر إلى عرض الشهر والسنة فقط، مع وضع تاريخ اليوم بشكل منفصل وأنيق تحت اسم التطبيق."] = "Restored the month selector to month and year only, with today's date shown separately under the app name.";
@@ -2997,6 +3007,18 @@
         return AR_TRANSLATIONS[s] || s;
       }
 
+      var I18N_TEXT_SOURCE = new WeakMap();
+      var I18N_ATTR_SOURCE = new WeakMap();
+
+      function sourceArabicText(current, previous) {
+        current = String(current || "").trim();
+        if (!current) return current;
+        if (!previous) return AR_TRANSLATIONS[current] || current;
+        var previousEnglish = translateDynamicText(previous);
+        if (current !== previous && current !== previousEnglish) return AR_TRANSLATIONS[current] || current;
+        return previous;
+      }
+
       function translateDom(root) {
         root = root || document.body;
         if (!root) return;
@@ -3013,17 +3035,23 @@
           var raw = String(node.nodeValue || "");
           var trimmed = raw.trim();
           if (!trimmed) return;
-          var target = translateStaticText(trimmed);
+          var source = sourceArabicText(trimmed, I18N_TEXT_SOURCE.get(node));
+          I18N_TEXT_SOURCE.set(node, source);
+          var target = currentLanguage === "en" ? translateDynamicText(source) : source;
           if (target !== trimmed) node.nodeValue = raw.replace(trimmed, target);
         });
         var attrs = ["title", "aria-label", "placeholder"];
         root.querySelectorAll("*").forEach(function(el) {
+          var sources = I18N_ATTR_SOURCE.get(el) || Object.create(null);
           attrs.forEach(function(attr) {
             if (el.id === "languageToggleButton" || !el.hasAttribute(attr)) return;
-            var source = el.getAttribute(attr);
-            var target = translateStaticText(source);
-            if (target !== source) el.setAttribute(attr, target);
+            var current = String(el.getAttribute(attr) || "").trim();
+            var source = sourceArabicText(current, sources[attr]);
+            sources[attr] = source;
+            var target = currentLanguage === "en" ? translateDynamicText(source) : source;
+            if (target !== current) el.setAttribute(attr, target);
           });
+          I18N_ATTR_SOURCE.set(el, sources);
         });
       }
 
@@ -3067,7 +3095,7 @@
       }
 
 
-      var APP_VERSION = "3.6.0";
+      var APP_VERSION = "3.6.1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -3169,9 +3197,11 @@
       }
 
       function getDaysRemaining(monthKey) {
-        if (monthKey < defaultMonth) return 0;
-        if (monthKey > defaultMonth) return daysInMonth(monthKey);
-        return Math.max(1, daysInMonth(monthKey) - today.getDate() + 1);
+        var now = new Date();
+        var currentMonth = toMonthKey(now);
+        if (monthKey < currentMonth) return 0;
+        if (monthKey > currentMonth) return daysInMonth(monthKey);
+        return Math.max(1, daysInMonth(monthKey) - now.getDate() + 1);
       }
 
       function formatAmount(value) {
@@ -4006,7 +4036,7 @@
         var metrics = getMetrics();
         $("#monthPicker").value = state.selectedMonth;
         setText("#monthDisplayText", formatMonthControl(state.selectedMonth));
-        setText("#todayDateText", (currentLanguage === "en" ? "Today · " : "اليوم · ") + formatDisplayDateObject(today, true));
+        setText("#todayDateText", (currentLanguage === "en" ? "Today · " : "اليوم · ") + formatDisplayDateObject(new Date(), true));
         $("#expenseDate").value = normalizeExpenseDate($("#expenseDate").value);
         setText("#monthSummaryTitle", "ملخص " + formatMonth(state.selectedMonth));
 

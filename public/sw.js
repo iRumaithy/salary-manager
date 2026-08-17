@@ -1,70 +1,117 @@
-const CACHE = "salary-manager-v3.6.0";
+const CACHE = "salary-manager-v3.6.1";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
-const STATIC_CORE = ["./config.js", "./manifest.webmanifest", "./icons/app-icon-180-v3.6.0.png", "./icons/app-icon-192-v3.6.0.png", "./icons/app-icon-512-v3.6.0.png"];
+const STATIC_CORE = [
+  "./config.js",
+  "./manifest.webmanifest",
+  "./icons/app-icon-180-v3.6.0.png",
+  "./icons/app-icon-192-v3.6.0.png",
+  "./icons/app-icon-512-v3.6.0.png"
+];
 
 function sameOrigin(url) { return url.origin === self.location.origin; }
 function inScope(url) { return sameOrigin(url) && url.href.startsWith(SCOPE); }
 
-async function normalizedResponse(response) {
-  const body = await response.arrayBuffer();
-  const headers = new Headers(response.headers);
-  headers.delete("content-length");
-  headers.delete("content-encoding");
-  headers.delete("location");
-  headers.set("cache-control", "no-store");
-  return new Response(body, { status: 200, statusText: "OK", headers });
+function offlinePage() {
+  return new Response(`<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>مدير الراتب</title><body style="font-family:system-ui;background:#f3efe7;color:#173331;display:grid;place-items:center;min-height:100vh;margin:0"><main style="max-width:520px;padding:28px;text-align:center"><h2>تعذر تحميل مدير الراتب مؤقتًا</h2><p>بياناتك المحلية لم تُحذف. تأكد من الاتصال بالإنترنت ثم أعد فتح التطبيق.</p><button onclick="location.reload()" style="border:0;border-radius:14px;padding:12px 18px;background:#14756c;color:white;font-weight:700">إعادة المحاولة</button></main></body></html>`, {
+    status: 503,
+    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }
+  });
 }
 
 async function fetchFreshShell() {
-  const url = new URL("./", SCOPE);
+  const url = new URL("./index.html", SCOPE);
   url.searchParams.set("__app_shell", Date.now());
   const response = await fetch(url.href, { cache: "no-store", redirect: "follow" });
-  if (!response.ok) throw new Error("Shell HTTP " + response.status);
+  if (!response || !response.ok) throw new Error("Shell HTTP " + (response ? response.status : "no-response"));
   const contentType = String(response.headers.get("content-type") || "").toLowerCase();
   const body = await response.text();
-  if (!contentType.includes("text/html") || !body.includes('id="appVersionFooter"')) {
-    throw new Error("Invalid app shell response");
-  }
+  if (!contentType.includes("text/html") || !body.includes('id="appVersionFooter"')) throw new Error("Invalid app shell response");
   const headers = new Headers(response.headers);
   headers.delete("content-length");
   headers.delete("content-encoding");
   headers.delete("location");
   headers.set("cache-control", "no-store");
-  return new Response(body, { status: 200, statusText: "OK", headers });
+  return new Response(body, { status: 200, headers });
 }
 
 async function refreshShell(cache) {
   const clean = await fetchFreshShell();
-  await cache.put(SHELL_KEY, clean.clone());
+  if (cache) await cache.put(SHELL_KEY, clean.clone()).catch(() => {});
   return clean;
 }
 
 async function cacheStatic(cache) {
+  if (!cache) return;
   for (const relative of STATIC_CORE) {
     try {
       const url = new URL(relative, SCOPE);
       url.searchParams.set("__static", Date.now());
       const response = await fetch(url.href, { cache: "no-store", redirect: "follow" });
-      if (response.ok) await cache.put(new URL(relative, SCOPE).href, response.clone());
+      if (response && response.ok) await cache.put(new URL(relative, SCOPE).href, response.clone());
     } catch (_) {}
   }
 }
 
+async function safeNavigation(request) {
+  let cache = null;
+  try { cache = await caches.open(CACHE); } catch (_) {}
+  if (cache) {
+    try {
+      const shell = await cache.match(SHELL_KEY);
+      if (shell) return shell;
+    } catch (_) {}
+  }
+  try { return await refreshShell(cache); }
+  catch (_) {
+    try {
+      const response = await fetch(request, { cache: "no-store", redirect: "follow" });
+      if (response) return response;
+    } catch (_) {}
+    return offlinePage();
+  }
+}
+
+async function safeStatic(request) {
+  let cache = null;
+  try { cache = await caches.open(CACHE); } catch (_) {}
+  if (cache) {
+    try {
+      const hit = await cache.match(request);
+      if (hit) return hit;
+    } catch (_) {}
+  }
+  try {
+    const response = await fetch(request);
+    if (response && cache && (response.ok || response.type === "opaque")) cache.put(request, response.clone()).catch(() => {});
+    return response || new Response("", { status: 504 });
+  } catch (_) {
+    return new Response("", { status: 504, statusText: "Offline" });
+  }
+}
+
 self.addEventListener("install", event => {
-  // Manual-update policy: do not call skipWaiting here.
-  // The installed version remains active until the user explicitly chooses Update now.
   event.waitUntil((async () => {
-    const cache = await caches.open(CACHE);
+    let cache = null;
+    try { cache = await caches.open(CACHE); } catch (_) {}
     await Promise.allSettled([refreshShell(cache), cacheStatic(cache)]);
+    // Emergency 3.6.1 recovery only: activate immediately to replace the broken 3.6.0 worker.
+    await self.skipWaiting();
+  })());
+});
+
+self.addEventListener("activate", event => {
+  event.waitUntil((async () => {
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(key => key.startsWith("salary-manager-v") && key !== CACHE).map(key => caches.delete(key)));
+    } catch (_) {}
+    await self.clients.claim();
   })());
 });
 
 self.addEventListener("message", event => {
-  if (event.data && event.data.type === "SKIP_WAITING") {
-    self.skipWaiting();
-    return;
-  }
+  if (event.data && event.data.type === "SKIP_WAITING") { self.skipWaiting(); return; }
   if (event.data && event.data.type === "REFRESH_APP_SHELL") {
     const port = event.ports && event.ports[0];
     event.waitUntil((async () => {
@@ -80,29 +127,17 @@ self.addEventListener("message", event => {
   }
 });
 
-self.addEventListener("activate", event => {
-  event.waitUntil(Promise.all([
-    caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("salary-manager-v") && key !== CACHE).map(key => caches.delete(key)))),
-    self.clients.claim()
-  ]));
-});
-
-
 self.addEventListener("push", event => {
   let data = {};
-  try { data = event.data ? event.data.json() : {}; } catch (_) {
-    try { data = { body: event.data ? event.data.text() : "" }; } catch (_) {}
-  }
-  const title = data.title || "مدير الراتب";
-  const options = {
+  try { data = event.data ? event.data.json() : {}; } catch (_) { try { data = { body: event.data ? event.data.text() : "" }; } catch (_) {} }
+  event.waitUntil(self.registration.showNotification(data.title || "مدير الراتب", {
     body: data.body || "لديك إشعار جديد.",
     icon: data.icon || "./icons/app-icon-192-v3.6.0.png",
     badge: data.badge || "./icons/app-icon-192-v3.6.0.png",
     tag: data.tag || "salary-manager-owner-alert",
     renotify: true,
     data: { url: data.url || "./?open=admin" }
-  };
-  event.waitUntil(self.registration.showNotification(title, options));
+  }));
 });
 
 self.addEventListener("notificationclick", event => {
@@ -113,7 +148,7 @@ self.addEventListener("notificationclick", event => {
     for (const client of windows) {
       if (client.url.startsWith(SCOPE)) {
         await client.focus();
-        if ("navigate" in client) await client.navigate(target);
+        try { if ("navigate" in client) await client.navigate(target); } catch (_) {}
         return;
       }
     }
@@ -125,35 +160,11 @@ self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
-
-  // API calls are always live and never cached.
   if (sameOrigin(url) && url.pathname.startsWith("/api/")) return;
-  // Update probes bypass the installed shell so a newer server version can be detected.
   if (inScope(url) && (url.searchParams.has("__update_check") || url.searchParams.has("__sw_recovery") || url.searchParams.has("__app_shell") || url.searchParams.has("__static"))) return;
   if (!inScope(url)) return;
-
   const scopePath = new URL(SCOPE).pathname.replace(/\/$/, "");
   const isNavigation = request.mode === "navigate" || url.pathname === scopePath + "/" || url.pathname === scopePath + "/index.html";
-  if (isNavigation) {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE);
-      let shell = await cache.match(SHELL_KEY);
-      if (shell) return shell;
-      try { return await refreshShell(cache); }
-      catch (_) {
-        const response = await fetch(request, { cache: "no-store", redirect: "follow" });
-        return normalizedResponse(response);
-      }
-    })());
-    return;
-  }
-
-  event.respondWith((async () => {
-    const cache = await caches.open(CACHE);
-    const hit = await cache.match(request);
-    if (hit) return hit;
-    const response = await fetch(request);
-    if (response.ok || response.type === "opaque") cache.put(request, response.clone()).catch(() => {});
-    return response;
-  })());
+  if (isNavigation) { event.respondWith(safeNavigation(request)); return; }
+  event.respondWith(safeStatic(request));
 });

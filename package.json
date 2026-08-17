@@ -1,6 +1,6 @@
 {
   "name": "salary-manager",
-  "version": "3.2.2",
+  "version": "3.3.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,5 +10,8 @@
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
+  },
+  "dependencies": {
+    "@block65/webcrypto-web-push": "^1.0.2"
   }
 }

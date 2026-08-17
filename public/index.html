@@ -2263,7 +2263,7 @@
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.1.0" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.1.1" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
         <span class="version-badge">الإصدار <b id="appVersion">3.1.0</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
@@ -2514,10 +2514,12 @@
       <div class="changelog-list">
         <section class="changelog-entry current">
           <div class="changelog-version">
-            <strong>الإصدار 3.1.0</strong>
+            <strong>الإصدار 3.1.1</strong>
             <time datetime="2026-08-17">17 أغسطس 2026</time>
           </div>
           <ul>
+            <li>إعادة تهيئة مخزن المصادقة الخاص بإنشاء المالك لتجنب أي حالة جزئية من المحاولات السابقة.</li>
+            <li>اعتماد إعداد PBKDF2 المجرب في نظام قارئ الفواتير وإضافة تشخيص مباشر لأي خطأ داخل خدمة الحسابات.</li>
             <li>إصلاح إعداد حساب المالك لأول مرة وإظهار حالة إعداد Cloudflare بوضوح بدل رسالة الخطأ العامة.</li>
             <li>إعلان أسرار المصادقة كمتطلبات للنشر حتى يفشل النشر بوضوح إذا كانت غير مفعلة بدل نشر نسخة لا يستطيع المستخدم تسجيل الدخول إليها.</li>
             <li>إضافة نظام تحديث اختياري: يظهر إشعار عند توفر إصدار جديد ولا يتم تطبيقه إلا بعد ضغط المستخدم «تحديث الآن».</li>
@@ -2573,7 +2575,7 @@
     (function () {
       "use strict";
 
-      var APP_VERSION = "3.1.0";
+      var APP_VERSION = "3.1.1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -2743,6 +2745,8 @@
           BOOTSTRAP_REQUIRED: "إعداد حساب المالك غير مكتمل بعد.",
           NETWORK_ERROR: "تعذر الاتصال بالخادم الآن. تحقق من الإنترنت ثم حاول مرة أخرى.",
           BAD_RESPONSE: "استجاب الخادم بصورة غير متوقعة. أعد تحميل الصفحة وحاول مرة أخرى.",
+          AUTH_RUNTIME_ERROR: "حدث خطأ داخل خدمة الحسابات.",
+          DATA_RUNTIME_ERROR: "حدث خطأ داخل خدمة مزامنة البيانات.",
           SERVER_ERROR: "حدث خطأ داخلي في الخادم. تحقق من إعدادات Variables and Secrets في Cloudflare ثم حاول مرة أخرى."
         };
         return map[code] || "تعذر إتمام العملية. حاول مرة أخرى.";
@@ -3878,7 +3882,9 @@
             await handleAuthSuccess(data, "تم إنشاء حساب المالك بنجاح");
           } catch (error) {
             console.error("Owner setup failed", error && error.code, error && error.detail || "");
-            showToast(apiErrorMessage(error.code), true);
+            var ownerMessage = apiErrorMessage(error.code);
+            if (error && error.code === "AUTH_RUNTIME_ERROR" && error.detail) ownerMessage += " السبب: " + String(error.detail).slice(0, 140);
+            showToast(ownerMessage, true);
           } finally {
             if (authState.bootstrapRequired) submit.disabled = false;
           }

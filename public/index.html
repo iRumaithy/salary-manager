@@ -574,6 +574,7 @@
     .summary-card::after {
       content: "";
       position: absolute;
+      z-index: 0;
       bottom: -35px;
       left: -35px;
       width: 85px;
@@ -581,6 +582,12 @@
       border-radius: 50%;
       background: var(--accent-soft, var(--teal-soft));
       opacity: .7;
+      pointer-events: none;
+    }
+
+    .summary-card > * {
+      position: relative;
+      z-index: 1;
     }
 
     .summary-icon {
@@ -1551,9 +1558,16 @@
       }
 
       .brand-subtitle,
-      .action-label,
       #printButton {
         display: none;
+      }
+
+      .top-actions .action-label {
+        display: none;
+      }
+
+      #accountButton .action-label {
+        display: inline;
       }
 
       .top-actions {
@@ -1563,6 +1577,11 @@
       .ghost-btn {
         min-width: 42px;
         padding: 9px 11px;
+      }
+
+      #accountButton {
+        min-width: auto;
+        padding: 9px 13px;
       }
 
       .hero {
@@ -1641,7 +1660,8 @@
       }
 
       .section-heading {
-        align-items: start;
+        align-items: stretch;
+        flex-direction: column;
       }
 
       .section-heading h2 {
@@ -1649,7 +1669,9 @@
       }
 
       .section-heading > .primary-btn {
-        display: none;
+        display: inline-flex;
+        width: 100%;
+        justify-content: center;
       }
 
       .commitment-card {
@@ -2263,9 +2285,9 @@
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.1.1" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.2.1" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
-        <span class="version-badge">الإصدار <b id="appVersion">3.1.0</b></span>
+        <span class="version-badge">الإصدار <b id="appVersion">3.2.1</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
         <span class="sync-pill offline" id="syncStatus">حفظ محلي</span>
       </div>
@@ -2514,6 +2536,19 @@
       <div class="changelog-list">
         <section class="changelog-entry current">
           <div class="changelog-version">
+            <strong>الإصدار 3.2.1</strong>
+            <time datetime="2026-08-17">17 أغسطس 2026</time>
+          </div>
+          <ul>
+            <li>تفعيل المزامنة الفورية والمستمرة تلقائيًا بمجرد تسجيل الدخول من أي جهاز.</li>
+            <li>أي تعديل يُحفظ في الحساب مباشرة ويصل إلى الأجهزة الأخرى المفتوحة على الحساب نفسه فورًا عبر اتصال حي.</li>
+            <li>عند تسجيل الدخول من جهاز جديد تُحمّل بيانات الحساب تلقائيًا دون الحاجة إلى استيراد نسخة احتياطية.</li>
+            <li>إذا كان الحساب السحابي فارغًا ووجدت بيانات محلية قديمة، تُرفع تلقائيًا للحساب مرة واحدة دون تدخل المستخدم.</li>
+            <li>إضافة مزامنة احتياطية تلقائية عند عودة الإنترنت أو الرجوع للتطبيق لضمان استمرار التطابق بين الأجهزة.</li>
+          </ul>
+        </section>
+        <section class="changelog-entry">
+          <div class="changelog-version">
             <strong>الإصدار 3.1.1</strong>
             <time datetime="2026-08-17">17 أغسطس 2026</time>
           </div>
@@ -2575,7 +2610,7 @@
     (function () {
       "use strict";
 
-      var APP_VERSION = "3.1.1";
+      var APP_VERSION = "3.2.1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -2584,7 +2619,17 @@
       var deferredInstallPrompt = null;
       var cloudSaveTimer = null;
       var cloudSaveBusy = false;
-      var authState = { authenticated: false, token: localStorage.getItem(AUTH_TOKEN_KEY) || "", user: null, backendReady: false, bootstrapRequired: false };
+      var cloudRevision = 0;
+      var localChangeSeq = 0;
+      var lastSavedSeq = 0;
+      var suppressCloudSave = false;
+      var deferredRemoteRevision = 0;
+      var liveSyncSocket = null;
+      var liveSyncStarting = false;
+      var liveSyncReconnectTimer = null;
+      var liveSyncPingTimer = null;
+      var liveSyncSafetyTimer = null;
+      var authState = { authenticated: false, sessionVerified: false, token: localStorage.getItem(AUTH_TOKEN_KEY) || "", user: null, backendReady: false, bootstrapRequired: false };
       try { authState.user = JSON.parse(localStorage.getItem(AUTH_USER_KEY) || "null"); } catch (e) { authState.user = null; }
       authState.authenticated = Boolean(authState.token && authState.user);
       var STORAGE_BACKUP_KEY = "monthlySalaryManager.v1.backup";
@@ -2798,8 +2843,8 @@
           $("#accountEmail").textContent = authState.user.email;
           $("#accountRole").textContent = authState.user.role === "super_admin" ? "مالك الصفحة · إدارة المستخدمين مفعلة" : "حساب مستخدم";
           $("#accountAvatar").textContent = String(authState.user.username || "ح").slice(0, 1).toUpperCase();
-          $("#storageNote").textContent = "البيانات محفوظة بالحساب مع نسخة محلية على هذا الجهاز";
-          setSyncStatus(navigator.onLine ? "متصل بالحساب" : "غير متصل · محفوظ محليًا", navigator.onLine);
+          $("#storageNote").textContent = "البيانات تُزامن تلقائيًا وفوريًا مع الحساب مع نسخة محلية على هذا الجهاز";
+          setSyncStatus(navigator.onLine ? "مزامنة تلقائية" : "غير متصل · محفوظ محليًا", navigator.onLine);
         } else {
           $("#storageNote").textContent = "سجّل الدخول لمزامنة بياناتك بين أجهزتك";
           setSyncStatus("حفظ محلي", false);
@@ -2813,31 +2858,49 @@
       }
 
       function rememberAuth(data) {
+        stopLiveSync();
+        cloudRevision = 0;
+        localChangeSeq = 0;
+        lastSavedSeq = 0;
+        deferredRemoteRevision = 0;
         authState.token = data.token || "";
         authState.user = data.user || null;
         authState.authenticated = Boolean(authState.token && authState.user);
+        authState.sessionVerified = authState.authenticated;
         if (authState.token) localStorage.setItem(AUTH_TOKEN_KEY, authState.token); else localStorage.removeItem(AUTH_TOKEN_KEY);
         if (authState.user) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authState.user)); else localStorage.removeItem(AUTH_USER_KEY);
         updateAccountUI();
       }
 
       function clearAuth() {
+        stopLiveSync();
+        cloudRevision = 0;
+        localChangeSeq = 0;
+        lastSavedSeq = 0;
+        deferredRemoteRevision = 0;
         authState.token = "";
         authState.user = null;
         authState.authenticated = false;
+        authState.sessionVerified = false;
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(AUTH_USER_KEY);
         updateAccountUI();
       }
 
       async function cloudSaveNow(silent) {
-        if (!authState.authenticated || !authState.token || cloudSaveBusy || !navigator.onLine) return false;
+        if (!authState.authenticated || !authState.sessionVerified || !authState.token || !navigator.onLine) return false;
+        if (cloudSaveBusy) return false;
         cloudSaveBusy = true;
+        if (cloudSaveTimer) { clearTimeout(cloudSaveTimer); cloudSaveTimer = null; }
+        var sentSeq = localChangeSeq;
+        var snapshot = JSON.stringify({ state: state });
         try {
-          setSyncStatus("جارٍ الحفظ…", true);
-          await apiFetch("/api/data", { method: "PUT", body: JSON.stringify({ state: state }) });
-          setSyncStatus("تمت المزامنة", true);
-          if (!silent) showToast("تم حفظ بياناتك في الحساب");
+          setSyncStatus("جارٍ الحفظ الفوري…", true);
+          var saved = await apiFetch("/api/data", { method: "PUT", body: snapshot });
+          cloudRevision = Math.max(cloudRevision, Number(saved.revision || 0));
+          lastSavedSeq = Math.max(lastSavedSeq, sentSeq);
+          setSyncStatus(liveSyncSocket && liveSyncSocket.readyState === 1 ? "مزامنة فورية مفعّلة" : "تمت المزامنة", true);
+          if (!silent) showToast("تم حفظ بياناتك ومزامنتها مع أجهزتك");
           return true;
         } catch (error) {
           if (error.code === "AUTH_REQUIRED") {
@@ -2850,40 +2913,71 @@
           return false;
         } finally {
           cloudSaveBusy = false;
+          if (authState.authenticated && navigator.onLine && localChangeSeq > lastSavedSeq) queueCloudSave(80);
+          else if (deferredRemoteRevision > cloudRevision) {
+            var pendingRevision = deferredRemoteRevision;
+            deferredRemoteRevision = 0;
+            if (pendingRevision > cloudRevision) syncFromCloud({ silent: true, reason: "deferred-live" });
+          }
         }
       }
 
-      function queueCloudSave() {
-        if (!authState.authenticated) return;
+      function queueCloudSave(delay) {
+        if (!authState.authenticated || !authState.sessionVerified || suppressCloudSave) return;
         clearTimeout(cloudSaveTimer);
-        cloudSaveTimer = setTimeout(function () { cloudSaveNow(true); }, 650);
+        cloudSaveTimer = setTimeout(function () { cloudSaveNow(true); }, Number(delay == null ? 120 : delay));
+      }
+
+      function applyRemoteState(remoteState, remoteRevision, options) {
+        options = options || {};
+        if (options.preserveLocalBackup && hasMeaningfulData(state)) {
+          try { localStorage.setItem(PRE_ACCOUNT_BACKUP_KEY, JSON.stringify({ savedAt: new Date().toISOString(), data: state })); } catch (e) {}
+        }
+        suppressCloudSave = true;
+        try {
+          normalizeSavedState(remoteState);
+          var serialized = JSON.stringify(state);
+          localStorage.setItem(accountStorageKey(), serialized);
+          localStorage.setItem(accountStorageKey() + ".backup", serialized);
+          cloudRevision = Math.max(cloudRevision, Number(remoteRevision || 0));
+          localChangeSeq = 0;
+          lastSavedSeq = 0;
+          render();
+        } finally {
+          suppressCloudSave = false;
+        }
       }
 
       async function syncFromCloud(options) {
         options = options || {};
-        if (!authState.authenticated || !navigator.onLine) return false;
+        if (!authState.authenticated || !authState.sessionVerified || !navigator.onLine) return false;
+        if ((cloudSaveBusy || localChangeSeq > lastSavedSeq) && !options.force) {
+          if (options.remoteRevision) deferredRemoteRevision = Math.max(deferredRemoteRevision, Number(options.remoteRevision || 0));
+          return false;
+        }
         try {
-          setSyncStatus("جارٍ تحميل بيانات الحساب…", true);
+          if (!options.background) setSyncStatus("جارٍ مزامنة الحساب…", true);
           var remote = await apiFetch("/api/data");
+          var remoteRevision = Number(remote.revision || 0);
           if (remote.state && typeof remote.state === "object") {
-            if (hasMeaningfulData(state)) {
-              try { localStorage.setItem(PRE_ACCOUNT_BACKUP_KEY, JSON.stringify({ savedAt: new Date().toISOString(), data: state })); } catch (e) {}
+            if (remoteRevision > cloudRevision || options.force || options.initial || cloudRevision === 0) {
+              applyRemoteState(remote.state, remoteRevision, { preserveLocalBackup: Boolean(options.preserveLocalBackup) });
+            } else {
+              cloudRevision = Math.max(cloudRevision, remoteRevision);
             }
-            normalizeSavedState(remote.state);
-            var serialized = JSON.stringify(state);
-            localStorage.setItem(accountStorageKey(), serialized);
-            localStorage.setItem(accountStorageKey() + ".backup", serialized);
-            render();
-            setSyncStatus("تم تحميل بيانات الحساب", true);
-            if (!options.silent) showToast("تم تحميل بيانات حسابك");
+            setSyncStatus(liveSyncSocket && liveSyncSocket.readyState === 1 ? "مزامنة فورية مفعّلة" : "تمت المزامنة", true);
+            if (!options.silent) showToast("تم تحديث بيانات حسابك من السحابة");
             return true;
           }
+          cloudRevision = Math.max(cloudRevision, remoteRevision);
           if (hasMeaningfulData(state)) {
+            localChangeSeq = Math.max(localChangeSeq, 1);
             await cloudSaveNow(true);
-            if (!options.silent) showToast("تم نقل بيانات هذا الجهاز إلى حسابك");
+            if (!options.silent) showToast("تم نقل بيانات هذا الجهاز إلى حسابك تلقائيًا");
           } else {
-            render();
-            setSyncStatus("الحساب جاهز", true);
+            suppressCloudSave = true;
+            try { render(); } finally { suppressCloudSave = false; }
+            setSyncStatus("الحساب جاهز للمزامنة", true);
           }
           return true;
         } catch (error) {
@@ -2891,6 +2985,103 @@
           setSyncStatus("غير متصل · محفوظ محليًا", false);
           return false;
         }
+      }
+
+      function stopLiveSync() {
+        clearTimeout(liveSyncReconnectTimer);
+        clearInterval(liveSyncPingTimer);
+        clearInterval(liveSyncSafetyTimer);
+        liveSyncReconnectTimer = null;
+        liveSyncPingTimer = null;
+        liveSyncSafetyTimer = null;
+        liveSyncStarting = false;
+        if (liveSyncSocket) {
+          var socket = liveSyncSocket;
+          liveSyncSocket = null;
+          socket.onopen = socket.onmessage = socket.onerror = socket.onclose = null;
+          try { socket.close(1000, "logout"); } catch (e) {}
+        }
+      }
+
+      function scheduleLiveSyncReconnect(delay) {
+        if (!authState.authenticated || !navigator.onLine) return;
+        clearTimeout(liveSyncReconnectTimer);
+        liveSyncReconnectTimer = setTimeout(function () { startLiveSync(); }, Number(delay || 1400));
+      }
+
+      function liveSyncUrl(ticket) {
+        var base = API_BASE || location.origin;
+        var url = new URL("/api/sync", base);
+        url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+        url.searchParams.set("ticket", ticket);
+        return url.href;
+      }
+
+      async function startLiveSync() {
+        if (!authState.authenticated || !authState.sessionVerified || !authState.token || !navigator.onLine || liveSyncStarting) return;
+        if (liveSyncSocket && (liveSyncSocket.readyState === 0 || liveSyncSocket.readyState === 1)) return;
+        liveSyncStarting = true;
+        try {
+          var ticketData = await apiFetch("/api/sync-ticket", { method: "POST", body: "{}" });
+          if (!authState.authenticated) { liveSyncStarting = false; return; }
+          var socket = new WebSocket(liveSyncUrl(ticketData.ticket));
+          liveSyncSocket = socket;
+          socket.onopen = function () {
+            liveSyncStarting = false;
+            setSyncStatus("مزامنة فورية مفعّلة", true);
+            clearInterval(liveSyncPingTimer);
+            liveSyncPingTimer = setInterval(function () {
+              if (liveSyncSocket === socket && socket.readyState === 1) {
+                try { socket.send(JSON.stringify({ type: "ping", at: Date.now() })); } catch (e) {}
+              }
+            }, 25000);
+          };
+          socket.onmessage = function (event) {
+            var message = null;
+            try { message = JSON.parse(event.data); } catch (e) { return; }
+            if (!message || (message.type !== "ready" && message.type !== "revision")) return;
+            var revision = Number(message.revision || 0);
+            if (revision <= cloudRevision) return;
+            if (cloudSaveBusy || localChangeSeq > lastSavedSeq) {
+              deferredRemoteRevision = Math.max(deferredRemoteRevision, revision);
+              return;
+            }
+            syncFromCloud({ silent: true, background: true, remoteRevision: revision });
+          };
+          socket.onerror = function () {
+            if (liveSyncSocket === socket) setSyncStatus("إعادة اتصال المزامنة…", true);
+          };
+          socket.onclose = function () {
+            if (liveSyncSocket === socket) liveSyncSocket = null;
+            liveSyncStarting = false;
+            clearInterval(liveSyncPingTimer);
+            liveSyncPingTimer = null;
+            if (authState.authenticated && navigator.onLine) {
+              setSyncStatus("إعادة اتصال المزامنة…", true);
+              scheduleLiveSyncReconnect(1200);
+            }
+          };
+          if (!liveSyncSafetyTimer) {
+            liveSyncSafetyTimer = setInterval(function () {
+              if (!authState.authenticated || !authState.sessionVerified || !navigator.onLine) return;
+              if (!liveSyncSocket || liveSyncSocket.readyState !== 1) {
+                syncFromCloud({ silent: true, background: true }).then(function () { startLiveSync(); });
+              }
+            }, 15000);
+          }
+        } catch (error) {
+          liveSyncStarting = false;
+          if (error.code === "AUTH_REQUIRED") { clearAuth(); return; }
+          setSyncStatus("مزامنة تلقائية · إعادة اتصال", true);
+          scheduleLiveSyncReconnect(1800);
+        }
+      }
+
+      async function resumeContinuousSync() {
+        if (!authState.authenticated || !authState.sessionVerified || !navigator.onLine) return;
+        if (localChangeSeq > lastSavedSeq) await cloudSaveNow(true);
+        await syncFromCloud({ silent: true, background: true });
+        startLiveSync();
       }
 
       function updateOwnerConfigStatus(status) {
@@ -2926,9 +3117,11 @@
               var session = await apiFetch("/api/auth/session");
               authState.user = session.user;
               authState.authenticated = true;
+              authState.sessionVerified = true;
               localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authState.user));
               updateAccountUI();
-              await syncFromCloud({ silent: true });
+              await syncFromCloud({ silent: true, force: true });
+              startLiveSync();
             } catch (e) {
               clearAuth();
             }
@@ -2944,7 +3137,8 @@
 
       async function handleAuthSuccess(data, message) {
         rememberAuth(data);
-        await syncFromCloud({ silent: true });
+        await syncFromCloud({ silent: true, force: true, initial: true, preserveLocalBackup: true });
+        startLiveSync();
         $("#authDialog").close();
         showToast(message);
       }
@@ -3109,8 +3303,11 @@
             accountId: authState.user ? authState.user.accountId : null
           }));
           var note = $("#storageNote");
-          if (note) note.textContent = authState.authenticated ? "البيانات محفوظة بالحساب مع نسخة محلية على هذا الجهاز" : "البيانات محفوظة محليًا على هذا الجهاز";
-          queueCloudSave();
+          if (note) note.textContent = authState.authenticated ? "البيانات تُحفظ وتُزامن تلقائيًا مع الحساب مع نسخة محلية على هذا الجهاز" : "البيانات محفوظة محليًا على هذا الجهاز";
+          if (authState.authenticated && authState.sessionVerified && !suppressCloudSave) {
+            localChangeSeq += 1;
+            queueCloudSave(120);
+          }
         } catch (error) {
           var note = $("#storageNote");
           if (note) note.textContent = "تعذر تأكيد الحفظ المحلي — نزّل نسخة احتياطية";
@@ -3848,7 +4045,7 @@
           event.preventDefault();
           try {
             var data = await apiFetch("/api/auth/login", { method: "POST", body: JSON.stringify({ login: $("#loginName").value.trim(), password: $("#loginPassword").value, deviceLabel: navigator.platform || "Browser" }) });
-            await handleAuthSuccess(data, "تم تسجيل الدخول وتحميل بيانات حسابك");
+            await handleAuthSuccess(data, "تم تسجيل الدخول وتفعيل المزامنة الفورية");
           } catch (error) { showToast(apiErrorMessage(error.code), true); }
         });
 
@@ -3856,7 +4053,7 @@
           event.preventDefault();
           try {
             var data = await apiFetch("/api/auth/register", { method: "POST", body: JSON.stringify({ username: $("#registerUsername").value.trim(), email: $("#registerEmail").value.trim(), password: $("#registerPassword").value, deviceLabel: navigator.platform || "Browser" }) });
-            await handleAuthSuccess(data, "تم إنشاء الحساب ومزامنة بياناتك");
+            await handleAuthSuccess(data, "تم إنشاء الحساب وتفعيل المزامنة الفورية");
           } catch (error) { showToast(apiErrorMessage(error.code), true); }
         });
 
@@ -3925,7 +4122,7 @@
           render(); $("#authDialog").close(); showToast("تم تسجيل الخروج");
         });
 
-        $("#syncNowButton").addEventListener("click", function () { syncFromCloud({ silent: false }); });
+        $("#syncNowButton").addEventListener("click", function () { syncFromCloud({ silent: false, force: true }); });
         $("#adminRefreshButton").addEventListener("click", renderAdminUsers);
         $("#adminUserList").addEventListener("click", async function (event) {
           var reset = event.target.closest("[data-admin-reset]");
@@ -4065,11 +4262,24 @@
       updateAccountUI();
       initializeAuth();
 
-      window.addEventListener("pagehide", saveState);
-      window.addEventListener("online", function () { if (authState.authenticated) syncFromCloud({ silent: true }); });
-      window.addEventListener("offline", function () { setSyncStatus(authState.authenticated ? "غير متصل · محفوظ محليًا" : "حفظ محلي", false); });
+      window.addEventListener("pagehide", function () { saveState(); if (authState.authenticated) cloudSaveNow(true); });
+      window.addEventListener("online", function () {
+        resumeContinuousSync();
+      });
+      window.addEventListener("offline", function () {
+        stopLiveSync();
+        setSyncStatus(authState.authenticated ? "غير متصل · محفوظ محليًا" : "حفظ محلي", false);
+      });
+      window.addEventListener("focus", function () {
+        resumeContinuousSync();
+      });
       document.addEventListener("visibilitychange", function () {
-        if (document.visibilityState === "hidden") saveState();
+        if (document.visibilityState === "hidden") {
+          saveState();
+          if (authState.authenticated) cloudSaveNow(true);
+        } else if (authState.authenticated && navigator.onLine) {
+          resumeContinuousSync();
+        }
       });
 
       if (!state.salary) {

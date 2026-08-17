@@ -1,9 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
 
-const VERSION = "3.1.0";
+const VERSION = "3.1.1";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
-const PBKDF2_ITERATIONS = 150000;
-const AUTH_NAME = "__salary_manager_auth_v1__";
+const PBKDF2_ITERATIONS = 100000;
+const AUTH_NAME = "__salary_manager_auth_v311__";
 
 function baseHeaders(extra = {}) {
   return { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...extra };
@@ -43,7 +43,7 @@ async function passwordHash(password, salt, pepper = "", iterations = PBKDF2_ITE
     ["deriveBits"]
   );
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt: unb64(salt), iterations: Math.max(10000, Number(iterations) || PBKDF2_ITERATIONS) },
+    { name: "PBKDF2", hash: "SHA-256", salt: unb64(salt), iterations: Math.max(10000, Math.min(100000, Math.round(Number(iterations) || PBKDF2_ITERATIONS))) },
     base,
     256
   );
@@ -435,8 +435,22 @@ export class SalaryStore extends DurableObject {
   }
   async fetch(request) {
     const url = new URL(request.url);
-    if (url.pathname.startsWith("/auth/")) return this.authFetch(request, url);
-    if (url.pathname.startsWith("/data/")) return this.dataFetch(request, url);
+    if (url.pathname.startsWith("/auth/")) {
+      try {
+        return await this.authFetch(request, url);
+      } catch (e) {
+        console.error("Salary auth directory error", url.pathname, e);
+        return json({ ok: false, error: "AUTH_RUNTIME_ERROR", detail: String(e?.message || e || "Unknown auth runtime error").slice(0, 220), phase: url.pathname }, 500);
+      }
+    }
+    if (url.pathname.startsWith("/data/")) {
+      try {
+        return await this.dataFetch(request, url);
+      } catch (e) {
+        console.error("Salary data store error", url.pathname, e);
+        return json({ ok: false, error: "DATA_RUNTIME_ERROR", detail: String(e?.message || e || "Unknown data runtime error").slice(0, 220), phase: url.pathname }, 500);
+      }
+    }
     return json({ ok: false, error: "NOT_FOUND" }, 404);
   }
 }

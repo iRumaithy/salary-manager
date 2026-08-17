@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.6.0";
+const VERSION = "3.6.1";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
 const AUTH_NAME = "__salary_manager_auth_v311__";
@@ -643,17 +643,32 @@ export class SalaryStore extends DurableObject {
 
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url);
     try {
-      const url = new URL(request.url);
       if (url.pathname.startsWith("/api/")) return await handleApi(request, env, url);
+
       if (url.pathname === "/" || url.pathname === "") {
-        const indexUrl = new URL("/index.html", url);
+        const indexUrl = new URL("/index.html", url.origin);
         indexUrl.search = url.search;
-        return env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+        const assetRequest = new Request(indexUrl.toString(), {
+          method: "GET",
+          headers: request.headers,
+          redirect: "follow"
+        });
+        const response = await env.ASSETS.fetch(assetRequest);
+        if (response && response.ok) return response;
+        return new Response("Salary Manager app shell unavailable", { status: response ? response.status : 503 });
       }
-      return env.ASSETS.fetch(request);
+
+      return await env.ASSETS.fetch(request);
     } catch (e) {
-      console.error("Salary Manager error", e);
+      console.error("Salary Manager error", url.pathname, e);
+      if (!url.pathname.startsWith("/api/") && (request.mode === "navigate" || request.headers.get("accept")?.includes("text/html"))) {
+        return new Response("<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Salary Manager</title><body style='font-family:system-ui;padding:32px'><h2>تعذر تحميل مدير الراتب مؤقتًا</h2><p>أعد المحاولة بعد لحظات. بيانات الحساب لم تُحذف.</p></body>", {
+          status: 503,
+          headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" }
+        });
+      }
       return apiJson(request, env, { ok: false, error: "SERVER_ERROR", detail: String(e?.message || e).slice(0, 180), version: VERSION }, 500);
     }
   }

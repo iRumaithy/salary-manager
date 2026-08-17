@@ -1,0 +1,4075 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#123f3b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="مدير الراتب">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icons/icon-180.png">
+  <script src="./config.js"></script>
+  <meta name="description" content="مدير شخصي للراتب والأقساط والسلف والمدفوعات الثابتة والادخار والمصروفات الشهرية">
+  <title>مدير الراتب الشهري</title>
+  <style>
+    :root {
+      --ink: #173331;
+      --muted: #6d7d79;
+      --line: #e4e2da;
+      --paper: #fffdf9;
+      --canvas: #f3efe7;
+      --forest: #123f3b;
+      --teal: #14756c;
+      --teal-soft: #dff2ed;
+      --coral: #ef7e5b;
+      --coral-soft: #ffebe4;
+      --gold: #d4a84f;
+      --gold-soft: #f8efd9;
+      --red: #bf4e48;
+      --shadow: 0 16px 50px rgba(21, 49, 46, .09);
+      --radius-xl: 28px;
+      --radius-lg: 21px;
+      --radius-md: 15px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 88% 2%, rgba(20, 117, 108, .10), transparent 25rem),
+        radial-gradient(circle at 5% 35%, rgba(212, 168, 79, .08), transparent 22rem),
+        var(--canvas);
+      font-family: Tahoma, "Segoe UI", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    button,
+    [role="button"] {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app {
+      min-height: 100vh;
+      padding-bottom: calc(42px + var(--safe-bottom));
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      border-bottom: 1px solid rgba(23, 51, 49, .08);
+      background: rgba(243, 239, 231, .88);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar-inner {
+      width: min(1220px, calc(100% - 34px));
+      min-height: 76px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-left: auto;
+      min-width: max-content;
+    }
+
+    .brand-mark {
+      width: 43px;
+      height: 43px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      color: white;
+      background: var(--forest);
+      box-shadow: 0 8px 20px rgba(18, 63, 59, .18);
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .brand-title {
+      display: block;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -.25px;
+    }
+
+    .brand-subtitle {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .month-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: rgba(255, 253, 249, .78);
+    }
+
+    .month-input {
+      width: 145px;
+      min-height: 36px;
+      padding: 6px 10px;
+      border: 0;
+      outline: 0;
+      color: var(--ink);
+      background: transparent;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .icon-btn,
+    .ghost-btn,
+    .primary-btn,
+    .soft-btn,
+    .danger-btn {
+      border: 0;
+      cursor: pointer;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease, opacity .18s ease;
+    }
+
+    .icon-btn:active,
+    .ghost-btn:active,
+    .primary-btn:active,
+    .soft-btn:active,
+    .danger-btn:active {
+      transform: scale(.97);
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 11px;
+      background: transparent;
+      font-size: 18px;
+    }
+
+    .icon-btn:hover {
+      background: #ece8df;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ghost-btn,
+    .primary-btn,
+    .soft-btn,
+    .danger-btn {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 15px;
+      border-radius: 13px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .ghost-btn {
+      border: 1px solid var(--line);
+      background: rgba(255, 253, 249, .74);
+    }
+
+    .ghost-btn:hover {
+      border-color: #c9cec8;
+      background: var(--paper);
+    }
+
+    .primary-btn {
+      color: white;
+      background: var(--teal);
+      box-shadow: 0 8px 20px rgba(20, 117, 108, .18);
+    }
+
+    .primary-btn:hover {
+      background: #0f665e;
+    }
+
+    .soft-btn {
+      color: var(--teal);
+      background: var(--teal-soft);
+    }
+
+    .danger-btn {
+      color: var(--red);
+      background: #fbe7e5;
+    }
+
+    .container {
+      width: min(1220px, calc(100% - 34px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.55fr .85fr;
+      gap: 16px;
+      padding: 28px 0 19px;
+    }
+
+    .salary-card,
+    .available-card {
+      position: relative;
+      min-height: 250px;
+      overflow: hidden;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+    }
+
+    .salary-card {
+      padding: 28px;
+      color: white;
+      background:
+        radial-gradient(circle at 12% 110%, rgba(239, 126, 91, .24), transparent 44%),
+        radial-gradient(circle at 92% -20%, rgba(212, 168, 79, .23), transparent 40%),
+        linear-gradient(135deg, #123f3b, #0f5c55);
+    }
+
+    .salary-card::after {
+      content: "";
+      position: absolute;
+      top: -62px;
+      left: -62px;
+      width: 190px;
+      height: 190px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 50%;
+      box-shadow: 0 0 0 35px rgba(255, 255, 255, .025), 0 0 0 70px rgba(255, 255, 255, .018);
+      pointer-events: none;
+    }
+
+    .hero-kicker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 19px;
+      color: rgba(255, 255, 255, .72);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #76dfc5;
+      box-shadow: 0 0 0 5px rgba(118, 223, 197, .11);
+    }
+
+    .salary-label {
+      margin: 0;
+      color: rgba(255, 255, 255, .72);
+      font-size: 14px;
+    }
+
+    .salary-value-row {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 13px;
+      margin-top: 7px;
+    }
+
+    .salary-value {
+      direction: ltr;
+      font-size: clamp(35px, 5vw, 58px);
+      font-weight: 900;
+      line-height: 1.12;
+      letter-spacing: -2px;
+    }
+
+    .edit-salary {
+      min-height: 37px;
+      padding: 7px 13px;
+      border: 1px solid rgba(255, 255, 255, .17);
+      border-radius: 12px;
+      color: white;
+      background: rgba(255, 255, 255, .10);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .edit-salary:hover {
+      background: rgba(255, 255, 255, .16);
+    }
+
+    .salary-foot {
+      position: absolute;
+      right: 28px;
+      bottom: 25px;
+      left: 28px;
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .allocation-copy strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .allocation-copy span {
+      color: rgba(255, 255, 255, .65);
+      font-size: 11px;
+    }
+
+    .mini-progress {
+      width: min(240px, 42%);
+    }
+
+    .mini-progress-head {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 7px;
+      color: rgba(255, 255, 255, .7);
+      font-size: 11px;
+    }
+
+    .mini-progress-track {
+      height: 7px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, .14);
+    }
+
+    .mini-progress-fill {
+      height: 100%;
+      width: 0;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #f3bd68, #ef7e5b);
+      transition: width .35s ease;
+    }
+
+    .available-card {
+      padding: 26px;
+      border: 1px solid rgba(23, 51, 49, .06);
+      background: var(--paper);
+    }
+
+    .available-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(90deg, var(--gold), var(--coral), var(--teal));
+    }
+
+    .available-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .available-label {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 9px;
+      border-radius: 99px;
+      color: var(--teal);
+      background: var(--teal-soft);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .status-chip::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-chip.warning {
+      color: #a66514;
+      background: var(--gold-soft);
+    }
+
+    .status-chip.danger {
+      color: var(--red);
+      background: #fbe7e5;
+    }
+
+    .available-value {
+      direction: ltr;
+      margin-top: 13px;
+      font-size: clamp(30px, 4.2vw, 47px);
+      font-weight: 900;
+      letter-spacing: -1.5px;
+    }
+
+    .available-caption {
+      margin: 7px 0 23px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .daily-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 15px;
+      padding: 15px;
+      border-radius: 16px;
+      background: #f0eee7;
+    }
+
+    .daily-box span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .daily-box strong {
+      direction: ltr;
+      display: block;
+      margin-top: 4px;
+      font-size: 17px;
+    }
+
+    .days-badge {
+      min-width: 56px;
+      padding: 9px;
+      border-radius: 13px;
+      text-align: center;
+      color: white;
+      background: var(--forest);
+    }
+
+    .days-badge b {
+      display: block;
+      font-size: 19px;
+    }
+
+    .days-badge small {
+      display: block;
+      margin-top: 1px;
+      color: rgba(255, 255, 255, .7);
+      font-size: 9px;
+    }
+
+    .tabs {
+      position: sticky;
+      top: 76px;
+      z-index: 25;
+      display: flex;
+      gap: 5px;
+      width: fit-content;
+      margin: 0 auto 20px;
+      padding: 5px;
+      border: 1px solid rgba(23, 51, 49, .07);
+      border-radius: 16px;
+      background: rgba(255, 253, 249, .91);
+      box-shadow: 0 8px 30px rgba(21, 49, 46, .07);
+      backdrop-filter: blur(16px);
+    }
+
+    .tab {
+      min-width: 138px;
+      min-height: 43px;
+      padding: 8px 15px;
+      border: 0;
+      border-radius: 12px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .tab.active {
+      color: white;
+      background: var(--forest);
+      box-shadow: 0 7px 16px rgba(18, 63, 59, .16);
+    }
+
+    .view {
+      display: none;
+      animation: reveal .26s ease;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(7px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 13px;
+      margin-bottom: 16px;
+    }
+
+    .summary-card {
+      position: relative;
+      min-height: 139px;
+      overflow: hidden;
+      padding: 19px;
+      border: 1px solid rgba(23, 51, 49, .065);
+      border-radius: var(--radius-lg);
+      background: var(--paper);
+      box-shadow: 0 10px 35px rgba(21, 49, 46, .05);
+    }
+
+    .summary-card::after {
+      content: "";
+      position: absolute;
+      bottom: -35px;
+      left: -35px;
+      width: 85px;
+      height: 85px;
+      border-radius: 50%;
+      background: var(--accent-soft, var(--teal-soft));
+      opacity: .7;
+    }
+
+    .summary-icon {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 15px;
+      border-radius: 12px;
+      color: var(--accent, var(--teal));
+      background: var(--accent-soft, var(--teal-soft));
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .summary-label {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .summary-value {
+      direction: ltr;
+      display: block;
+      margin-top: 5px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .summary-note {
+      display: block;
+      margin-top: 4px;
+      color: #94a09c;
+      font-size: 9px;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .panel {
+      border: 1px solid rgba(23, 51, 49, .065);
+      border-radius: var(--radius-xl);
+      background: var(--paper);
+      box-shadow: 0 12px 40px rgba(21, 49, 46, .055);
+    }
+
+    .panel-pad {
+      padding: 23px;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 21px;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: -.35px;
+    }
+
+    .panel-subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    .distribution {
+      display: grid;
+      grid-template-columns: 154px 1fr;
+      align-items: center;
+      gap: 25px;
+    }
+
+    .donut {
+      width: 154px;
+      height: 154px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: conic-gradient(var(--teal) 0 0%, var(--coral) 0 0%, #e6e5df 0 100%);
+      transition: background .35s ease;
+    }
+
+    .donut-center {
+      width: 106px;
+      height: 106px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      text-align: center;
+      background: var(--paper);
+      box-shadow: inset 0 0 0 1px rgba(23, 51, 49, .05);
+    }
+
+    .donut-center strong {
+      display: block;
+      font-size: 21px;
+    }
+
+    .donut-center span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .legend {
+      display: grid;
+      gap: 14px;
+    }
+
+    .legend-row {
+      display: grid;
+      grid-template-columns: 11px 1fr auto;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+    }
+
+    .legend-row span {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .legend-row strong {
+      direction: ltr;
+      font-size: 12px;
+    }
+
+    .insight {
+      margin-top: 20px;
+      padding: 13px 14px;
+      border-radius: 15px;
+      color: #695225;
+      background: var(--gold-soft);
+      font-size: 10px;
+      line-height: 1.75;
+    }
+
+    .upcoming-list,
+    .expense-list,
+    .commitment-list,
+    .recurring-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .overview-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 7px;
+    }
+
+    .payment-note {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 15px;
+      padding: 15px 17px;
+      border: 1px solid #d8e5e0;
+      border-radius: 17px;
+      color: #365953;
+      background: #edf7f4;
+    }
+
+    .payment-note-symbol {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      color: white;
+      background: var(--teal);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .payment-note strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 12px;
+    }
+
+    .payment-note p {
+      margin: 0;
+      font-size: 10px;
+      line-height: 1.8;
+    }
+
+    .budget-checkbox {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      min-height: 42px;
+      padding: 10px 12px;
+      border: 1px solid #e0ddd5;
+      border-radius: 13px;
+      color: var(--muted);
+      background: #faf8f3;
+      cursor: pointer;
+      font-size: 10px;
+      line-height: 1.7;
+    }
+
+    .budget-checkbox input {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 auto;
+      margin: 1px 0 0;
+      accent-color: var(--teal);
+    }
+
+    .tracked-only-tag {
+      display: inline-flex;
+      margin-top: 4px;
+      padding: 3px 6px;
+      border-radius: 99px;
+      color: #6b572b;
+      background: var(--gold-soft);
+      font-size: 8px;
+      font-weight: 800;
+    }
+
+    .upcoming-item {
+      display: grid;
+      grid-template-columns: 43px 1fr auto;
+      align-items: center;
+      gap: 11px;
+      padding: 12px 0;
+      border-bottom: 1px solid #eeece5;
+    }
+
+    .upcoming-item:last-child {
+      border-bottom: 0;
+    }
+
+    .due-day {
+      min-height: 43px;
+      display: grid;
+      place-items: center;
+      padding: 4px;
+      border-radius: 12px;
+      color: var(--teal);
+      background: var(--teal-soft);
+      text-align: center;
+    }
+
+    .due-day b {
+      display: block;
+      font-size: 14px;
+    }
+
+    .due-day small {
+      display: block;
+      font-size: 8px;
+    }
+
+    .item-title {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .item-meta {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.6;
+    }
+
+    .item-amount {
+      direction: ltr;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .empty-state {
+      padding: 34px 18px;
+      border: 1px dashed #d8d5cb;
+      border-radius: 18px;
+      text-align: center;
+      background: #faf8f3;
+    }
+
+    .empty-symbol {
+      width: 50px;
+      height: 50px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 12px;
+      border-radius: 16px;
+      color: var(--teal);
+      background: var(--teal-soft);
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .empty-state strong {
+      display: block;
+      font-size: 13px;
+    }
+
+    .empty-state p {
+      max-width: 340px;
+      margin: 7px auto 0;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.75;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 2px 0 16px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: -.6px;
+    }
+
+    .section-heading p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .commitment-card {
+      display: grid;
+      grid-template-columns: 56px 1fr auto;
+      gap: 16px;
+      align-items: center;
+      padding: 17px;
+      border: 1px solid #eae7df;
+      border-radius: 19px;
+      background: #fffefa;
+      transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+    }
+
+    .commitment-card:hover {
+      transform: translateY(-1px);
+      border-color: #cfded8;
+      box-shadow: 0 10px 25px rgba(21, 49, 46, .055);
+    }
+
+    .category-mark {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border-radius: 17px;
+      color: var(--category-color, var(--teal));
+      background: var(--category-bg, var(--teal-soft));
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .commitment-title-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .commitment-title-row h3 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .tiny-tag {
+      padding: 4px 7px;
+      border-radius: 99px;
+      color: var(--muted);
+      background: #eeece6;
+      font-size: 8px;
+      font-weight: 800;
+    }
+
+    .tiny-tag.paid {
+      color: var(--teal);
+      background: var(--teal-soft);
+    }
+
+    .commitment-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px 14px;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.6;
+    }
+
+    .commitment-actions {
+      min-width: 190px;
+      text-align: left;
+    }
+
+    .commitment-amount {
+      direction: ltr;
+      display: block;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .commitment-action-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 9px;
+    }
+
+    .mini-btn {
+      min-height: 31px;
+      padding: 6px 9px;
+      border: 1px solid #e3e0d8;
+      border-radius: 10px;
+      color: var(--muted);
+      background: #faf8f3;
+      cursor: pointer;
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .mini-btn:hover {
+      border-color: #bfd4cd;
+      color: var(--teal);
+    }
+
+    .mini-btn.mark-paid {
+      color: var(--teal);
+      border-color: #bfddd5;
+      background: var(--teal-soft);
+    }
+
+    .mini-btn.mark-paid.is-paid {
+      color: var(--muted);
+      border-color: #e3e0d8;
+      background: #f1efe9;
+    }
+
+    .form-panel {
+      padding: 22px;
+    }
+
+    .quick-form {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr .9fr .9fr auto;
+      align-items: end;
+      gap: 10px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field label {
+      color: #51645f;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid #dcdad2;
+      border-radius: 13px;
+      outline: none;
+      color: var(--ink);
+      background: #fff;
+      font-size: 12px;
+      transition: border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .field textarea {
+      min-height: 80px;
+      resize: vertical;
+      line-height: 1.7;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 4px rgba(20, 117, 108, .09);
+    }
+
+    .expense-table {
+      margin-top: 16px;
+    }
+
+    .expense-item {
+      display: grid;
+      grid-template-columns: 42px 1fr auto auto;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 4px;
+      border-bottom: 1px solid #eceae4;
+    }
+
+    .expense-item:last-child {
+      border-bottom: 0;
+    }
+
+    .expense-category {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      color: var(--teal);
+      background: var(--teal-soft);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .expense-delete {
+      width: 31px;
+      height: 31px;
+      border: 0;
+      border-radius: 10px;
+      color: #9b6a65;
+      background: #f9ecea;
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .expense-delete:hover {
+      color: white;
+      background: var(--red);
+    }
+
+    .modal {
+      width: min(620px, calc(100% - 26px));
+      max-height: min(760px, calc(100vh - 30px));
+      padding: 0;
+      overflow: auto;
+      border: 0;
+      border-radius: 25px;
+      color: var(--ink);
+      background: var(--paper);
+      box-shadow: 0 30px 100px rgba(8, 28, 26, .25);
+    }
+
+    .modal::backdrop {
+      background: rgba(13, 37, 35, .55);
+      backdrop-filter: blur(5px);
+    }
+
+    .modal-head {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      padding: 21px 22px 17px;
+      border-bottom: 1px solid #ece9e1;
+      background: rgba(255, 253, 249, .95);
+      backdrop-filter: blur(12px);
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-size: 19px;
+    }
+
+    .close-btn {
+      width: 36px;
+      height: 36px;
+      border: 0;
+      border-radius: 11px;
+      color: var(--muted);
+      background: #efede7;
+      cursor: pointer;
+      font-size: 19px;
+    }
+
+    .modal-body {
+      padding: 21px 22px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .span-2 {
+      grid-column: 1 / -1;
+    }
+
+    .helper {
+      margin: 2px 0 0;
+      color: #8a9793;
+      font-size: 9px;
+      line-height: 1.7;
+    }
+
+    .modal-foot {
+      display: flex;
+      justify-content: flex-end;
+      gap: 9px;
+      padding: 16px 22px 22px;
+    }
+
+    .salary-dialog-copy {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.8;
+    }
+
+    .backup-menu {
+      position: fixed;
+      z-index: 60;
+      top: 70px;
+      left: max(17px, calc((100% - 1220px) / 2));
+      width: 220px;
+      display: none;
+      padding: 7px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--paper);
+      box-shadow: 0 18px 55px rgba(21, 49, 46, .16);
+    }
+
+    .backup-menu.open {
+      display: grid;
+      animation: reveal .18s ease;
+    }
+
+    .menu-btn {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 42px;
+      padding: 9px 11px;
+      border: 0;
+      border-radius: 10px;
+      color: var(--ink);
+      background: transparent;
+      cursor: pointer;
+      text-align: right;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .menu-btn:hover {
+      background: #f2efe8;
+    }
+
+    .menu-btn.danger {
+      color: var(--red);
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 100;
+      right: 50%;
+      bottom: calc(24px + var(--safe-bottom));
+      min-width: 220px;
+      max-width: calc(100% - 30px);
+      padding: 12px 16px;
+      border-radius: 14px;
+      color: white;
+      background: var(--forest);
+      box-shadow: 0 16px 50px rgba(8, 28, 26, .24);
+      opacity: 0;
+      pointer-events: none;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 800;
+      transform: translate(50%, 12px);
+      transition: opacity .22s ease, transform .22s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(50%, 0);
+    }
+
+    .toast.error {
+      background: var(--red);
+    }
+
+    .mobile-fab {
+      position: fixed;
+      z-index: 40;
+      right: 18px;
+      bottom: calc(18px + var(--safe-bottom));
+      width: 54px;
+      height: 54px;
+      display: none;
+      place-items: center;
+      border: 0;
+      border-radius: 18px;
+      color: white;
+      background: var(--teal);
+      box-shadow: 0 14px 32px rgba(20, 117, 108, .28);
+      cursor: pointer;
+      font-size: 26px;
+    }
+
+    .negative {
+      color: var(--red) !important;
+    }
+
+    .ltr {
+      direction: ltr;
+      unicode-bidi: isolate;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+
+
+    .app-update-banner {
+      position: sticky;
+      top: calc(10px + var(--safe-top));
+      z-index: 1200;
+      width: min(1180px, calc(100% - 30px));
+      margin: 10px auto 0;
+      padding: 14px 15px;
+      display: none;
+      border: 1px solid rgba(31, 126, 115, .24);
+      border-radius: 18px;
+      background: rgba(244, 252, 249, .97);
+      box-shadow: 0 18px 48px rgba(20, 64, 59, .14);
+      backdrop-filter: blur(16px);
+    }
+
+    .app-update-banner.show {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .app-update-copy { min-width: 0; }
+    .app-update-title { color: var(--ink); font-size: 13px; font-weight: 950; margin-bottom: 4px; }
+    .app-update-note { color: var(--muted); font-size: 10px; line-height: 1.75; }
+    .app-update-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+    .app-update-actions button { white-space: nowrap; }
+
+    .owner-config-status {
+      display: none;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 10px;
+      line-height: 1.75;
+      border: 1px solid #ead7b8;
+      background: #fff8e8;
+      color: #7d5a1d;
+    }
+    .owner-config-status.show { display: block; }
+    .owner-config-status.ready { border-color: #c9e2da; background: #f1f8f6; color: #1d655c; }
+
+    .app-footer {
+      width: min(1220px, calc(100% - 34px));
+      margin: 24px auto 0;
+      padding: 18px 0 calc(4px + var(--safe-bottom));
+      border-top: 1px solid rgba(23, 51, 49, .09);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .version-area {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .version-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 30px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255, 253, 249, .68);
+      font-weight: 700;
+    }
+
+    .changelog-btn {
+      min-height: 30px;
+      padding: 6px 10px;
+      border: 0;
+      border-radius: 10px;
+      color: var(--teal);
+      background: var(--teal-soft);
+      cursor: pointer;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .storage-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-align: left;
+      line-height: 1.65;
+    }
+
+    .storage-note::before {
+      content: "✓";
+      width: 20px;
+      height: 20px;
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 7px;
+      color: var(--teal);
+      background: var(--teal-soft);
+      font-weight: 900;
+    }
+
+    .changelog-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .changelog-entry {
+      padding: 15px 16px;
+      border: 1px solid #e6e2d9;
+      border-radius: 16px;
+      background: #fffefa;
+    }
+
+    .changelog-entry.current {
+      border-color: #c9e2da;
+      background: #f1f8f6;
+    }
+
+    .changelog-version {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 9px;
+    }
+
+    .changelog-version strong {
+      font-size: 13px;
+    }
+
+    .changelog-version time {
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .changelog-entry ul {
+      margin: 0;
+      padding-right: 18px;
+      color: #51645f;
+      font-size: 10px;
+      line-height: 1.9;
+    }
+
+    @media (max-width: 920px) {
+      .topbar-inner {
+        flex-wrap: wrap;
+        padding: 12px 0;
+      }
+
+      .brand {
+        flex: 1;
+      }
+
+      .month-control {
+        order: 3;
+        width: 100%;
+      }
+
+      .month-input {
+        flex: 1;
+        text-align: center;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .available-card {
+        min-height: auto;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .quick-form {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .quick-form .field:first-child {
+        grid-column: 1 / -1;
+      }
+
+      .quick-form .primary-btn {
+        grid-column: 1 / -1;
+      }
+
+      .tabs {
+        top: 130px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .app {
+        padding-bottom: calc(85px + var(--safe-bottom));
+      }
+
+      .topbar-inner,
+      .container {
+        width: min(100% - 22px, 1220px);
+      }
+
+      .topbar-inner {
+        gap: 10px;
+      }
+
+      .brand-subtitle,
+      .action-label,
+      #printButton {
+        display: none;
+      }
+
+      .top-actions {
+        gap: 5px;
+      }
+
+      .ghost-btn {
+        min-width: 42px;
+        padding: 9px 11px;
+      }
+
+      .hero {
+        padding-top: 14px;
+      }
+
+      .salary-card,
+      .available-card {
+        border-radius: 23px;
+      }
+
+      .salary-card {
+        min-height: 268px;
+        padding: 22px;
+      }
+
+      .salary-foot {
+        right: 22px;
+        bottom: 21px;
+        left: 22px;
+        display: grid;
+      }
+
+      .mini-progress {
+        width: 100%;
+      }
+
+      .available-card {
+        padding: 22px;
+      }
+
+      .tabs {
+        top: 126px;
+        width: 100%;
+        overflow: auto;
+        justify-content: stretch;
+        margin-bottom: 14px;
+      }
+
+      .tab {
+        flex: 1 0 auto;
+        min-width: 105px;
+        padding-inline: 10px;
+      }
+
+      .summary-grid {
+        gap: 9px;
+      }
+
+      .summary-card {
+        min-height: 130px;
+        padding: 15px;
+        border-radius: 18px;
+      }
+
+      .summary-value {
+        font-size: 16px;
+      }
+
+      .panel {
+        border-radius: 22px;
+      }
+
+      .panel-pad,
+      .form-panel {
+        padding: 17px;
+      }
+
+      .distribution {
+        grid-template-columns: 1fr;
+        justify-items: center;
+      }
+
+      .legend {
+        width: 100%;
+      }
+
+      .section-heading {
+        align-items: start;
+      }
+
+      .section-heading h2 {
+        font-size: 20px;
+      }
+
+      .section-heading > .primary-btn {
+        display: none;
+      }
+
+      .commitment-card {
+        grid-template-columns: 46px 1fr;
+        gap: 12px;
+        align-items: start;
+      }
+
+      .category-mark {
+        width: 45px;
+        height: 45px;
+        border-radius: 14px;
+      }
+
+      .commitment-actions {
+        grid-column: 1 / -1;
+        min-width: 0;
+        padding-top: 11px;
+        border-top: 1px solid #ece9e2;
+      }
+
+      .commitment-action-row {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+
+      .commitment-amount {
+        text-align: right;
+      }
+
+      .quick-form,
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .quick-form .field:first-child,
+      .quick-form .primary-btn,
+      .span-2 {
+        grid-column: auto;
+      }
+
+      .expense-item {
+        grid-template-columns: 40px 1fr auto;
+      }
+
+      .expense-item .expense-delete {
+        grid-column: 3;
+        grid-row: 1 / 3;
+      }
+
+      .expense-item .item-amount {
+        grid-column: 2;
+      }
+
+      .mobile-fab {
+        display: grid;
+      }
+
+
+      .app-footer {
+        width: min(100% - 22px, 1220px);
+        align-items: flex-start;
+        flex-direction: column;
+        margin-top: 18px;
+      }
+
+      .storage-note {
+        text-align: right;
+      }
+    }
+
+
+    .account-btn {
+      position: relative;
+    }
+
+    .account-dot {
+      width: 8px;
+      height: 8px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      background: #b7bdb9;
+      box-shadow: 0 0 0 4px rgba(183, 189, 185, .14);
+    }
+
+    .account-btn.is-online .account-dot {
+      background: #46b99c;
+      box-shadow: 0 0 0 4px rgba(70, 185, 156, .14);
+    }
+
+    .sync-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 30px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      color: var(--teal);
+      background: var(--teal-soft);
+      font-weight: 800;
+    }
+
+    .sync-pill.offline {
+      color: #8a6424;
+      background: var(--gold-soft);
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 18px;
+      padding: 5px;
+      border-radius: 14px;
+      background: #efede7;
+    }
+
+    .auth-tab {
+      flex: 1;
+      min-height: 39px;
+      border: 0;
+      border-radius: 10px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .auth-tab.active {
+      color: white;
+      background: var(--forest);
+    }
+
+    .auth-pane { display: none; }
+    .auth-pane.active { display: block; }
+
+    .auth-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .auth-copy {
+      margin: 0 0 15px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.8;
+    }
+
+    .auth-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .account-card {
+      display: grid;
+      grid-template-columns: 52px 1fr auto;
+      align-items: center;
+      gap: 13px;
+      padding: 16px;
+      border: 1px solid #e6e2d9;
+      border-radius: 18px;
+      background: #fffefa;
+    }
+
+    .account-avatar {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      color: white;
+      background: var(--forest);
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .account-card h3 { margin: 0; font-size: 14px; }
+    .account-card p { margin: 4px 0 0; color: var(--muted); font-size: 9px; line-height: 1.6; }
+
+    .admin-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .admin-list { display: grid; gap: 10px; }
+
+    .admin-user {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 16px;
+      border: 1px solid #e7e3da;
+      border-radius: 17px;
+      background: #fffefa;
+    }
+
+    .admin-user-main strong { display: block; font-size: 13px; }
+    .admin-user-main span { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; line-height: 1.65; }
+    .admin-user-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+
+    .reset-request {
+      display: inline-flex !important;
+      width: fit-content;
+      margin-top: 6px !important;
+      padding: 4px 7px;
+      border-radius: 99px;
+      color: #9a681f !important;
+      background: var(--gold-soft);
+      font-weight: 900;
+    }
+
+    .reset-code-box {
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid #cde4dc;
+      border-radius: 16px;
+      color: #315a52;
+      background: #eff8f5;
+      text-align: center;
+    }
+
+    .reset-code-box strong {
+      direction: ltr;
+      display: block;
+      margin: 6px 0;
+      font-size: 25px;
+      letter-spacing: 4px;
+    }
+
+    .pwa-note {
+      padding: 14px 15px;
+      border: 1px solid #d9e4df;
+      border-radius: 15px;
+      color: #44625d;
+      background: #f1f7f5;
+      font-size: 10px;
+      line-height: 1.9;
+    }
+
+    .owner-only-tab { display: none; }
+    .owner-only-tab.visible { display: inline-block; }
+
+    @media (max-width: 620px) {
+      .admin-user { grid-template-columns: 1fr; }
+      .admin-user-actions { justify-content: flex-start; }
+      .account-card { grid-template-columns: 46px 1fr; }
+      .account-card > .ghost-btn { grid-column: 1 / -1; }
+      .app-footer { align-items: flex-start; flex-direction: column; }
+      .app-update-banner.show { align-items: stretch; flex-direction: column; }
+      .app-update-actions { width: 100%; }
+      .app-update-actions button { flex: 1; }
+    }
+
+    @media print {
+      body {
+        background: white;
+      }
+
+      .topbar,
+      .tabs,
+      .top-actions,
+      .edit-salary,
+      .section-heading .primary-btn,
+      .quick-form,
+      .mobile-fab,
+      .commitment-action-row,
+      .expense-delete,
+      .backup-menu,
+      #installButton,
+      #accountButton,
+      #adminTab,
+      .app-update-banner {
+        display: none !important;
+      }
+
+      .app {
+        padding: 0;
+      }
+
+      .container {
+        width: 100%;
+      }
+
+      .hero {
+        padding-top: 0;
+      }
+
+      .view {
+        display: none !important;
+      }
+
+      #overviewView {
+        display: block !important;
+      }
+
+      .salary-card,
+      .available-card,
+      .panel,
+      .summary-card {
+        break-inside: avoid;
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-update-banner" id="appUpdateBanner" role="status" aria-live="polite">
+    <div class="app-update-copy">
+      <div class="app-update-title" id="appUpdateTitle">تحديث جديد متوفر</div>
+      <div class="app-update-note" id="appUpdateNote">لن يتم تحديث الصفحة تلقائيًا. يمكنك أخذ نسخة احتياطية أولًا، ثم الضغط على «تحديث الآن» عندما تكون جاهزًا.</div>
+    </div>
+    <div class="app-update-actions">
+      <button class="soft-btn" id="updateBackupButton" type="button">نسخة احتياطية</button>
+      <button class="primary-btn" id="applyUpdateButton" type="button">تحديث الآن</button>
+    </div>
+  </div>
+  <div class="app">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand" aria-label="مدير الراتب الشهري">
+          <div class="brand-mark" aria-hidden="true">د.إ</div>
+          <div>
+            <span class="brand-title">مدير الراتب</span>
+            <span class="brand-subtitle">خطّط لشهرك بثقة ووضوح</span>
+          </div>
+        </div>
+
+        <div class="month-control" aria-label="اختيار الشهر">
+          <button class="icon-btn" id="previousMonth" type="button" title="الشهر السابق" aria-label="الشهر السابق">→</button>
+          <label class="sr-only" for="monthPicker">الشهر المعروض</label>
+          <input class="month-input" id="monthPicker" type="month">
+          <button class="icon-btn" id="nextMonth" type="button" title="الشهر التالي" aria-label="الشهر التالي">←</button>
+        </div>
+
+        <div class="top-actions">
+          <button class="ghost-btn" id="installButton" type="button" title="إضافة التطبيق إلى الشاشة الرئيسية">
+            <span aria-hidden="true">＋</span>
+            <span class="action-label">تثبيت</span>
+          </button>
+          <button class="ghost-btn account-btn" id="accountButton" type="button" title="الحساب والمزامنة">
+            <span class="account-dot" aria-hidden="true"></span>
+            <span class="action-label" id="accountButtonLabel">تسجيل الدخول</span>
+          </button>
+          <button class="ghost-btn" id="printButton" type="button" title="طباعة ملخص الشهر">
+            <span aria-hidden="true">▣</span>
+            <span class="action-label">طباعة</span>
+          </button>
+          <button class="ghost-btn" id="backupButton" type="button" aria-expanded="false" aria-controls="backupMenu">
+            <span aria-hidden="true">•••</span>
+            <span class="action-label">البيانات</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="backup-menu" id="backupMenu" role="menu">
+      <button class="menu-btn" id="exportButton" type="button" role="menuitem"><span aria-hidden="true">↓</span> تنزيل نسخة احتياطية</button>
+      <button class="menu-btn" id="importButton" type="button" role="menuitem"><span aria-hidden="true">↑</span> استيراد نسخة احتياطية</button>
+      <button class="menu-btn danger" id="resetButton" type="button" role="menuitem"><span aria-hidden="true">×</span> مسح جميع البيانات</button>
+      <input class="sr-only" id="importFile" type="file" accept="application/json,.json">
+    </div>
+
+    <main class="container">
+      <section class="hero" aria-labelledby="monthSummaryTitle">
+        <article class="salary-card">
+          <p class="hero-kicker"><span class="live-dot" aria-hidden="true"></span><span id="monthSummaryTitle">ملخص الشهر الحالي</span></p>
+          <p class="salary-label">الراتب الشهري</p>
+          <div class="salary-value-row">
+            <strong class="salary-value" id="salaryHero">0.00 د.إ</strong>
+            <button class="edit-salary" id="editSalaryButton" type="button">تحديد الراتب</button>
+          </div>
+          <div class="salary-foot">
+            <div class="allocation-copy">
+              <strong id="allocationHeadline">ابدأ بإضافة راتبك</strong>
+              <span id="allocationSubline">سيظهر هنا ملخص الأقساط والمدفوعات الثابتة ومصروفاتك</span>
+            </div>
+            <div class="mini-progress" aria-label="نسبة الراتب المستخدم">
+              <div class="mini-progress-head"><span>المستخدم من الراتب</span><b id="usedPercentText">0%</b></div>
+              <div class="mini-progress-track"><div class="mini-progress-fill" id="usedPercentBar"></div></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="available-card">
+          <div class="available-head">
+            <p class="available-label">المتاح لباقي الشهر</p>
+            <span class="status-chip" id="balanceStatus">وضع مريح</span>
+          </div>
+          <div class="available-value" id="availableHero">0.00 د.إ</div>
+          <p class="available-caption" id="availableCaption">بعد خصم الأقساط والمدفوعات الثابتة والمصروفات</p>
+          <div class="daily-box">
+            <div>
+              <span>حد الصرف اليومي المقترح</span>
+              <strong id="dailyBudget">0.00 د.إ</strong>
+            </div>
+            <div class="days-badge">
+              <b id="daysRemaining">0</b>
+              <small id="daysLabel">يوم متبقٍ</small>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <nav class="tabs" role="tablist" aria-label="أقسام مدير الراتب">
+        <button class="tab active" type="button" role="tab" aria-selected="true" aria-controls="overviewView" data-view="overviewView">نظرة الشهر</button>
+        <button class="tab" type="button" role="tab" aria-selected="false" aria-controls="commitmentsView" data-view="commitmentsView">السلف والأقساط</button>
+        <button class="tab" type="button" role="tab" aria-selected="false" aria-controls="recurringView" data-view="recurringView">المدفوعات الثابتة</button>
+        <button class="tab" type="button" role="tab" aria-selected="false" aria-controls="expensesView" data-view="expensesView">المصروفات</button>
+        <button class="tab owner-only-tab" id="adminTab" type="button" role="tab" aria-selected="false" aria-controls="adminView" data-view="adminView">إدارة المستخدمين</button>
+      </nav>
+
+      <section class="view active" id="overviewView" role="tabpanel">
+        <div class="summary-grid">
+          <article class="summary-card" style="--accent:#14756c;--accent-soft:#dff2ed">
+            <div class="summary-icon" aria-hidden="true">ر</div>
+            <span class="summary-label">راتب الشهر</span>
+            <strong class="summary-value" id="salarySummary">0.00 د.إ</strong>
+            <span class="summary-note">الدخل الأساسي المسجل</span>
+          </article>
+          <article class="summary-card" style="--accent:#d08f27;--accent-soft:#f8efd9">
+            <div class="summary-icon" aria-hidden="true">ق</div>
+            <span class="summary-label">الأقساط والسلف</span>
+            <strong class="summary-value" id="commitmentsSummary">0.00 د.إ</strong>
+            <span class="summary-note" id="commitmentCountNote">لا توجد التزامات نشطة</span>
+          </article>
+          <article class="summary-card" style="--accent:#705a9b;--accent-soft:#eee9f7">
+            <div class="summary-icon" aria-hidden="true">ث</div>
+            <span class="summary-label">المدفوعات الثابتة</span>
+            <strong class="summary-value" id="recurringSummary">0.00 د.إ</strong>
+            <span class="summary-note" id="recurringCountNote">لا توجد دفعات ثابتة</span>
+          </article>
+          <article class="summary-card" style="--accent:#ef7e5b;--accent-soft:#ffebe4">
+            <div class="summary-icon" aria-hidden="true">م</div>
+            <span class="summary-label">مصروفات الشهر</span>
+            <strong class="summary-value" id="expensesSummary">0.00 د.إ</strong>
+            <span class="summary-note" id="expenseCountNote">لا توجد مصروفات مسجلة</span>
+          </article>
+          <article class="summary-card" style="--accent:#56726c;--accent-soft:#e6ecea">
+            <div class="summary-icon" aria-hidden="true">ب</div>
+            <span class="summary-label">الرصيد المتبقي</span>
+            <strong class="summary-value" id="balanceSummary">0.00 د.إ</strong>
+            <span class="summary-note">متاح لإدارة بقية الشهر</span>
+          </article>
+        </div>
+
+        <div class="content-grid">
+          <article class="panel panel-pad">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title">توزيع الراتب</h2>
+                <p class="panel-subtitle">صورة فورية لما تم تخصيصه وما بقي من راتبك</p>
+              </div>
+            </div>
+            <div class="distribution">
+              <div class="donut" id="salaryDonut" aria-label="رسم توزيع الراتب">
+                <div class="donut-center">
+                  <div>
+                    <strong id="remainingPercent">100%</strong>
+                    <span>متبقٍ من الراتب</span>
+                  </div>
+                </div>
+              </div>
+              <div class="legend">
+                <div class="legend-row">
+                  <span class="legend-dot" style="background:#14756c"></span>
+                  <span>الأقساط والسلف</span>
+                  <strong id="legendCommitments">0.00 د.إ</strong>
+                </div>
+                <div class="legend-row">
+                  <span class="legend-dot" style="background:#705a9b"></span>
+                  <span>المدفوعات الثابتة والادخار</span>
+                  <strong id="legendRecurring">0.00 د.إ</strong>
+                </div>
+                <div class="legend-row">
+                  <span class="legend-dot" style="background:#ef7e5b"></span>
+                  <span>المصروفات اليومية</span>
+                  <strong id="legendExpenses">0.00 د.إ</strong>
+                </div>
+                <div class="legend-row">
+                  <span class="legend-dot" style="background:#e6e5df"></span>
+                  <span>الرصيد المتبقي</span>
+                  <strong id="legendRemaining">0.00 د.إ</strong>
+                </div>
+                <div class="insight" id="monthlyInsight">أدخل راتبك أولًا لتحصل على قراءة واضحة لميزانية الشهر.</div>
+              </div>
+            </div>
+          </article>
+
+          <article class="panel panel-pad">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title">استحقاقات هذا الشهر</h2>
+                <p class="panel-subtitle">الأقساط والمدفوعات الثابتة مرتبة حسب يوم الاستحقاق</p>
+              </div>
+              <div class="overview-actions">
+                <button class="soft-btn" type="button" data-open-commitment>+ قسط</button>
+                <button class="soft-btn" type="button" data-open-recurring>+ دفعة ثابتة</button>
+              </div>
+            </div>
+            <div class="upcoming-list" id="upcomingList"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="commitmentsView" role="tabpanel" hidden>
+        <div class="section-heading">
+          <div>
+            <h2>السلف والأقساط</h2>
+            <p>أضف التزامك الشهري وحدد بداية الخصم ونهايته لتظهر ميزانيتك بدقة.</p>
+          </div>
+          <button class="primary-btn" type="button" data-open-commitment>+ إضافة سلفة أو قسط</button>
+        </div>
+        <article class="panel panel-pad">
+          <div class="commitment-list" id="commitmentList"></div>
+        </article>
+      </section>
+
+      <section class="view" id="recurringView" role="tabpanel" hidden>
+        <div class="section-heading">
+          <div>
+            <h2>المدفوعات الثابتة</h2>
+            <p>للفواتير المتكررة، مخصصات المحافظ، الادخار والاشتراكات الشهرية.</p>
+          </div>
+          <button class="primary-btn" type="button" data-open-recurring>+ إضافة دفعة ثابتة</button>
+        </div>
+        <div class="payment-note">
+          <div class="payment-note-symbol" aria-hidden="true">✓</div>
+          <div>
+            <strong>ما وظيفة «تم الدفع هذا الشهر»؟</strong>
+            <p>الدفعة محسوبة ومحجوزة من الراتب تلقائيًا سواء ضغطت الزر أم لا. الزر للمتابعة فقط: يوضح أنك سددت الفاتورة أو حولت الادخار في الشهر المختار، ثم تبدأ حالة جديدة تلقائيًا عند الانتقال للشهر التالي.</p>
+          </div>
+        </div>
+        <article class="panel panel-pad">
+          <div class="recurring-list" id="recurringList"></div>
+        </article>
+      </section>
+
+      <section class="view" id="expensesView" role="tabpanel" hidden>
+        <div class="section-heading">
+          <div>
+            <h2>مصروفات الشهر</h2>
+            <p>سجل مشترياتك أولًا بأول لتعرف المبلغ الآمن لبقية الأيام.</p>
+          </div>
+        </div>
+        <article class="panel form-panel">
+          <form class="quick-form" id="expenseForm">
+            <div class="field">
+              <label for="expenseTitle">وصف المصروف</label>
+              <input id="expenseTitle" name="title" type="text" maxlength="80" placeholder="مثال: مشتريات المنزل" required>
+            </div>
+            <div class="field">
+              <label for="expenseCategory">التصنيف</label>
+              <select id="expenseCategory" name="category">
+                <option value="مشتريات">مشتريات</option>
+                <option value="طعام">طعام ومقاهي</option>
+                <option value="مواصلات">مواصلات</option>
+                <option value="فواتير">فواتير</option>
+                <option value="ترفيه">ترفيه</option>
+                <option value="أخرى">أخرى</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="expenseAmount">المبلغ (د.إ)</label>
+              <input id="expenseAmount" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required>
+            </div>
+            <div class="field">
+              <label for="expenseDate">التاريخ</label>
+              <input id="expenseDate" name="date" type="date" required>
+            </div>
+            <button class="primary-btn" type="submit">حفظ المصروف</button>
+            <label class="budget-checkbox" for="expenseFromReserved">
+              <input id="expenseFromReserved" name="excludeFromBudget" type="checkbox">
+              <span><strong>دُفع من محفظة أو مخصص سبق حجزه</strong><br>فعّل هذا الخيار عند تسجيل مشتريات من محفظة أدنوك مثلًا؛ سيظهر المصروف في السجل للمتابعة، لكنه لن يُخصم من الراتب مرة ثانية.</span>
+            </label>
+          </form>
+        </article>
+        <article class="panel panel-pad expense-table">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">سجل المصروفات</h2>
+              <p class="panel-subtitle" id="expenseListSubtitle">المصروفات المسجلة للشهر المختار</p>
+            </div>
+          </div>
+          <div class="expense-list" id="expenseList"></div>
+        </article>
+      </section>
+
+      <section class="view" id="adminView" role="tabpanel" hidden>
+        <div class="section-heading">
+          <div>
+            <h2>إدارة المستخدمين</h2>
+            <p>هذا القسم يظهر لحساب المالك فقط، وجميع الصلاحيات يتم التحقق منها على الخادم.</p>
+          </div>
+        </div>
+        <article class="panel panel-pad">
+          <div class="admin-toolbar">
+            <div>
+              <h2 class="panel-title">الحسابات المسجلة</h2>
+              <p class="panel-subtitle" id="adminUserCount">جاري تحميل المستخدمين…</p>
+            </div>
+            <button class="soft-btn" id="adminRefreshButton" type="button">تحديث</button>
+          </div>
+          <div class="admin-list" id="adminUserList"></div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="app-footer" id="appVersionFooter" data-version="3.1.0" aria-label="معلومات الإصدار والحفظ">
+      <div class="version-area">
+        <span class="version-badge">الإصدار <b id="appVersion">3.1.0</b></span>
+        <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
+        <span class="sync-pill offline" id="syncStatus">حفظ محلي</span>
+      </div>
+      <span class="storage-note" id="storageNote">سجّل الدخول لمزامنة بياناتك بين أجهزتك</span>
+    </footer>
+
+    <button class="mobile-fab" id="mobileFab" type="button" aria-label="إضافة عنصر">+</button>
+  </div>
+
+  <dialog class="modal" id="salaryDialog">
+    <form id="salaryForm">
+      <div class="modal-head">
+        <h2>تحديد الراتب الشهري</h2>
+        <button class="close-btn" type="button" data-close-dialog="salaryDialog" aria-label="إغلاق">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="salary-dialog-copy">اكتب صافي الراتب الذي تستلمه شهريًا. سيُستخدم لحساب المتبقي بعد الأقساط والمدفوعات الثابتة والمصروفات.</p>
+        <div class="field">
+          <label for="salaryInput">صافي الراتب (بالدرهم الإماراتي)</label>
+          <input id="salaryInput" name="salary" type="number" min="0" step="0.01" inputmode="decimal" placeholder="مثال: 15000" required>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="ghost-btn" type="button" data-close-dialog="salaryDialog">إلغاء</button>
+        <button class="primary-btn" type="submit">حفظ الراتب</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="commitmentDialog">
+    <form id="commitmentForm">
+      <div class="modal-head">
+        <h2 id="commitmentDialogTitle">إضافة سلفة أو قسط</h2>
+        <button class="close-btn" type="button" data-close-dialog="commitmentDialog" aria-label="إغلاق">×</button>
+      </div>
+      <div class="modal-body">
+        <input id="commitmentId" name="id" type="hidden">
+        <div class="form-grid">
+          <div class="field span-2">
+            <label for="commitmentName">اسم السلفة أو القسط</label>
+            <input id="commitmentName" name="name" type="text" maxlength="90" placeholder="مثال: قسط السيارة" required>
+          </div>
+          <div class="field">
+            <label for="commitmentCategory">نوع الالتزام</label>
+            <select id="commitmentCategory" name="category">
+              <option value="سلفة">سلفة شخصية</option>
+              <option value="سيارة">قسط سيارة</option>
+              <option value="عقار">تمويل عقاري</option>
+              <option value="بطاقة">بطاقة ائتمانية</option>
+              <option value="أخرى">أخرى</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="commitmentAmount">القسط الشهري (د.إ)</label>
+            <input id="commitmentAmount" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required>
+          </div>
+          <div class="field">
+            <label for="commitmentStart">تاريخ بداية الخصم</label>
+            <input id="commitmentStart" name="startDate" type="date" required>
+          </div>
+          <div class="field">
+            <label for="commitmentEnd">تاريخ نهاية السلفة</label>
+            <input id="commitmentEnd" name="endDate" type="date" required>
+          </div>
+          <div class="field">
+            <label for="commitmentDueDay">يوم الخصم من الشهر</label>
+            <input id="commitmentDueDay" name="dueDay" type="number" min="1" max="31" inputmode="numeric" value="1" required>
+            <p class="helper">إذا كان الشهر أقصر، يُحتسب آخر يوم منه تلقائيًا.</p>
+          </div>
+          <div class="field">
+            <label for="commitmentTotal">الرصيد المتبقي للسلفة (اختياري)</label>
+            <input id="commitmentTotal" name="remainingTotal" type="number" min="0" step="0.01" inputmode="decimal" placeholder="للمتابعة فقط">
+          </div>
+          <div class="field span-2">
+            <label for="commitmentNotes">ملاحظات (اختياري)</label>
+            <textarea id="commitmentNotes" name="notes" maxlength="300" placeholder="أي تفاصيل تريد تذكرها عن السلفة أو القسط"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="ghost-btn" type="button" data-close-dialog="commitmentDialog">إلغاء</button>
+        <button class="primary-btn" type="submit">حفظ الالتزام</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="recurringDialog">
+    <form id="recurringForm">
+      <div class="modal-head">
+        <h2 id="recurringDialogTitle">إضافة دفعة ثابتة</h2>
+        <button class="close-btn" type="button" data-close-dialog="recurringDialog" aria-label="إغلاق">×</button>
+      </div>
+      <div class="modal-body">
+        <input id="recurringId" name="id" type="hidden">
+        <div class="form-grid">
+          <div class="field span-2">
+            <label for="recurringName">اسم الدفعة</label>
+            <input id="recurringName" name="name" type="text" maxlength="90" placeholder="مثال: فاتورة اتصالات أو محفظة أدنوك" required>
+          </div>
+          <div class="field">
+            <label for="recurringType">نوع الدفعة</label>
+            <select id="recurringType" name="type">
+              <option value="فاتورة">فاتورة شهرية</option>
+              <option value="محفظة">مخصص محفظة</option>
+              <option value="ادخار">تحويل ادخار</option>
+              <option value="اشتراك">اشتراك شهري</option>
+              <option value="أخرى">أخرى</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="recurringAmount">المبلغ الشهري (د.إ)</label>
+            <input id="recurringAmount" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required>
+          </div>
+          <div class="field">
+            <label for="recurringDueDay">يوم الدفع أو التحويل</label>
+            <input id="recurringDueDay" name="dueDay" type="number" min="1" max="31" inputmode="numeric" value="1" required>
+          </div>
+          <div class="field">
+            <label for="recurringStart">تاريخ بداية التكرار</label>
+            <input id="recurringStart" name="startDate" type="date" required>
+          </div>
+          <div class="field span-2">
+            <label for="recurringEnd">تاريخ النهاية (اختياري)</label>
+            <input id="recurringEnd" name="endDate" type="date">
+            <p class="helper">اتركه فارغًا للفواتير أو الادخار المستمر، ويمكنك إيقاف الدفعة أو حذفها لاحقًا.</p>
+          </div>
+          <div class="field span-2">
+            <label for="recurringNotes">ملاحظات (اختياري)</label>
+            <textarea id="recurringNotes" name="notes" maxlength="300" placeholder="مثال: التحويل إلى حساب الادخار الرئيسي"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="ghost-btn" type="button" data-close-dialog="recurringDialog">إلغاء</button>
+        <button class="primary-btn" type="submit">حفظ الدفعة الثابتة</button>
+      </div>
+    </form>
+  </dialog>
+
+
+
+  <dialog class="modal" id="authDialog">
+    <div class="modal-head">
+      <h2 id="authDialogTitle">الحساب والمزامنة</h2>
+      <button class="close-btn" type="button" data-close-dialog="authDialog" aria-label="إغلاق">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="signedOutAuth">
+        <div class="auth-tabs">
+          <button class="auth-tab active" type="button" data-auth-pane="loginPane">تسجيل الدخول</button>
+          <button class="auth-tab" type="button" data-auth-pane="registerPane">إنشاء حساب</button>
+          <button class="auth-tab" type="button" data-auth-pane="resetPane">نسيت الباسوورد</button>
+          <button class="auth-tab" id="ownerSetupTab" type="button" data-auth-pane="ownerPane" style="display:none">إعداد المالك</button>
+        </div>
+
+        <section class="auth-pane active" id="loginPane">
+          <p class="auth-copy">سجّل الدخول باسم المستخدم أو البريد الإلكتروني. سيبقى الحساب مسجلًا على هذا الجهاز حتى تختار تسجيل الخروج.</p>
+          <form class="auth-grid" id="loginForm">
+            <div class="field"><label for="loginName">اسم المستخدم أو البريد الإلكتروني</label><input id="loginName" autocomplete="username" required></div>
+            <div class="field"><label for="loginPassword">كلمة المرور</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+            <button class="primary-btn" type="submit">تسجيل الدخول</button>
+          </form>
+        </section>
+
+        <section class="auth-pane" id="registerPane">
+          <p class="auth-copy">أنشئ حسابًا واحدًا واستخدمه على الهاتف والكمبيوتر. اسم المستخدم يكون بالإنجليزية والأرقام والرموز . _ -</p>
+          <form class="auth-grid" id="registerForm">
+            <div class="field"><label for="registerUsername">اسم المستخدم</label><input id="registerUsername" autocomplete="username" pattern="[A-Za-z0-9._-]{3,32}" required></div>
+            <div class="field"><label for="registerEmail">البريد الإلكتروني</label><input id="registerEmail" type="email" autocomplete="email" required></div>
+            <div class="field"><label for="registerPassword">كلمة المرور</label><input id="registerPassword" type="password" autocomplete="new-password" minlength="10" required><p class="helper">10 أحرف على الأقل وتحتوي حرفًا ورقمًا.</p></div>
+            <button class="primary-btn" type="submit">إنشاء الحساب</button>
+          </form>
+        </section>
+
+        <section class="auth-pane" id="resetPane">
+          <p class="auth-copy">إذا نسيت كلمة المرور، أرسل طلبًا للمالك. بعد أن يعطيك رمز إعادة التعيين، أدخله هنا مع كلمة المرور الجديدة.</p>
+          <form class="auth-grid" id="resetForm">
+            <div class="field"><label for="resetLogin">اسم المستخدم أو البريد الإلكتروني</label><input id="resetLogin" autocomplete="username" required></div>
+            <div class="field"><label for="resetCode">رمز إعادة التعيين</label><input id="resetCode" class="ltr" maxlength="8" autocomplete="one-time-code" placeholder="XXXXXXXX"></div>
+            <div class="field"><label for="resetNewPassword">كلمة المرور الجديدة</label><input id="resetNewPassword" type="password" autocomplete="new-password" minlength="10"></div>
+            <div class="auth-actions">
+              <button class="soft-btn" id="requestResetButton" type="button">إرسال طلب للمالك</button>
+              <button class="primary-btn" type="submit">تعيين كلمة المرور الجديدة</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="auth-pane" id="ownerPane">
+          <p class="auth-copy">يظهر هذا الخيار قبل إنشاء أول حساب مالك فقط. أدخل رمز التهيئة السري الذي تم ضبطه في Cloudflare ثم أنشئ حسابك.</p>
+          <div class="owner-config-status" id="ownerConfigStatus" role="status"></div>
+          <form class="auth-grid" id="ownerForm">
+            <div class="field"><label for="ownerBootstrapToken">رمز تهيئة المالك</label><input id="ownerBootstrapToken" type="password" autocomplete="off" required></div>
+            <div class="field"><label for="ownerUsername">اسم المستخدم</label><input id="ownerUsername" pattern="[A-Za-z0-9._-]{3,32}" required></div>
+            <div class="field"><label for="ownerEmail">البريد الإلكتروني</label><input id="ownerEmail" type="email" required></div>
+            <div class="field"><label for="ownerPassword">كلمة المرور</label><input id="ownerPassword" type="password" minlength="10" required></div>
+            <button class="primary-btn" id="ownerSubmitButton" type="submit">إنشاء حساب المالك</button>
+          </form>
+        </section>
+      </div>
+
+      <div id="signedInAuth" hidden>
+        <div class="account-card">
+          <div class="account-avatar" id="accountAvatar">ح</div>
+          <div><h3 id="accountUsername">—</h3><p id="accountEmail">—</p><p id="accountRole">حساب مستخدم</p></div>
+          <button class="ghost-btn" id="syncNowButton" type="button">مزامنة الآن</button>
+        </div>
+        <div class="panel" style="margin-top:14px;padding:16px">
+          <h3 style="margin:0 0 12px;font-size:13px">تغيير كلمة المرور</h3>
+          <form class="auth-grid" id="changePasswordForm">
+            <div class="field"><label for="currentPassword">كلمة المرور الحالية</label><input id="currentPassword" type="password" autocomplete="current-password" required></div>
+            <div class="field"><label for="newPassword">كلمة المرور الجديدة</label><input id="newPassword" type="password" minlength="10" autocomplete="new-password" required></div>
+            <button class="soft-btn" type="submit">تغيير كلمة المرور</button>
+          </form>
+        </div>
+        <div class="auth-actions">
+          <button class="danger-btn" id="logoutButton" type="button">تسجيل الخروج</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="installDialog">
+    <div class="modal-head"><h2>إضافة التطبيق إلى الشاشة الرئيسية</h2><button class="close-btn" type="button" data-close-dialog="installDialog" aria-label="إغلاق">×</button></div>
+    <div class="modal-body">
+      <div class="pwa-note" id="installInstructions">على iPhone: افتح الصفحة في Safari، اضغط زر المشاركة، ثم اختر «إضافة إلى الشاشة الرئيسية». بعد ذلك سيفتح مدير الراتب كتطبيق مستقل.</div>
+    </div>
+    <div class="modal-foot"><button class="primary-btn" type="button" data-close-dialog="installDialog">حسنًا</button></div>
+  </dialog>
+
+  <dialog class="modal" id="resetCodeDialog">
+    <div class="modal-head"><h2>رمز إعادة تعيين كلمة المرور</h2><button class="close-btn" type="button" data-close-dialog="resetCodeDialog" aria-label="إغلاق">×</button></div>
+    <div class="modal-body">
+      <p class="auth-copy">أرسل هذا الرمز للمستخدم المطلوب فقط. الرمز مؤقت ويُستخدم مرة واحدة.</p>
+      <div class="reset-code-box"><span>رمز المستخدم</span><strong id="generatedResetCode">—</strong><small id="generatedResetExpiry">صالح لمدة 20 دقيقة</small></div>
+      <div class="auth-actions"><button class="soft-btn" id="copyResetCodeButton" type="button">نسخ الرمز</button></div>
+    </div>
+  </dialog>
+
+
+  <dialog class="modal" id="changelogDialog">
+    <div class="modal-head">
+      <h2>سجل التحديثات</h2>
+      <button class="close-btn" type="button" data-close-dialog="changelogDialog" aria-label="إغلاق">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="changelog-list">
+        <section class="changelog-entry current">
+          <div class="changelog-version">
+            <strong>الإصدار 3.1.0</strong>
+            <time datetime="2026-08-17">17 أغسطس 2026</time>
+          </div>
+          <ul>
+            <li>إصلاح إعداد حساب المالك لأول مرة وإظهار حالة إعداد Cloudflare بوضوح بدل رسالة الخطأ العامة.</li>
+            <li>إعلان أسرار المصادقة كمتطلبات للنشر حتى يفشل النشر بوضوح إذا كانت غير مفعلة بدل نشر نسخة لا يستطيع المستخدم تسجيل الدخول إليها.</li>
+            <li>إضافة نظام تحديث اختياري: يظهر إشعار عند توفر إصدار جديد ولا يتم تطبيقه إلا بعد ضغط المستخدم «تحديث الآن».</li>
+            <li>إضافة زر «نسخة احتياطية» داخل إشعار التحديث لإتاحة حفظ البيانات قبل تثبيت الإصدار الجديد.</li>
+            <li>تعديل Service Worker ليُبقي الإصدار الحالي فعالًا إلى أن يوافق المستخدم صراحة على التحديث.</li>
+          </ul>
+        </section>
+        <section class="changelog-entry">
+          <div class="changelog-version">
+            <strong>الإصدار 3.0.0</strong>
+            <time datetime="2026-08-17">17 أغسطس 2026</time>
+          </div>
+          <ul>
+            <li>إضافة نظام حسابات وتسجيل دخول دائم حتى يختار المستخدم تسجيل الخروج.</li>
+            <li>مزامنة بيانات الراتب والأقساط والمدفوعات والمصروفات مع الحساب للوصول إليها من أي جهاز.</li>
+            <li>إضافة تبويب «إدارة المستخدمين» للمالك فقط مع إنشاء رموز مؤقتة لإعادة تعيين كلمات المرور.</li>
+            <li>إضافة دعم PWA لإضافة مدير الراتب إلى الشاشة الرئيسية على iPhone وAndroid.</li>
+            <li>الإبقاء على التخزين المحلي كنسخة عمل احتياطية عند انقطاع الإنترنت.</li>
+          </ul>
+        </section>
+        <section class="changelog-entry">
+          <div class="changelog-version">
+            <strong>الإصدار 2.1.0</strong>
+            <time datetime="2026-08-17">17 أغسطس 2026</time>
+          </div>
+          <ul>
+            <li>إضافة رقم الإصدار أسفل الصفحة وزر «سجل التحديثات».</li>
+            <li>تعزيز الحفظ المحلي بنسخة احتياطية داخلية تلقائية للبيانات.</li>
+            <li>استرجاع النسخة المحلية الاحتياطية تلقائيًا إذا تعذرت قراءة النسخة الأساسية.</li>
+            <li>تأكيد أن بيانات كل جهاز/متصفح مستقلة ولا تتم مزامنتها أو إرسالها خارجيًا.</li>
+          </ul>
+        </section>
+        <section class="changelog-entry">
+          <div class="changelog-version">
+            <strong>الإصدار 2.0.0</strong>
+            <time>الإصدار السابق</time>
+          </div>
+          <ul>
+            <li>إدارة الراتب والأقساط والسلف والمدفوعات الثابتة والادخار والمصروفات الشهرية.</li>
+            <li>إضافة النسخ الاحتياطي والاستيراد والطباعة والمتابعة الشهرية للمدفوعات.</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="primary-btn" type="button" data-close-dialog="changelogDialog">إغلاق</button>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var APP_VERSION = "3.1.0";
+      var STORAGE_KEY = "monthlySalaryManager.v1";
+      var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
+      var AUTH_USER_KEY = "monthlySalaryManager.authUser";
+      var PRE_ACCOUNT_BACKUP_KEY = "monthlySalaryManager.v1.preAccountBackup";
+      var API_BASE = String(window.SALARY_API_BASE || "").replace(/\/+$/, "");
+      var deferredInstallPrompt = null;
+      var cloudSaveTimer = null;
+      var cloudSaveBusy = false;
+      var authState = { authenticated: false, token: localStorage.getItem(AUTH_TOKEN_KEY) || "", user: null, backendReady: false, bootstrapRequired: false };
+      try { authState.user = JSON.parse(localStorage.getItem(AUTH_USER_KEY) || "null"); } catch (e) { authState.user = null; }
+      authState.authenticated = Boolean(authState.token && authState.user);
+      var STORAGE_BACKUP_KEY = "monthlySalaryManager.v1.backup";
+      var STORAGE_META_KEY = "monthlySalaryManager.v1.meta";
+      var storageWarningShown = false;
+      var today = new Date();
+      var defaultMonth = toMonthKey(today);
+      var state = {
+        salary: 0,
+        selectedMonth: defaultMonth,
+        commitments: [],
+        recurringPayments: [],
+        expenses: []
+      };
+      var activeView = "overviewView";
+      var toastTimer;
+
+      var categoryStyle = {
+        "سلفة": { symbol: "س", color: "#14756c", background: "#dff2ed" },
+        "سيارة": { symbol: "س", color: "#c77b28", background: "#f8efd9" },
+        "عقار": { symbol: "ع", color: "#56726c", background: "#e6ecea" },
+        "بطاقة": { symbol: "ب", color: "#c65c4d", background: "#ffebe4" },
+        "اشتراك": { symbol: "ش", color: "#705a9b", background: "#eee9f7" },
+        "أخرى": { symbol: "أ", color: "#647477", background: "#ecefef" }
+      };
+
+      var recurringStyle = {
+        "فاتورة": { symbol: "ف", color: "#14756c", background: "#dff2ed" },
+        "محفظة": { symbol: "م", color: "#c77b28", background: "#f8efd9" },
+        "ادخار": { symbol: "د", color: "#705a9b", background: "#eee9f7" },
+        "اشتراك": { symbol: "ش", color: "#c65c4d", background: "#ffebe4" },
+        "أخرى": { symbol: "أ", color: "#647477", background: "#ecefef" }
+      };
+
+      var expenseSymbols = {
+        "مشتريات": "م",
+        "طعام": "ط",
+        "مواصلات": "ن",
+        "فواتير": "ف",
+        "ترفيه": "ت",
+        "أخرى": "أ"
+      };
+
+      function $(selector) {
+        return document.querySelector(selector);
+      }
+
+      function $all(selector) {
+        return Array.prototype.slice.call(document.querySelectorAll(selector));
+      }
+
+      function toMonthKey(date) {
+        return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0");
+      }
+
+      function toDateInput(date) {
+        return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+      }
+
+      function parseLocalDate(value) {
+        var parts = String(value || "").split("-").map(Number);
+        return new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
+      }
+
+      function monthDate(monthKey) {
+        var parts = monthKey.split("-").map(Number);
+        return new Date(parts[0], parts[1] - 1, 1);
+      }
+
+      function shiftMonth(monthKey, offset) {
+        var date = monthDate(monthKey);
+        date.setMonth(date.getMonth() + offset);
+        return toMonthKey(date);
+      }
+
+      function daysInMonth(monthKey) {
+        var date = monthDate(monthKey);
+        return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+      }
+
+      function getDaysRemaining(monthKey) {
+        if (monthKey < defaultMonth) return 0;
+        if (monthKey > defaultMonth) return daysInMonth(monthKey);
+        return Math.max(1, daysInMonth(monthKey) - today.getDate() + 1);
+      }
+
+      function formatMoney(value) {
+        var amount = Number(value) || 0;
+        return new Intl.NumberFormat("ar-AE-u-nu-latn", {
+          style: "currency",
+          currency: "AED",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(amount);
+      }
+
+      function formatMonth(monthKey) {
+        return new Intl.DateTimeFormat("ar-AE-u-nu-latn", {
+          month: "long",
+          year: "numeric"
+        }).format(monthDate(monthKey));
+      }
+
+      function formatDate(value) {
+        return new Intl.DateTimeFormat("ar-AE-u-nu-latn", {
+          day: "numeric",
+          month: "short",
+          year: "numeric"
+        }).format(parseLocalDate(value));
+      }
+
+      function escapeHTML(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+
+      function makeId(prefix) {
+        if (window.crypto && crypto.randomUUID) return prefix + "-" + crypto.randomUUID();
+        return prefix + "-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+      }
+
+      function safeNumber(value) {
+        var number = Number(value);
+        return Number.isFinite(number) && number >= 0 ? number : 0;
+      }
+
+      function accountStorageKey() {
+        return authState.user && authState.user.accountId ? "monthlySalaryManager.account." + authState.user.accountId : STORAGE_KEY;
+      }
+
+      function hasMeaningfulData(data) {
+        return Boolean(data && (safeNumber(data.salary) > 0 || (data.commitments || []).length || (data.recurringPayments || []).length || (data.expenses || []).length));
+      }
+
+      function apiErrorMessage(code) {
+        var map = {
+          INVALID_CREDENTIALS: "اسم المستخدم/البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+          ACCOUNT_SUSPENDED: "هذا الحساب موقوف حاليًا. راجع مالك الصفحة.",
+          TRY_LATER: "تم إيقاف محاولات الدخول مؤقتًا بسبب تكرار كلمة مرور خاطئة.",
+          INVALID_USERNAME: "اسم المستخدم غير صالح. استخدم 3–32 من الأحرف الإنجليزية أو الأرقام و . _ -",
+          INVALID_EMAIL: "البريد الإلكتروني غير صالح.",
+          WEAK_PASSWORD: "كلمة المرور يجب أن تكون 10 أحرف على الأقل وتحتوي حرفًا ورقمًا.",
+          USERNAME_EXISTS: "اسم المستخدم مستخدم بالفعل.",
+          EMAIL_EXISTS: "البريد الإلكتروني مستخدم بالفعل.",
+          OWNER_SETUP_REQUIRED: "يجب إعداد حساب المالك أولًا.",
+          INVALID_BOOTSTRAP_TOKEN: "رمز تهيئة المالك غير صحيح.",
+          INVALID_RESET_CODE: "رمز إعادة التعيين غير صحيح أو انتهت صلاحيته.",
+          AUTH_REQUIRED: "انتهت جلسة الحساب. سجّل الدخول مرة أخرى.",
+          FORBIDDEN: "ليس لديك صلاحية لتنفيذ هذا الإجراء.",
+          ORIGIN_NOT_ALLOWED: "عنوان الصفحة غير مسموح به في إعدادات الخادم.",
+          AUTH_PEPPER_NOT_CONFIGURED: "سر AUTH_PEPPER غير مفعّل في إعدادات Runtime للـWorker. أضفه من Settings → Variables and Secrets ثم اضغط Deploy.",
+          OWNER_BOOTSTRAP_TOKEN_NOT_CONFIGURED: "سر OWNER_BOOTSTRAP_TOKEN غير مفعّل في إعدادات Runtime للـWorker. أضفه ثم اضغط Deploy.",
+          OWNER_ALREADY_EXISTS: "تم إنشاء حساب المالك مسبقًا. استخدم تسجيل الدخول بدل إعداد مالك جديد.",
+          BOOTSTRAP_REQUIRED: "إعداد حساب المالك غير مكتمل بعد.",
+          NETWORK_ERROR: "تعذر الاتصال بالخادم الآن. تحقق من الإنترنت ثم حاول مرة أخرى.",
+          BAD_RESPONSE: "استجاب الخادم بصورة غير متوقعة. أعد تحميل الصفحة وحاول مرة أخرى.",
+          SERVER_ERROR: "حدث خطأ داخلي في الخادم. تحقق من إعدادات Variables and Secrets في Cloudflare ثم حاول مرة أخرى."
+        };
+        return map[code] || "تعذر إتمام العملية. حاول مرة أخرى.";
+      }
+
+      async function apiFetch(path, options) {
+        options = options || {};
+        var headers = Object.assign({ "x-salary-manager-app": "1" }, options.headers || {});
+        if (options.body && !headers["content-type"] && !headers["Content-Type"]) headers["content-type"] = "application/json";
+        if (authState.token) headers.authorization = "Bearer " + authState.token;
+        var response;
+        try {
+          response = await fetch(API_BASE + path, Object.assign({ cache: "no-store" }, options, { headers: headers }));
+        } catch (networkError) {
+          var offlineError = new Error("NETWORK_ERROR");
+          offlineError.code = "NETWORK_ERROR";
+          offlineError.detail = String(networkError && networkError.message || networkError || "");
+          throw offlineError;
+        }
+        var data = null;
+        try { data = await response.json(); } catch (e) { data = { ok: false, error: "BAD_RESPONSE" }; }
+        if (!response.ok) {
+          var error = new Error(data && data.error ? data.error : "REQUEST_FAILED");
+          error.code = data && data.error ? data.error : "REQUEST_FAILED";
+          error.status = response.status;
+          error.detail = data && data.detail ? data.detail : "";
+          throw error;
+        }
+        return data;
+      }
+
+      function setSyncStatus(text, online) {
+        var el = $("#syncStatus");
+        if (!el) return;
+        el.textContent = text;
+        el.classList.toggle("offline", !online);
+        var account = $("#accountButton");
+        if (account) account.classList.toggle("is-online", Boolean(online && authState.authenticated));
+      }
+
+      function updateAccountUI() {
+        var signedIn = Boolean(authState.authenticated && authState.user);
+        $("#signedOutAuth").hidden = signedIn;
+        $("#signedInAuth").hidden = !signedIn;
+        $("#accountButtonLabel").textContent = signedIn ? authState.user.username : "تسجيل الدخول";
+        $("#adminTab").classList.toggle("visible", signedIn && authState.user.role === "super_admin");
+        if (signedIn) {
+          $("#accountUsername").textContent = authState.user.username;
+          $("#accountEmail").textContent = authState.user.email;
+          $("#accountRole").textContent = authState.user.role === "super_admin" ? "مالك الصفحة · إدارة المستخدمين مفعلة" : "حساب مستخدم";
+          $("#accountAvatar").textContent = String(authState.user.username || "ح").slice(0, 1).toUpperCase();
+          $("#storageNote").textContent = "البيانات محفوظة بالحساب مع نسخة محلية على هذا الجهاز";
+          setSyncStatus(navigator.onLine ? "متصل بالحساب" : "غير متصل · محفوظ محليًا", navigator.onLine);
+        } else {
+          $("#storageNote").textContent = "سجّل الدخول لمزامنة بياناتك بين أجهزتك";
+          setSyncStatus("حفظ محلي", false);
+          if (activeView === "adminView") setView("overviewView");
+        }
+      }
+
+      function setAuthPane(id) {
+        $all(".auth-pane").forEach(function (pane) { pane.classList.toggle("active", pane.id === id); });
+        $all("[data-auth-pane]").forEach(function (button) { button.classList.toggle("active", button.dataset.authPane === id); });
+      }
+
+      function rememberAuth(data) {
+        authState.token = data.token || "";
+        authState.user = data.user || null;
+        authState.authenticated = Boolean(authState.token && authState.user);
+        if (authState.token) localStorage.setItem(AUTH_TOKEN_KEY, authState.token); else localStorage.removeItem(AUTH_TOKEN_KEY);
+        if (authState.user) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authState.user)); else localStorage.removeItem(AUTH_USER_KEY);
+        updateAccountUI();
+      }
+
+      function clearAuth() {
+        authState.token = "";
+        authState.user = null;
+        authState.authenticated = false;
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+        localStorage.removeItem(AUTH_USER_KEY);
+        updateAccountUI();
+      }
+
+      async function cloudSaveNow(silent) {
+        if (!authState.authenticated || !authState.token || cloudSaveBusy || !navigator.onLine) return false;
+        cloudSaveBusy = true;
+        try {
+          setSyncStatus("جارٍ الحفظ…", true);
+          await apiFetch("/api/data", { method: "PUT", body: JSON.stringify({ state: state }) });
+          setSyncStatus("تمت المزامنة", true);
+          if (!silent) showToast("تم حفظ بياناتك في الحساب");
+          return true;
+        } catch (error) {
+          if (error.code === "AUTH_REQUIRED") {
+            clearAuth();
+            showToast("انتهت جلسة الحساب. بياناتك المحلية ما زالت محفوظة.", true);
+          } else {
+            setSyncStatus("غير متصل · محفوظ محليًا", false);
+            if (!silent) showToast("تعذرت المزامنة الآن، وتم الاحتفاظ بالتغييرات محليًا.", true);
+          }
+          return false;
+        } finally {
+          cloudSaveBusy = false;
+        }
+      }
+
+      function queueCloudSave() {
+        if (!authState.authenticated) return;
+        clearTimeout(cloudSaveTimer);
+        cloudSaveTimer = setTimeout(function () { cloudSaveNow(true); }, 650);
+      }
+
+      async function syncFromCloud(options) {
+        options = options || {};
+        if (!authState.authenticated || !navigator.onLine) return false;
+        try {
+          setSyncStatus("جارٍ تحميل بيانات الحساب…", true);
+          var remote = await apiFetch("/api/data");
+          if (remote.state && typeof remote.state === "object") {
+            if (hasMeaningfulData(state)) {
+              try { localStorage.setItem(PRE_ACCOUNT_BACKUP_KEY, JSON.stringify({ savedAt: new Date().toISOString(), data: state })); } catch (e) {}
+            }
+            normalizeSavedState(remote.state);
+            var serialized = JSON.stringify(state);
+            localStorage.setItem(accountStorageKey(), serialized);
+            localStorage.setItem(accountStorageKey() + ".backup", serialized);
+            render();
+            setSyncStatus("تم تحميل بيانات الحساب", true);
+            if (!options.silent) showToast("تم تحميل بيانات حسابك");
+            return true;
+          }
+          if (hasMeaningfulData(state)) {
+            await cloudSaveNow(true);
+            if (!options.silent) showToast("تم نقل بيانات هذا الجهاز إلى حسابك");
+          } else {
+            render();
+            setSyncStatus("الحساب جاهز", true);
+          }
+          return true;
+        } catch (error) {
+          if (error.code === "AUTH_REQUIRED") clearAuth();
+          setSyncStatus("غير متصل · محفوظ محليًا", false);
+          return false;
+        }
+      }
+
+      function updateOwnerConfigStatus(status) {
+        var box = $("#ownerConfigStatus");
+        var submit = $("#ownerSubmitButton");
+        if (!box || !submit) return;
+        var config = status && status.config ? status.config : {};
+        var ready = Boolean(config.authPepperConfigured && config.ownerBootstrapConfigured);
+        box.classList.add("show");
+        box.classList.toggle("ready", ready);
+        if (ready) {
+          box.textContent = "الخادم جاهز لإنشاء حساب المالك. أدخل رمز التهيئة نفسه الذي حفظته في Cloudflare.";
+          submit.disabled = false;
+        } else {
+          var missing = [];
+          if (!config.authPepperConfigured) missing.push("AUTH_PEPPER");
+          if (!config.ownerBootstrapConfigured) missing.push("OWNER_BOOTSTRAP_TOKEN");
+          box.textContent = "إعداد Cloudflare غير مكتمل. الأسرار غير المتاحة وقت التشغيل: " + missing.join("، ") + ". أضفها من Worker → Settings → Variables and Secrets كنوع Secret ثم اضغط Deploy.";
+          submit.disabled = true;
+        }
+      }
+
+      async function initializeAuth() {
+        try {
+          var status = await apiFetch("/api/auth/status");
+          authState.backendReady = true;
+          authState.bootstrapRequired = Boolean(status.bootstrapRequired);
+          updateOwnerConfigStatus(status);
+          $("#ownerSetupTab").style.display = authState.bootstrapRequired ? "block" : "none";
+          if (authState.bootstrapRequired) setAuthPane("ownerPane");
+          if (authState.token) {
+            try {
+              var session = await apiFetch("/api/auth/session");
+              authState.user = session.user;
+              authState.authenticated = true;
+              localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authState.user));
+              updateAccountUI();
+              await syncFromCloud({ silent: true });
+            } catch (e) {
+              clearAuth();
+            }
+          } else {
+            updateAccountUI();
+          }
+        } catch (error) {
+          authState.backendReady = false;
+          updateAccountUI();
+          setSyncStatus("الخادم غير متاح · حفظ محلي", false);
+        }
+      }
+
+      async function handleAuthSuccess(data, message) {
+        rememberAuth(data);
+        await syncFromCloud({ silent: true });
+        $("#authDialog").close();
+        showToast(message);
+      }
+
+      async function renderAdminUsers() {
+        if (!authState.authenticated || authState.user?.role !== "super_admin") return;
+        var root = $("#adminUserList");
+        root.innerHTML = '<div class="empty-state"><strong>جاري تحميل المستخدمين…</strong></div>';
+        try {
+          var data = await apiFetch("/api/admin/users");
+          $("#adminUserCount").textContent = data.count + " حساب مسجل";
+          root.innerHTML = data.users.map(function (user) {
+            var owner = user.role === "super_admin";
+            var reset = user.resetRequested ? '<span class="reset-request">طلب إعادة تعيين كلمة المرور</span>' : '';
+            return '<div class="admin-user">' +
+              '<div class="admin-user-main"><strong>' + escapeHTML(user.username) + (owner ? ' · المالك' : '') + '</strong><span>' + escapeHTML(user.email) + ' · ' + (user.status === 'active' ? 'نشط' : 'موقوف') + ' · ' + Number(user.activeSessions || 0) + ' جلسة نشطة</span>' + reset + '</div>' +
+              '<div class="admin-user-actions">' +
+                (!owner ? '<button class="mini-btn mark-paid" type="button" data-admin-reset="' + escapeHTML(user.id) + '">رمز إعادة تعيين</button>' : '') +
+                (!owner ? '<button class="mini-btn" type="button" data-admin-status="' + escapeHTML(user.id) + '" data-status="' + (user.status === 'active' ? 'suspended' : 'active') + '">' + (user.status === 'active' ? 'إيقاف الحساب' : 'تفعيل الحساب') + '</button>' : '') +
+                (!owner ? '<button class="mini-btn" type="button" data-admin-logout="' + escapeHTML(user.id) + '">تسجيل خروج من كل الأجهزة</button>' : '') +
+              '</div></div>';
+          }).join("") || '<div class="empty-state"><strong>لا توجد حسابات بعد</strong></div>';
+        } catch (error) {
+          root.innerHTML = '<div class="empty-state"><strong>تعذر تحميل المستخدمين</strong><p>' + escapeHTML(apiErrorMessage(error.code)) + '</p></div>';
+        }
+      }
+
+      async function generateResetCode(userId) {
+        try {
+          var data = await apiFetch("/api/admin/reset-code", { method: "POST", body: JSON.stringify({ userId: userId }) });
+          $("#generatedResetCode").textContent = data.code;
+          $("#generatedResetExpiry").textContent = "صالح حتى " + new Date(data.expiresAt).toLocaleTimeString("ar-AE", { hour: "2-digit", minute: "2-digit" });
+          $("#resetCodeDialog").showModal();
+          await renderAdminUsers();
+        } catch (error) { showToast(apiErrorMessage(error.code), true); }
+      }
+
+      function initPWA() {
+        var waitingWorker = null;
+        var registration = null;
+        var acceptedUpdate = false;
+        var remoteVersion = "";
+        var banner = $("#appUpdateBanner");
+        var note = $("#appUpdateNote");
+        var applyButton = $("#applyUpdateButton");
+        var backupButton = $("#updateBackupButton");
+
+        function showUpdate(worker, version) {
+          if (worker) waitingWorker = worker;
+          if (version) remoteVersion = version;
+          if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+          if (note) note.textContent = "يتوفر إصدار أحدث" + (remoteVersion ? " (" + remoteVersion + ")" : "") + ". لن يتم تحديث الصفحة تلقائيًا. احفظ نسخة احتياطية إن رغبت، ثم اضغط «تحديث الآن».";
+          if (banner) banner.classList.add("show");
+        }
+
+        async function checkHtmlVersion() {
+          try {
+            var url = new URL("./index.html", location.href);
+            url.searchParams.set("__update_check", Date.now());
+            var response = await fetch(url.href, { cache: "no-store", headers: { "cache-control": "no-cache" } });
+            if (!response.ok) return;
+            var text = await response.text();
+            var match = text.match(/id=["']appVersionFooter["'][^>]*data-version=["']([^"']+)["']/i) || text.match(/data-version=["']([^"']+)["'][^>]*id=["']appVersionFooter["']/i);
+            var version = match && match[1] ? match[1].trim() : "";
+            if (version && version !== APP_VERSION) showUpdate(null, version);
+          } catch (e) {}
+        }
+
+        async function refreshCurrentShell() {
+          var controller = navigator.serviceWorker.controller;
+          if (!controller) throw new Error("NO_ACTIVE_SERVICE_WORKER");
+          await new Promise(function (resolve, reject) {
+            var channel = new MessageChannel();
+            var timer = setTimeout(function () { reject(new Error("UPDATE_TIMEOUT")); }, 20000);
+            channel.port1.onmessage = function (event) {
+              clearTimeout(timer);
+              if (event.data && event.data.ok) resolve(); else reject(new Error(event.data && event.data.error || "UPDATE_FAILED"));
+            };
+            controller.postMessage({ type: "REFRESH_APP_SHELL" }, [channel.port2]);
+          });
+        }
+
+        if (backupButton) backupButton.addEventListener("click", function () {
+          exportData();
+          backupButton.textContent = "تم حفظ النسخة ✓";
+        });
+
+        if (applyButton) applyButton.addEventListener("click", async function () {
+          if (!window.confirm("سيتم تحديث التطبيق الآن. إن كنت تريد نسخة احتياطية فتأكد من حفظها أولًا. هل تريد المتابعة؟")) return;
+          acceptedUpdate = true;
+          applyButton.disabled = true;
+          applyButton.textContent = "جارٍ التحديث…";
+          try {
+            if (waitingWorker) {
+              waitingWorker.postMessage({ type: "SKIP_WAITING" });
+              return;
+            }
+            await refreshCurrentShell();
+            location.reload();
+          } catch (e) {
+            acceptedUpdate = false;
+            applyButton.disabled = false;
+            applyButton.textContent = "تحديث الآن";
+            showToast("تعذر تطبيق التحديث الآن. تحقق من الاتصال وحاول مرة أخرى.", true);
+          }
+        });
+
+        if ("serviceWorker" in navigator && location.protocol !== "file:") {
+          navigator.serviceWorker.addEventListener("controllerchange", function () {
+            if (acceptedUpdate) location.reload();
+          });
+          window.addEventListener("load", async function () {
+            try {
+              registration = await navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" });
+              if (registration.waiting) showUpdate(registration.waiting, "");
+              registration.addEventListener("updatefound", function () {
+                var worker = registration.installing;
+                if (!worker) return;
+                worker.addEventListener("statechange", function () {
+                  if (worker.state === "installed" && navigator.serviceWorker.controller) showUpdate(worker, "");
+                });
+              });
+              registration.update().catch(function () {});
+              checkHtmlVersion();
+              setInterval(function () {
+                if (registration) registration.update().catch(function () {});
+                checkHtmlVersion();
+              }, 30 * 60 * 1000);
+            } catch (e) { console.warn("Service worker registration failed", e); }
+          });
+        }
+
+        window.addEventListener("beforeinstallprompt", function (event) {
+          event.preventDefault();
+          deferredInstallPrompt = event;
+        });
+      }
+
+      function normalizeSavedState(saved) {
+        if (!saved || typeof saved !== "object") return false;
+        state.salary = safeNumber(saved.salary);
+        state.selectedMonth = /^\d{4}-\d{2}$/.test(saved.selectedMonth || "") ? saved.selectedMonth : defaultMonth;
+        state.commitments = Array.isArray(saved.commitments) ? saved.commitments : [];
+        state.recurringPayments = Array.isArray(saved.recurringPayments) ? saved.recurringPayments : [];
+        state.expenses = Array.isArray(saved.expenses) ? saved.expenses : [];
+        return true;
+      }
+
+      function saveState() {
+        try {
+          var serialized = JSON.stringify(state);
+          var key = accountStorageKey();
+          localStorage.setItem(key, serialized);
+          localStorage.setItem(key + ".backup", serialized);
+          if (!authState.authenticated) {
+            localStorage.setItem(STORAGE_KEY, serialized);
+            localStorage.setItem(STORAGE_BACKUP_KEY, serialized);
+          }
+          localStorage.setItem(STORAGE_META_KEY, JSON.stringify({
+            appVersion: APP_VERSION,
+            lastSavedAt: new Date().toISOString(),
+            accountId: authState.user ? authState.user.accountId : null
+          }));
+          var note = $("#storageNote");
+          if (note) note.textContent = authState.authenticated ? "البيانات محفوظة بالحساب مع نسخة محلية على هذا الجهاز" : "البيانات محفوظة محليًا على هذا الجهاز";
+          queueCloudSave();
+        } catch (error) {
+          var note = $("#storageNote");
+          if (note) note.textContent = "تعذر تأكيد الحفظ المحلي — نزّل نسخة احتياطية";
+          if (!storageWarningShown) {
+            storageWarningShown = true;
+            showToast("تعذر حفظ البيانات محليًا. نزّل نسخة احتياطية لحماية بياناتك.", true);
+          }
+        }
+      }
+
+      function loadState() {
+        var primaryError = false;
+        var key = accountStorageKey();
+        try {
+          var primaryRaw = localStorage.getItem(key) || (!authState.user ? localStorage.getItem(STORAGE_KEY) : null);
+          if (primaryRaw) {
+            var primarySaved = JSON.parse(primaryRaw);
+            if (normalizeSavedState(primarySaved)) return;
+          }
+        } catch (error) { primaryError = true; }
+        try {
+          var backupRaw = localStorage.getItem(key + ".backup") || (!authState.user ? localStorage.getItem(STORAGE_BACKUP_KEY) : null);
+          if (backupRaw) {
+            var backupSaved = JSON.parse(backupRaw);
+            if (normalizeSavedState(backupSaved)) {
+              localStorage.setItem(key, backupRaw);
+              setTimeout(function () { showToast("تم استرجاع بياناتك من النسخة المحلية الاحتياطية"); }, 100);
+              return;
+            }
+          }
+        } catch (backupError) { primaryError = true; }
+        if (primaryError) setTimeout(function () { showToast("تعذر قراءة التخزين المحلي. يمكنك استيراد نسخة احتياطية محفوظة.", true); }, 100);
+      }
+
+      function requestPersistentStorage() {
+        try {
+          if (navigator.storage && typeof navigator.storage.persist === "function") {
+            navigator.storage.persist().catch(function () {});
+          }
+        } catch (error) {}
+      }
+
+      function isCommitmentActive(item, monthKey) {
+        var startMonth = String(item.startDate || "").slice(0, 7);
+        var endMonth = String(item.endDate || "").slice(0, 7);
+        return Boolean(startMonth && endMonth && startMonth <= monthKey && endMonth >= monthKey);
+      }
+
+      function getActiveCommitments() {
+        return state.commitments.filter(function (item) {
+          return isCommitmentActive(item, state.selectedMonth);
+        });
+      }
+
+      function isRecurringActive(item, monthKey) {
+        if (item.isPaused) return false;
+        var startMonth = String(item.startDate || "").slice(0, 7);
+        var endMonth = String(item.endDate || "").slice(0, 7);
+        return Boolean(startMonth && startMonth <= monthKey && (!endMonth || endMonth >= monthKey));
+      }
+
+      function getActiveRecurring() {
+        return state.recurringPayments.filter(function (item) {
+          return isRecurringActive(item, state.selectedMonth);
+        });
+      }
+
+      function getMonthExpenses() {
+        return state.expenses.filter(function (item) {
+          return String(item.date || "").slice(0, 7) === state.selectedMonth;
+        });
+      }
+
+      function monthsInclusive(startMonth, endMonth) {
+        var start = monthDate(startMonth);
+        var end = monthDate(endMonth);
+        return Math.max(0, (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth() + 1);
+      }
+
+      function getMetrics() {
+        var activeCommitments = getActiveCommitments();
+        var activeRecurring = getActiveRecurring();
+        var monthExpenses = getMonthExpenses();
+        var commitmentsTotal = activeCommitments.reduce(function (sum, item) {
+          return sum + safeNumber(item.amount);
+        }, 0);
+        var recurringTotal = activeRecurring.reduce(function (sum, item) {
+          return sum + safeNumber(item.amount);
+        }, 0);
+        var savingsTotal = activeRecurring.reduce(function (sum, item) {
+          return sum + (item.type === "ادخار" ? safeNumber(item.amount) : 0);
+        }, 0);
+        var expensesTotal = monthExpenses.reduce(function (sum, item) {
+          return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount));
+        }, 0);
+        var excludedExpensesTotal = monthExpenses.reduce(function (sum, item) {
+          return sum + (item.excludeFromBudget ? safeNumber(item.amount) : 0);
+        }, 0);
+        var balance = state.salary - commitmentsTotal - recurringTotal - expensesTotal;
+        var daysLeft = getDaysRemaining(state.selectedMonth);
+        var daily = daysLeft > 0 ? Math.max(0, balance) / daysLeft : 0;
+        var used = commitmentsTotal + recurringTotal + expensesTotal;
+        var usedPercent = state.salary > 0 ? (used / state.salary) * 100 : 0;
+        return {
+          activeCommitments: activeCommitments,
+          activeRecurring: activeRecurring,
+          monthExpenses: monthExpenses,
+          commitmentsTotal: commitmentsTotal,
+          recurringTotal: recurringTotal,
+          savingsTotal: savingsTotal,
+          expensesTotal: expensesTotal,
+          excludedExpensesTotal: excludedExpensesTotal,
+          balance: balance,
+          daysLeft: daysLeft,
+          daily: daily,
+          used: used,
+          usedPercent: usedPercent
+        };
+      }
+
+      function setText(selector, value) {
+        var node = $(selector);
+        if (node) node.textContent = value;
+      }
+
+      function setMoney(selector, value) {
+        setText(selector, formatMoney(value));
+        var node = $(selector);
+        if (node) node.classList.toggle("negative", value < 0);
+      }
+
+      function render() {
+        var metrics = getMetrics();
+        $("#monthPicker").value = state.selectedMonth;
+        $("#expenseDate").value = normalizeExpenseDate($("#expenseDate").value);
+        setText("#monthSummaryTitle", "ملخص " + formatMonth(state.selectedMonth));
+
+        setMoney("#salaryHero", state.salary);
+        setMoney("#salarySummary", state.salary);
+        setMoney("#availableHero", metrics.balance);
+        setMoney("#balanceSummary", metrics.balance);
+        setMoney("#commitmentsSummary", metrics.commitmentsTotal);
+        setMoney("#recurringSummary", metrics.recurringTotal);
+        setMoney("#expensesSummary", metrics.expensesTotal);
+        setMoney("#dailyBudget", metrics.daily);
+        setMoney("#legendCommitments", metrics.commitmentsTotal);
+        setMoney("#legendRecurring", metrics.recurringTotal);
+        setMoney("#legendExpenses", metrics.expensesTotal);
+        setMoney("#legendRemaining", metrics.balance);
+
+        setText("#daysRemaining", metrics.daysLeft);
+        setText("#daysLabel", state.selectedMonth < defaultMonth ? "الشهر مكتمل" : "يوم متبقٍ");
+        setText("#commitmentCountNote", metrics.activeCommitments.length ? metrics.activeCommitments.length + " التزام نشط هذا الشهر" : "لا توجد التزامات نشطة");
+        setText("#recurringCountNote", metrics.activeRecurring.length ? metrics.activeRecurring.length + " دفعة · منها " + formatMoney(metrics.savingsTotal) + " ادخار" : "لا توجد دفعات ثابتة");
+        setText("#expenseCountNote", metrics.monthExpenses.length ? metrics.monthExpenses.length + " عملية · المحتسب " + formatMoney(metrics.expensesTotal) : "لا توجد مصروفات مسجلة");
+        setText("#expenseListSubtitle", "المصروفات المسجلة في " + formatMonth(state.selectedMonth));
+
+        var clampedUsed = Math.min(100, Math.max(0, metrics.usedPercent));
+        $("#usedPercentBar").style.width = clampedUsed + "%";
+        setText("#usedPercentText", Math.round(metrics.usedPercent) + "%");
+        setText("#remainingPercent", state.salary > 0 ? Math.max(0, Math.round((metrics.balance / state.salary) * 100)) + "%" : "100%");
+
+        var commitmentsPercent = state.salary > 0 ? Math.min(100, (metrics.commitmentsTotal / state.salary) * 100) : 0;
+        var recurringPercent = state.salary > 0 ? Math.min(100 - commitmentsPercent, (metrics.recurringTotal / state.salary) * 100) : 0;
+        var recurringStop = Math.min(100, commitmentsPercent + recurringPercent);
+        var expensesPercent = state.salary > 0 ? Math.min(100 - recurringStop, (metrics.expensesTotal / state.salary) * 100) : 0;
+        var expensesStop = Math.min(100, recurringStop + expensesPercent);
+        $("#salaryDonut").style.background = "conic-gradient(#14756c 0 " + commitmentsPercent + "%, #705a9b " + commitmentsPercent + "% " + recurringStop + "%, #ef7e5b " + recurringStop + "% " + expensesStop + "%, #e6e5df " + expensesStop + "% 100%)";
+
+        updateBalanceMessage(metrics);
+        renderUpcoming(metrics.activeCommitments, metrics.activeRecurring);
+        renderCommitments();
+        renderRecurring();
+        renderExpenses(metrics.monthExpenses);
+        saveState();
+      }
+
+      function updateBalanceMessage(metrics) {
+        var status = $("#balanceStatus");
+        status.className = "status-chip";
+        if (state.salary <= 0) {
+          status.textContent = "بانتظار الراتب";
+          status.classList.add("warning");
+          setText("#allocationHeadline", "ابدأ بإضافة راتبك");
+          setText("#allocationSubline", "سيظهر هنا ملخص الأقساط والمدفوعات الثابتة ومصروفاتك");
+          setText("#monthlyInsight", "أدخل راتبك أولًا لتحصل على قراءة واضحة لميزانية الشهر.");
+          return;
+        }
+
+        if (metrics.balance < 0) {
+          status.textContent = "تجاوز الميزانية";
+          status.classList.add("danger");
+          setText("#allocationHeadline", "المبالغ المخصصة تتجاوز الراتب");
+          setText("#allocationSubline", "راجع الأقساط والمدفوعات الثابتة والمصروفات لهذا الشهر");
+          setText("#monthlyInsight", "تنبيه: تجاوزت ميزانيتك بمقدار " + formatMoney(Math.abs(metrics.balance)) + ". راجع المصروفات غير الضرورية.");
+          return;
+        }
+
+        var remainingRatio = metrics.balance / state.salary;
+        if (remainingRatio < .2) {
+          status.textContent = "هامش محدود";
+          status.classList.add("warning");
+        } else {
+          status.textContent = "وضع مريح";
+        }
+
+        setText("#allocationHeadline", "تم تخصيص " + Math.round(metrics.usedPercent) + "% من راتبك");
+        setText("#allocationSubline", "متبقٍ " + formatMoney(metrics.balance) + " لإدارة بقية الشهر");
+        if (state.selectedMonth < defaultMonth) {
+          setText("#monthlyInsight", "انتهى الشهر برصيد " + formatMoney(metrics.balance) + " بعد احتساب كل ما سجلته.");
+        } else {
+          setText("#monthlyInsight", "للبقاء ضمن الميزانية، حاول ألا يتجاوز صرفك اليومي " + formatMoney(metrics.daily) + " خلال الأيام المتبقية.");
+        }
+      }
+
+      function dueDateForMonth(item) {
+        var date = monthDate(state.selectedMonth);
+        var day = Math.min(Math.max(1, Number(item.dueDay) || 1), daysInMonth(state.selectedMonth));
+        return new Date(date.getFullYear(), date.getMonth(), day);
+      }
+
+      function renderUpcoming(commitments, recurringPayments) {
+        var root = $("#upcomingList");
+        var items = commitments.map(function (item) {
+          return Object.assign({ sourceType: "commitment" }, item);
+        }).concat(recurringPayments.map(function (item) {
+          return Object.assign({ sourceType: "recurring" }, item);
+        }));
+        if (!items.length) {
+          root.innerHTML = emptyState("ق", "لا توجد استحقاقات هذا الشهر", "أضف قسطًا أو دفعة ثابتة لتظهر مواعيدها هنا تلقائيًا.");
+          return;
+        }
+        var sorted = items.slice().sort(function (a, b) {
+          return Number(a.dueDay || 1) - Number(b.dueDay || 1);
+        });
+        root.innerHTML = sorted.slice(0, 5).map(function (item) {
+          var due = dueDateForMonth(item);
+          var paid = Array.isArray(item.paidMonths) && item.paidMonths.indexOf(state.selectedMonth) !== -1;
+          var meta = item.sourceType === "recurring"
+            ? (item.type || "دفعة ثابتة") + (item.endDate ? " · حتى " + formatDate(item.endDate) : " · تتكرر شهريًا")
+            : (item.category || "أخرى") + " · ينتهي " + formatDate(item.endDate);
+          return '<div class="upcoming-item">' +
+            '<div class="due-day"><div><b>' + due.getDate() + '</b><small>' + (paid ? "مدفوع" : "استحقاق") + '</small></div></div>' +
+            '<div><p class="item-title">' + escapeHTML(item.name) + '</p><p class="item-meta">' + escapeHTML(meta) + '</p></div>' +
+            '<strong class="item-amount">' + escapeHTML(formatMoney(item.amount)) + '</strong>' +
+          '</div>';
+        }).join("");
+      }
+
+      function renderCommitments() {
+        var root = $("#commitmentList");
+        if (!state.commitments.length) {
+          root.innerHTML = emptyState("ق", "لم تضف أي سلفة أو قسط بعد", "ابدأ بإضافة الالتزامات الشهرية، وسيحسب المدير أثرها على الراتب حتى تاريخ الانتهاء.");
+          return;
+        }
+
+        var sorted = state.commitments.slice().sort(function (a, b) {
+          return String(a.endDate).localeCompare(String(b.endDate));
+        });
+
+        root.innerHTML = sorted.map(function (item) {
+          var style = categoryStyle[item.category] || categoryStyle["أخرى"];
+          var active = isCommitmentActive(item, state.selectedMonth);
+          var paid = Array.isArray(item.paidMonths) && item.paidMonths.indexOf(state.selectedMonth) !== -1;
+          var endMonth = String(item.endDate).slice(0, 7);
+          var remainingMonths = state.selectedMonth <= endMonth ? monthsInclusive(state.selectedMonth, endMonth) : 0;
+          var projected = safeNumber(item.remainingTotal) || remainingMonths * safeNumber(item.amount);
+          var statusLabel = active ? (paid ? "مدفوع هذا الشهر" : "نشط هذا الشهر") : (endMonth < state.selectedMonth ? "منتهٍ" : "يبدأ لاحقًا");
+          var notes = item.notes ? ' · ' + escapeHTML(item.notes) : "";
+
+          return '<article class="commitment-card">' +
+            '<div class="category-mark" style="--category-color:' + style.color + ';--category-bg:' + style.background + '">' + style.symbol + '</div>' +
+            '<div>' +
+              '<div class="commitment-title-row"><h3>' + escapeHTML(item.name) + '</h3><span class="tiny-tag ' + (paid ? "paid" : "") + '">' + statusLabel + '</span></div>' +
+              '<div class="commitment-details">' +
+                '<span>' + escapeHTML(item.category || "أخرى") + '</span>' +
+                '<span>الخصم يوم ' + escapeHTML(item.dueDay || 1) + '</span>' +
+                '<span>ينتهي ' + escapeHTML(formatDate(item.endDate)) + '</span>' +
+                '<span>' + remainingMonths + ' شهر متبقٍ</span>' + notes +
+              '</div>' +
+            '</div>' +
+            '<div class="commitment-actions">' +
+              '<strong class="commitment-amount">' + escapeHTML(formatMoney(item.amount)) + ' / شهر</strong>' +
+              '<div class="item-meta">إجمالي متوقع متبقٍ: ' + escapeHTML(formatMoney(projected)) + '</div>' +
+              '<div class="commitment-action-row">' +
+                (active ? '<button class="mini-btn mark-paid ' + (paid ? "is-paid" : "") + '" type="button" data-toggle-paid="' + escapeHTML(item.id) + '">' + (paid ? "إلغاء علامة الدفع" : "تم دفع هذا الشهر") + '</button>' : '') +
+                '<button class="mini-btn" type="button" data-edit-commitment="' + escapeHTML(item.id) + '">تعديل</button>' +
+                '<button class="mini-btn" type="button" data-delete-commitment="' + escapeHTML(item.id) + '">حذف</button>' +
+              '</div>' +
+            '</div>' +
+          '</article>';
+        }).join("");
+      }
+
+      function recurringActionLabel(item, paid) {
+        if (paid) return item.type === "ادخار" ? "إلغاء علامة التحويل" : item.type === "محفظة" ? "إلغاء علامة الشحن" : "إلغاء علامة الدفع";
+        if (item.type === "ادخار") return "تم تحويل الادخار هذا الشهر";
+        if (item.type === "محفظة") return "تم شحن المحفظة هذا الشهر";
+        return "تم الدفع هذا الشهر";
+      }
+
+      function renderRecurring() {
+        var root = $("#recurringList");
+        if (!state.recurringPayments.length) {
+          root.innerHTML = emptyState("ث", "لم تضف أي دفعة ثابتة بعد", "أضف فاتورة اتصالات أو مخصص محفظة أو تحويل ادخار، وسيُحجز المبلغ تلقائيًا من راتب كل شهر.");
+          return;
+        }
+
+        var sorted = state.recurringPayments.slice().sort(function (a, b) {
+          return Number(a.dueDay || 1) - Number(b.dueDay || 1);
+        });
+
+        root.innerHTML = sorted.map(function (item) {
+          var style = recurringStyle[item.type] || recurringStyle["أخرى"];
+          var active = isRecurringActive(item, state.selectedMonth);
+          var paid = Array.isArray(item.paidMonths) && item.paidMonths.indexOf(state.selectedMonth) !== -1;
+          var startMonth = String(item.startDate || "").slice(0, 7);
+          var endMonth = String(item.endDate || "").slice(0, 7);
+          var statusLabel = item.isPaused ? "متوقفة مؤقتًا" : active ? (paid ? "مكتملة هذا الشهر" : "بانتظار التنفيذ") : (endMonth && endMonth < state.selectedMonth ? "منتهية" : startMonth > state.selectedMonth ? "تبدأ لاحقًا" : "غير نشطة");
+          var schedule = item.endDate ? "حتى " + formatDate(item.endDate) : "مستمرة دون تاريخ نهاية";
+          var notes = item.notes ? " · " + escapeHTML(item.notes) : "";
+
+          return '<article class="commitment-card">' +
+            '<div class="category-mark" style="--category-color:' + style.color + ';--category-bg:' + style.background + '">' + style.symbol + '</div>' +
+            '<div>' +
+              '<div class="commitment-title-row"><h3>' + escapeHTML(item.name) + '</h3><span class="tiny-tag ' + (paid ? "paid" : "") + '">' + statusLabel + '</span></div>' +
+              '<div class="commitment-details">' +
+                '<span>' + escapeHTML(item.type || "أخرى") + '</span>' +
+                '<span>موعدها يوم ' + escapeHTML(item.dueDay || 1) + '</span>' +
+                '<span>' + escapeHTML(schedule) + '</span>' + notes +
+              '</div>' +
+            '</div>' +
+            '<div class="commitment-actions">' +
+              '<strong class="commitment-amount">' + escapeHTML(formatMoney(item.amount)) + ' / شهر</strong>' +
+              '<div class="item-meta">' + (item.type === "ادخار" ? "يُحجز كادخار ولا يُعرض كمصروف" : item.type === "محفظة" ? "مخصص محجوز مسبقًا للمحفظة" : "محسوبة ضمن المدفوعات الثابتة") + '</div>' +
+              '<div class="commitment-action-row">' +
+                (active ? '<button class="mini-btn mark-paid ' + (paid ? "is-paid" : "") + '" type="button" data-toggle-recurring-paid="' + escapeHTML(item.id) + '">' + recurringActionLabel(item, paid) + '</button>' : '') +
+                '<button class="mini-btn" type="button" data-toggle-recurring-status="' + escapeHTML(item.id) + '">' + (item.isPaused ? "إعادة التفعيل" : "إيقاف مؤقت") + '</button>' +
+                '<button class="mini-btn" type="button" data-edit-recurring="' + escapeHTML(item.id) + '">تعديل</button>' +
+                '<button class="mini-btn" type="button" data-delete-recurring="' + escapeHTML(item.id) + '">حذف</button>' +
+              '</div>' +
+            '</div>' +
+          '</article>';
+        }).join("");
+      }
+
+      function renderExpenses(items) {
+        var root = $("#expenseList");
+        if (!items.length) {
+          root.innerHTML = emptyState("م", "لا توجد مصروفات في هذا الشهر", "سجّل أول مصروف، وسيتم تحديث الرصيد والحد اليومي مباشرة.");
+          return;
+        }
+
+        var sorted = items.slice().sort(function (a, b) {
+          return String(b.date).localeCompare(String(a.date));
+        });
+
+        root.innerHTML = sorted.map(function (item) {
+          var trackedOnly = item.excludeFromBudget ? '<span class="tracked-only-tag">من مخصص محجوز · لم يُخصم مرة ثانية</span>' : '';
+          return '<div class="expense-item">' +
+            '<div class="expense-category">' + escapeHTML(expenseSymbols[item.category] || "أ") + '</div>' +
+            '<div><p class="item-title">' + escapeHTML(item.title) + '</p><p class="item-meta">' + escapeHTML(item.category || "أخرى") + ' · ' + escapeHTML(formatDate(item.date)) + '</p>' + trackedOnly + '</div>' +
+            '<strong class="item-amount">' + escapeHTML(formatMoney(item.amount)) + '</strong>' +
+            '<button class="expense-delete" type="button" title="حذف المصروف" aria-label="حذف ' + escapeHTML(item.title) + '" data-delete-expense="' + escapeHTML(item.id) + '">×</button>' +
+          '</div>';
+        }).join("");
+      }
+
+      function emptyState(symbol, title, copy) {
+        return '<div class="empty-state"><div class="empty-symbol" aria-hidden="true">' + symbol + '</div><strong>' + title + '</strong><p>' + copy + '</p></div>';
+      }
+
+      function showToast(message, isError) {
+        var toast = $("#toast");
+        clearTimeout(toastTimer);
+        toast.textContent = message;
+        toast.classList.toggle("error", Boolean(isError));
+        toast.classList.add("show");
+        toastTimer = setTimeout(function () {
+          toast.classList.remove("show");
+        }, 2600);
+      }
+
+      function openSalaryDialog() {
+        $("#salaryInput").value = state.salary || "";
+        $("#salaryDialog").showModal();
+        setTimeout(function () { $("#salaryInput").focus(); }, 40);
+      }
+
+      function openCommitmentDialog(item) {
+        var form = $("#commitmentForm");
+        form.reset();
+        $("#commitmentId").value = "";
+        $("#commitmentDialogTitle").textContent = item ? "تعديل السلفة أو القسط" : "إضافة سلفة أو قسط";
+        var startDefault = state.selectedMonth + "-01";
+        var endDefault = shiftMonth(state.selectedMonth, 11) + "-01";
+        $("#commitmentStart").value = startDefault;
+        $("#commitmentEnd").value = endDefault;
+        $("#commitmentDueDay").value = 1;
+
+        if (item) {
+          $("#commitmentId").value = item.id;
+          $("#commitmentName").value = item.name || "";
+          $("#commitmentCategory").value = item.category || "أخرى";
+          $("#commitmentAmount").value = item.amount || "";
+          $("#commitmentStart").value = item.startDate || startDefault;
+          $("#commitmentEnd").value = item.endDate || endDefault;
+          $("#commitmentDueDay").value = item.dueDay || 1;
+          $("#commitmentTotal").value = item.remainingTotal || "";
+          $("#commitmentNotes").value = item.notes || "";
+        }
+
+        $("#commitmentDialog").showModal();
+        setTimeout(function () { $("#commitmentName").focus(); }, 40);
+      }
+
+      function openRecurringDialog(item) {
+        var form = $("#recurringForm");
+        form.reset();
+        $("#recurringId").value = "";
+        $("#recurringDialogTitle").textContent = item ? "تعديل الدفعة الثابتة" : "إضافة دفعة ثابتة";
+        var startDefault = state.selectedMonth + "-01";
+        $("#recurringStart").value = startDefault;
+        $("#recurringDueDay").value = 1;
+
+        if (item) {
+          $("#recurringId").value = item.id;
+          $("#recurringName").value = item.name || "";
+          $("#recurringType").value = item.type || "أخرى";
+          $("#recurringAmount").value = item.amount || "";
+          $("#recurringDueDay").value = item.dueDay || 1;
+          $("#recurringStart").value = item.startDate || startDefault;
+          $("#recurringEnd").value = item.endDate || "";
+          $("#recurringNotes").value = item.notes || "";
+        }
+
+        $("#recurringDialog").showModal();
+        setTimeout(function () { $("#recurringName").focus(); }, 40);
+      }
+
+      function closeDialog(id) {
+        var dialog = document.getElementById(id);
+        if (dialog && dialog.open) dialog.close();
+      }
+
+      function setView(viewId) {
+        if (viewId === "adminView" && (!authState.authenticated || authState.user?.role !== "super_admin")) viewId = "overviewView";
+        activeView = viewId;
+        $all(".tab").forEach(function (tab) {
+          var active = tab.dataset.view === viewId;
+          tab.classList.toggle("active", active);
+          tab.setAttribute("aria-selected", active ? "true" : "false");
+        });
+        $all(".view").forEach(function (view) {
+          var active = view.id === viewId;
+          view.classList.toggle("active", active);
+          view.hidden = !active;
+        });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        if (viewId === "adminView") renderAdminUsers();
+      }
+
+      function normalizeExpenseDate(currentValue) {
+        var selected = state.selectedMonth;
+        if (currentValue && currentValue.slice(0, 7) === selected) return currentValue;
+        if (selected === defaultMonth) return toDateInput(today);
+        return selected + "-01";
+      }
+
+      function submitSalary(event) {
+        event.preventDefault();
+        var value = safeNumber($("#salaryInput").value);
+        state.salary = value;
+        closeDialog("salaryDialog");
+        render();
+        showToast("تم حفظ الراتب وتحديث ميزانية الشهر");
+      }
+
+      function submitCommitment(event) {
+        event.preventDefault();
+        var data = new FormData(event.currentTarget);
+        var startDate = String(data.get("startDate") || "");
+        var endDate = String(data.get("endDate") || "");
+        if (endDate < startDate) {
+          showToast("تاريخ النهاية يجب أن يكون بعد تاريخ بداية الخصم", true);
+          return;
+        }
+
+        var existingId = String(data.get("id") || "");
+        var existing = state.commitments.find(function (item) { return item.id === existingId; });
+        var item = {
+          id: existingId || makeId("commitment"),
+          name: String(data.get("name") || "").trim(),
+          category: String(data.get("category") || "أخرى"),
+          amount: safeNumber(data.get("amount")),
+          startDate: startDate,
+          endDate: endDate,
+          dueDay: Math.min(31, Math.max(1, Number(data.get("dueDay")) || 1)),
+          remainingTotal: safeNumber(data.get("remainingTotal")),
+          notes: String(data.get("notes") || "").trim(),
+          paidMonths: existing && Array.isArray(existing.paidMonths) ? existing.paidMonths : [],
+          createdAt: existing && existing.createdAt ? existing.createdAt : new Date().toISOString()
+        };
+
+        if (existing) {
+          state.commitments = state.commitments.map(function (current) {
+            return current.id === existingId ? item : current;
+          });
+        } else {
+          state.commitments.push(item);
+        }
+
+        closeDialog("commitmentDialog");
+        render();
+        showToast(existing ? "تم تحديث بيانات الالتزام" : "تمت إضافة الالتزام بنجاح");
+      }
+
+      function submitRecurring(event) {
+        event.preventDefault();
+        var data = new FormData(event.currentTarget);
+        var startDate = String(data.get("startDate") || "");
+        var endDate = String(data.get("endDate") || "");
+        if (endDate && endDate < startDate) {
+          showToast("تاريخ النهاية يجب أن يكون بعد تاريخ بداية التكرار", true);
+          return;
+        }
+
+        var existingId = String(data.get("id") || "");
+        var existing = state.recurringPayments.find(function (item) { return item.id === existingId; });
+        var item = {
+          id: existingId || makeId("recurring"),
+          name: String(data.get("name") || "").trim(),
+          type: String(data.get("type") || "أخرى"),
+          amount: safeNumber(data.get("amount")),
+          dueDay: Math.min(31, Math.max(1, Number(data.get("dueDay")) || 1)),
+          startDate: startDate,
+          endDate: endDate,
+          notes: String(data.get("notes") || "").trim(),
+          paidMonths: existing && Array.isArray(existing.paidMonths) ? existing.paidMonths : [],
+          isPaused: existing ? Boolean(existing.isPaused) : false,
+          createdAt: existing && existing.createdAt ? existing.createdAt : new Date().toISOString()
+        };
+
+        if (!item.name || !item.amount || !item.startDate) {
+          showToast("أكمل اسم الدفعة والمبلغ وتاريخ البداية", true);
+          return;
+        }
+
+        if (existing) {
+          state.recurringPayments = state.recurringPayments.map(function (current) {
+            return current.id === existingId ? item : current;
+          });
+        } else {
+          state.recurringPayments.push(item);
+        }
+
+        closeDialog("recurringDialog");
+        render();
+        showToast(existing ? "تم تحديث الدفعة الثابتة" : "تمت إضافة الدفعة الثابتة وحجزها من الراتب");
+      }
+
+      function submitExpense(event) {
+        event.preventDefault();
+        var data = new FormData(event.currentTarget);
+        var item = {
+          id: makeId("expense"),
+          title: String(data.get("title") || "").trim(),
+          category: String(data.get("category") || "أخرى"),
+          amount: safeNumber(data.get("amount")),
+          date: String(data.get("date") || ""),
+          excludeFromBudget: data.get("excludeFromBudget") === "on",
+          createdAt: new Date().toISOString()
+        };
+
+        if (!item.title || !item.amount || !item.date) {
+          showToast("أكمل وصف المصروف والمبلغ والتاريخ", true);
+          return;
+        }
+
+        state.expenses.push(item);
+        event.currentTarget.reset();
+        $("#expenseDate").value = normalizeExpenseDate("");
+        render();
+        showToast("تم تسجيل المصروف وتحديث الرصيد");
+      }
+
+      function togglePaid(id) {
+        state.commitments = state.commitments.map(function (item) {
+          if (item.id !== id) return item;
+          var paidMonths = Array.isArray(item.paidMonths) ? item.paidMonths.slice() : [];
+          var index = paidMonths.indexOf(state.selectedMonth);
+          if (index === -1) paidMonths.push(state.selectedMonth);
+          else paidMonths.splice(index, 1);
+          return Object.assign({}, item, { paidMonths: paidMonths });
+        });
+        render();
+        showToast("تم تحديث حالة القسط لهذا الشهر");
+      }
+
+      function toggleRecurringPaid(id) {
+        state.recurringPayments = state.recurringPayments.map(function (item) {
+          if (item.id !== id) return item;
+          var paidMonths = Array.isArray(item.paidMonths) ? item.paidMonths.slice() : [];
+          var index = paidMonths.indexOf(state.selectedMonth);
+          if (index === -1) paidMonths.push(state.selectedMonth);
+          else paidMonths.splice(index, 1);
+          return Object.assign({}, item, { paidMonths: paidMonths });
+        });
+        render();
+        showToast("تم تحديث حالة الدفعة للشهر المختار دون تغيير قيمة الميزانية");
+      }
+
+      function toggleRecurringStatus(id) {
+        state.recurringPayments = state.recurringPayments.map(function (item) {
+          return item.id === id ? Object.assign({}, item, { isPaused: !item.isPaused }) : item;
+        });
+        render();
+        showToast("تم تحديث حالة الدفعة الثابتة");
+      }
+
+      function deleteCommitment(id) {
+        var item = state.commitments.find(function (current) { return current.id === id; });
+        if (!item) return;
+        if (!window.confirm('هل تريد حذف "' + item.name + '" نهائيًا؟')) return;
+        state.commitments = state.commitments.filter(function (current) { return current.id !== id; });
+        render();
+        showToast("تم حذف الالتزام");
+      }
+
+      function deleteRecurring(id) {
+        var item = state.recurringPayments.find(function (current) { return current.id === id; });
+        if (!item) return;
+        if (!window.confirm('هل تريد حذف الدفعة الثابتة "' + item.name + '" نهائيًا؟')) return;
+        state.recurringPayments = state.recurringPayments.filter(function (current) { return current.id !== id; });
+        render();
+        showToast("تم حذف الدفعة الثابتة وتحديث الرصيد");
+      }
+
+      function deleteExpense(id) {
+        var item = state.expenses.find(function (current) { return current.id === id; });
+        if (!item) return;
+        if (!window.confirm('حذف المصروف "' + item.title + '"؟')) return;
+        state.expenses = state.expenses.filter(function (current) { return current.id !== id; });
+        render();
+        showToast("تم حذف المصروف وتحديث الرصيد");
+      }
+
+      function exportData() {
+        var payload = {
+          app: "مدير الراتب الشهري",
+          version: APP_VERSION,
+          exportedAt: new Date().toISOString(),
+          data: state
+        };
+        var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement("a");
+        link.href = url;
+        link.download = "salary-manager-backup-" + toDateInput(today) + ".json";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        closeBackupMenu();
+        showToast("تم تنزيل النسخة الاحتياطية");
+      }
+
+      function importData(file) {
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          try {
+            var payload = JSON.parse(reader.result);
+            var data = payload && payload.data ? payload.data : payload;
+            if (!data || !Array.isArray(data.commitments) || !Array.isArray(data.expenses)) throw new Error("invalid");
+            if (!window.confirm("سيتم استبدال البيانات الحالية بمحتوى النسخة الاحتياطية. هل تريد المتابعة؟")) return;
+            state.salary = safeNumber(data.salary);
+            state.selectedMonth = /^\d{4}-\d{2}$/.test(data.selectedMonth || "") ? data.selectedMonth : defaultMonth;
+            state.commitments = data.commitments;
+            state.recurringPayments = Array.isArray(data.recurringPayments) ? data.recurringPayments : [];
+            state.expenses = data.expenses;
+            render();
+            showToast("تم استيراد النسخة الاحتياطية بنجاح");
+          } catch (error) {
+            showToast("الملف المختار ليس نسخة احتياطية صالحة", true);
+          }
+          $("#importFile").value = "";
+          closeBackupMenu();
+        };
+        reader.readAsText(file);
+      }
+
+      function resetData() {
+        var message = authState.authenticated ? "هل أنت متأكد؟ سيتم مسح بيانات الراتب من حسابك ومزامنة الحذف مع أجهزتك الأخرى." : "هل أنت متأكد؟ سيتم حذف الراتب والأقساط والمدفوعات الثابتة والمصروفات المحفوظة على هذا الجهاز.";
+        if (!window.confirm(message)) return;
+        state = { salary: 0, selectedMonth: defaultMonth, commitments: [], recurringPayments: [], expenses: [] };
+        localStorage.removeItem(accountStorageKey());
+        localStorage.removeItem(accountStorageKey() + ".backup");
+        if (!authState.authenticated) { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(STORAGE_BACKUP_KEY); }
+        localStorage.removeItem(STORAGE_META_KEY);
+        closeBackupMenu();
+        render();
+        if (authState.authenticated) cloudSaveNow(true);
+        showToast("تم مسح جميع البيانات");
+      }
+
+      function closeBackupMenu() {
+        $("#backupMenu").classList.remove("open");
+        $("#backupButton").setAttribute("aria-expanded", "false");
+      }
+
+      function bindEvents() {
+        $("#editSalaryButton").addEventListener("click", openSalaryDialog);
+        $("#salaryForm").addEventListener("submit", submitSalary);
+        $("#commitmentForm").addEventListener("submit", submitCommitment);
+        $("#recurringForm").addEventListener("submit", submitRecurring);
+        $("#expenseForm").addEventListener("submit", submitExpense);
+
+
+        $all("[data-auth-pane]").forEach(function (button) {
+          button.addEventListener("click", function () { setAuthPane(button.dataset.authPane); });
+        });
+
+        $("#accountButton").addEventListener("click", function () { updateAccountUI(); $("#authDialog").showModal(); });
+        $("#installButton").addEventListener("click", async function () {
+          if (deferredInstallPrompt) {
+            try { await deferredInstallPrompt.prompt(); deferredInstallPrompt = null; return; } catch (e) {}
+          }
+          var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+          $("#installInstructions").textContent = ios ? "على iPhone: افتح الصفحة في Safari، اضغط زر المشاركة، ثم اختر «إضافة إلى الشاشة الرئيسية». بعد ذلك سيفتح مدير الراتب كتطبيق مستقل." : "من قائمة المتصفح اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية». إذا ظهر زر التثبيت في شريط العنوان يمكنك استخدامه مباشرة.";
+          $("#installDialog").showModal();
+        });
+
+        $("#loginForm").addEventListener("submit", async function (event) {
+          event.preventDefault();
+          try {
+            var data = await apiFetch("/api/auth/login", { method: "POST", body: JSON.stringify({ login: $("#loginName").value.trim(), password: $("#loginPassword").value, deviceLabel: navigator.platform || "Browser" }) });
+            await handleAuthSuccess(data, "تم تسجيل الدخول وتحميل بيانات حسابك");
+          } catch (error) { showToast(apiErrorMessage(error.code), true); }
+        });
+
+        $("#registerForm").addEventListener("submit", async function (event) {
+          event.preventDefault();
+          try {
+            var data = await apiFetch("/api/auth/register", { method: "POST", body: JSON.stringify({ username: $("#registerUsername").value.trim(), email: $("#registerEmail").value.trim(), password: $("#registerPassword").value, deviceLabel: navigator.platform || "Browser" }) });
+            await handleAuthSuccess(data, "تم إنشاء الحساب ومزامنة بياناتك");
+          } catch (error) { showToast(apiErrorMessage(error.code), true); }
+        });
+
+        $("#ownerForm").addEventListener("submit", async function (event) {
+          event.preventDefault();
+          var submit = $("#ownerSubmitButton");
+          try {
+            submit.disabled = true;
+            var status = await apiFetch("/api/auth/status?check=" + Date.now());
+            updateOwnerConfigStatus(status);
+            if (!status.bootstrapRequired) {
+              authState.bootstrapRequired = false;
+              $("#ownerSetupTab").style.display = "none";
+              setAuthPane("loginPane");
+              showToast("تم إنشاء حساب المالك مسبقًا. سجّل الدخول بحسابك.");
+              return;
+            }
+            if (!status.config || !status.config.authPepperConfigured) throw Object.assign(new Error("AUTH_PEPPER_NOT_CONFIGURED"), { code: "AUTH_PEPPER_NOT_CONFIGURED" });
+            if (!status.config.ownerBootstrapConfigured) throw Object.assign(new Error("OWNER_BOOTSTRAP_TOKEN_NOT_CONFIGURED"), { code: "OWNER_BOOTSTRAP_TOKEN_NOT_CONFIGURED" });
+            submit.disabled = true;
+            var data = await apiFetch("/api/auth/bootstrap-owner", { method: "POST", body: JSON.stringify({ bootstrapToken: $("#ownerBootstrapToken").value, username: $("#ownerUsername").value.trim(), email: $("#ownerEmail").value.trim(), password: $("#ownerPassword").value, deviceLabel: navigator.platform || "Browser" }) });
+            authState.bootstrapRequired = false; $("#ownerSetupTab").style.display = "none";
+            await handleAuthSuccess(data, "تم إنشاء حساب المالك بنجاح");
+          } catch (error) {
+            console.error("Owner setup failed", error && error.code, error && error.detail || "");
+            showToast(apiErrorMessage(error.code), true);
+          } finally {
+            if (authState.bootstrapRequired) submit.disabled = false;
+          }
+        });
+
+        $("#requestResetButton").addEventListener("click", async function () {
+          var login = $("#resetLogin").value.trim();
+          if (!login) { showToast("اكتب اسم المستخدم أو البريد الإلكتروني أولًا", true); return; }
+          try { await apiFetch("/api/auth/forgot", { method: "POST", body: JSON.stringify({ login: login }) }); showToast("تم تسجيل طلب إعادة التعيين لدى المالك"); }
+          catch (error) { showToast("تم تسجيل الطلب إن كان الحساب موجودًا"); }
+        });
+
+        $("#resetForm").addEventListener("submit", async function (event) {
+          event.preventDefault();
+          try {
+            await apiFetch("/api/auth/reset-with-code", { method: "POST", body: JSON.stringify({ login: $("#resetLogin").value.trim(), code: $("#resetCode").value.trim(), newPassword: $("#resetNewPassword").value }) });
+            setAuthPane("loginPane"); $("#loginName").value = $("#resetLogin").value.trim(); $("#loginPassword").value = "";
+            showToast("تم تعيين كلمة المرور الجديدة. سجّل الدخول الآن.");
+          } catch (error) { showToast(apiErrorMessage(error.code), true); }
+        });
+
+        $("#changePasswordForm").addEventListener("submit", async function (event) {
+          event.preventDefault();
+          try {
+            await apiFetch("/api/auth/change-password", { method: "POST", body: JSON.stringify({ currentPassword: $("#currentPassword").value, newPassword: $("#newPassword").value }) });
+            event.currentTarget.reset(); showToast("تم تغيير كلمة المرور");
+          } catch (error) { showToast(apiErrorMessage(error.code), true); }
+        });
+
+        $("#logoutButton").addEventListener("click", async function () {
+          try { await apiFetch("/api/auth/logout", { method: "POST", body: "{}" }); } catch (e) {}
+          clearAuth();
+          state = { salary: 0, selectedMonth: defaultMonth, commitments: [], recurringPayments: [], expenses: [] };
+          try {
+            var guest = localStorage.getItem(STORAGE_KEY);
+            if (guest) normalizeSavedState(JSON.parse(guest));
+          } catch (e) {}
+          render(); $("#authDialog").close(); showToast("تم تسجيل الخروج");
+        });
+
+        $("#syncNowButton").addEventListener("click", function () { syncFromCloud({ silent: false }); });
+        $("#adminRefreshButton").addEventListener("click", renderAdminUsers);
+        $("#adminUserList").addEventListener("click", async function (event) {
+          var reset = event.target.closest("[data-admin-reset]");
+          var status = event.target.closest("[data-admin-status]");
+          var logout = event.target.closest("[data-admin-logout]");
+          if (reset) generateResetCode(reset.dataset.adminReset);
+          if (status) {
+            try { await apiFetch("/api/admin/user-status", { method: "POST", body: JSON.stringify({ userId: status.dataset.adminStatus, status: status.dataset.status }) }); showToast("تم تحديث حالة الحساب"); renderAdminUsers(); }
+            catch (error) { showToast(apiErrorMessage(error.code), true); }
+          }
+          if (logout) {
+            try { await apiFetch("/api/admin/logout-user", { method: "POST", body: JSON.stringify({ userId: logout.dataset.adminLogout }) }); showToast("تم تسجيل خروج المستخدم من جميع الأجهزة"); renderAdminUsers(); }
+            catch (error) { showToast(apiErrorMessage(error.code), true); }
+          }
+        });
+        $("#copyResetCodeButton").addEventListener("click", async function () {
+          var code = $("#generatedResetCode").textContent.trim();
+          try { await navigator.clipboard.writeText(code); showToast("تم نسخ الرمز"); } catch (e) { showToast("الرمز: " + code); }
+        });
+
+        $("#monthPicker").addEventListener("change", function (event) {
+          if (!event.target.value) return;
+          state.selectedMonth = event.target.value;
+          render();
+        });
+
+        $("#previousMonth").addEventListener("click", function () {
+          state.selectedMonth = shiftMonth(state.selectedMonth, -1);
+          render();
+        });
+
+        $("#nextMonth").addEventListener("click", function () {
+          state.selectedMonth = shiftMonth(state.selectedMonth, 1);
+          render();
+        });
+
+        $all(".tab").forEach(function (tab) {
+          tab.addEventListener("click", function () { setView(tab.dataset.view); });
+        });
+
+        $all("[data-open-commitment]").forEach(function (button) {
+          button.addEventListener("click", function () { openCommitmentDialog(null); });
+        });
+
+        $all("[data-open-recurring]").forEach(function (button) {
+          button.addEventListener("click", function () { openRecurringDialog(null); });
+        });
+
+        $all("[data-close-dialog]").forEach(function (button) {
+          button.addEventListener("click", function () { closeDialog(button.dataset.closeDialog); });
+        });
+
+        $("#commitmentList").addEventListener("click", function (event) {
+          var paidButton = event.target.closest("[data-toggle-paid]");
+          var editButton = event.target.closest("[data-edit-commitment]");
+          var deleteButton = event.target.closest("[data-delete-commitment]");
+          if (paidButton) togglePaid(paidButton.dataset.togglePaid);
+          if (editButton) {
+            var item = state.commitments.find(function (current) { return current.id === editButton.dataset.editCommitment; });
+            if (item) openCommitmentDialog(item);
+          }
+          if (deleteButton) deleteCommitment(deleteButton.dataset.deleteCommitment);
+        });
+
+        $("#recurringList").addEventListener("click", function (event) {
+          var paidButton = event.target.closest("[data-toggle-recurring-paid]");
+          var statusButton = event.target.closest("[data-toggle-recurring-status]");
+          var editButton = event.target.closest("[data-edit-recurring]");
+          var deleteButton = event.target.closest("[data-delete-recurring]");
+          if (paidButton) toggleRecurringPaid(paidButton.dataset.toggleRecurringPaid);
+          if (statusButton) toggleRecurringStatus(statusButton.dataset.toggleRecurringStatus);
+          if (editButton) {
+            var item = state.recurringPayments.find(function (current) { return current.id === editButton.dataset.editRecurring; });
+            if (item) openRecurringDialog(item);
+          }
+          if (deleteButton) deleteRecurring(deleteButton.dataset.deleteRecurring);
+        });
+
+        $("#expenseList").addEventListener("click", function (event) {
+          var button = event.target.closest("[data-delete-expense]");
+          if (button) deleteExpense(button.dataset.deleteExpense);
+        });
+
+        $("#mobileFab").addEventListener("click", function () {
+          if (activeView === "expensesView") {
+            $("#expenseTitle").focus();
+            $("#expenseForm").scrollIntoView({ behavior: "smooth", block: "center" });
+          } else if (activeView === "recurringView") {
+            openRecurringDialog(null);
+          } else if (activeView === "adminView") {
+            renderAdminUsers();
+          } else {
+            openCommitmentDialog(null);
+          }
+        });
+
+        $("#printButton").addEventListener("click", function () {
+          closeBackupMenu();
+          window.print();
+        });
+
+        $("#changelogButton").addEventListener("click", function () {
+          $("#changelogDialog").showModal();
+        });
+
+        $("#backupButton").addEventListener("click", function (event) {
+          event.stopPropagation();
+          var menu = $("#backupMenu");
+          var open = menu.classList.toggle("open");
+          $("#backupButton").setAttribute("aria-expanded", open ? "true" : "false");
+        });
+
+        $("#exportButton").addEventListener("click", exportData);
+        $("#importButton").addEventListener("click", function () { $("#importFile").click(); });
+        $("#importFile").addEventListener("change", function (event) { importData(event.target.files[0]); });
+        $("#resetButton").addEventListener("click", resetData);
+
+        document.addEventListener("click", function (event) {
+          if (!event.target.closest("#backupMenu") && !event.target.closest("#backupButton")) closeBackupMenu();
+        });
+
+        $all("dialog").forEach(function (dialog) {
+          dialog.addEventListener("click", function (event) {
+            var box = dialog.getBoundingClientRect();
+            var outside = event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom;
+            if (outside) dialog.close();
+          });
+        });
+      }
+
+      setText("#appVersion", APP_VERSION);
+      loadState();
+      requestPersistentStorage();
+      bindEvents();
+      initPWA();
+      render();
+      updateAccountUI();
+      initializeAuth();
+
+      window.addEventListener("pagehide", saveState);
+      window.addEventListener("online", function () { if (authState.authenticated) syncFromCloud({ silent: true }); });
+      window.addEventListener("offline", function () { setSyncStatus(authState.authenticated ? "غير متصل · محفوظ محليًا" : "حفظ محلي", false); });
+      document.addEventListener("visibilitychange", function () {
+        if (document.visibilityState === "hidden") saveState();
+      });
+
+      if (!state.salary) {
+        setTimeout(function () { if (!$("#authDialog").open && !authState.bootstrapRequired) openSalaryDialog(); }, 1200);
+      }
+    })();
+  </script>
+</body>
+</html>

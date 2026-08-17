@@ -1335,6 +1335,47 @@
 
 
 
+    .app-update-banner {
+      position: sticky;
+      top: calc(10px + var(--safe-top));
+      z-index: 1200;
+      width: min(1180px, calc(100% - 30px));
+      margin: 10px auto 0;
+      padding: 14px 15px;
+      display: none;
+      border: 1px solid rgba(31, 126, 115, .24);
+      border-radius: 18px;
+      background: rgba(244, 252, 249, .97);
+      box-shadow: 0 18px 48px rgba(20, 64, 59, .14);
+      backdrop-filter: blur(16px);
+    }
+
+    .app-update-banner.show {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .app-update-copy { min-width: 0; }
+    .app-update-title { color: var(--ink); font-size: 13px; font-weight: 950; margin-bottom: 4px; }
+    .app-update-note { color: var(--muted); font-size: 10px; line-height: 1.75; }
+    .app-update-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+    .app-update-actions button { white-space: nowrap; }
+
+    .owner-config-status {
+      display: none;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 10px;
+      line-height: 1.75;
+      border: 1px solid #ead7b8;
+      background: #fff8e8;
+      color: #7d5a1d;
+    }
+    .owner-config-status.show { display: block; }
+    .owner-config-status.ready { border-color: #c9e2da; background: #f1f8f6; color: #1d655c; }
+
     .app-footer {
       width: min(1220px, calc(100% - 34px));
       margin: 24px auto 0;
@@ -1863,6 +1904,9 @@
       .account-card { grid-template-columns: 46px 1fr; }
       .account-card > .ghost-btn { grid-column: 1 / -1; }
       .app-footer { align-items: flex-start; flex-direction: column; }
+      .app-update-banner.show { align-items: stretch; flex-direction: column; }
+      .app-update-actions { width: 100%; }
+      .app-update-actions button { flex: 1; }
     }
 
     @media print {
@@ -1882,7 +1926,8 @@
       .backup-menu,
       #installButton,
       #accountButton,
-      #adminTab {
+      #adminTab,
+      .app-update-banner {
         display: none !important;
       }
 
@@ -1917,6 +1962,16 @@
   </style>
 </head>
 <body>
+  <div class="app-update-banner" id="appUpdateBanner" role="status" aria-live="polite">
+    <div class="app-update-copy">
+      <div class="app-update-title" id="appUpdateTitle">تحديث جديد متوفر</div>
+      <div class="app-update-note" id="appUpdateNote">لن يتم تحديث الصفحة تلقائيًا. يمكنك أخذ نسخة احتياطية أولًا، ثم الضغط على «تحديث الآن» عندما تكون جاهزًا.</div>
+    </div>
+    <div class="app-update-actions">
+      <button class="soft-btn" id="updateBackupButton" type="button">نسخة احتياطية</button>
+      <button class="primary-btn" id="applyUpdateButton" type="button">تحديث الآن</button>
+    </div>
+  </div>
   <div class="app">
     <header class="topbar">
       <div class="topbar-inner">
@@ -2208,9 +2263,9 @@
       </section>
     </main>
 
-    <footer class="app-footer" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.1.0" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
-        <span class="version-badge">الإصدار <b id="appVersion">3.0.0</b></span>
+        <span class="version-badge">الإصدار <b id="appVersion">3.1.0</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
         <span class="sync-pill offline" id="syncStatus">حفظ محلي</span>
       </div>
@@ -2400,12 +2455,13 @@
 
         <section class="auth-pane" id="ownerPane">
           <p class="auth-copy">يظهر هذا الخيار قبل إنشاء أول حساب مالك فقط. أدخل رمز التهيئة السري الذي تم ضبطه في Cloudflare ثم أنشئ حسابك.</p>
+          <div class="owner-config-status" id="ownerConfigStatus" role="status"></div>
           <form class="auth-grid" id="ownerForm">
             <div class="field"><label for="ownerBootstrapToken">رمز تهيئة المالك</label><input id="ownerBootstrapToken" type="password" autocomplete="off" required></div>
             <div class="field"><label for="ownerUsername">اسم المستخدم</label><input id="ownerUsername" pattern="[A-Za-z0-9._-]{3,32}" required></div>
             <div class="field"><label for="ownerEmail">البريد الإلكتروني</label><input id="ownerEmail" type="email" required></div>
             <div class="field"><label for="ownerPassword">كلمة المرور</label><input id="ownerPassword" type="password" minlength="10" required></div>
-            <button class="primary-btn" type="submit">إنشاء حساب المالك</button>
+            <button class="primary-btn" id="ownerSubmitButton" type="submit">إنشاء حساب المالك</button>
           </form>
         </section>
       </div>
@@ -2458,6 +2514,19 @@
       <div class="changelog-list">
         <section class="changelog-entry current">
           <div class="changelog-version">
+            <strong>الإصدار 3.1.0</strong>
+            <time datetime="2026-08-17">17 أغسطس 2026</time>
+          </div>
+          <ul>
+            <li>إصلاح إعداد حساب المالك لأول مرة وإظهار حالة إعداد Cloudflare بوضوح بدل رسالة الخطأ العامة.</li>
+            <li>إعلان أسرار المصادقة كمتطلبات للنشر حتى يفشل النشر بوضوح إذا كانت غير مفعلة بدل نشر نسخة لا يستطيع المستخدم تسجيل الدخول إليها.</li>
+            <li>إضافة نظام تحديث اختياري: يظهر إشعار عند توفر إصدار جديد ولا يتم تطبيقه إلا بعد ضغط المستخدم «تحديث الآن».</li>
+            <li>إضافة زر «نسخة احتياطية» داخل إشعار التحديث لإتاحة حفظ البيانات قبل تثبيت الإصدار الجديد.</li>
+            <li>تعديل Service Worker ليُبقي الإصدار الحالي فعالًا إلى أن يوافق المستخدم صراحة على التحديث.</li>
+          </ul>
+        </section>
+        <section class="changelog-entry">
+          <div class="changelog-version">
             <strong>الإصدار 3.0.0</strong>
             <time datetime="2026-08-17">17 أغسطس 2026</time>
           </div>
@@ -2504,7 +2573,7 @@
     (function () {
       "use strict";
 
-      var APP_VERSION = "3.0.0";
+      var APP_VERSION = "3.1.0";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -2667,7 +2736,14 @@
           INVALID_RESET_CODE: "رمز إعادة التعيين غير صحيح أو انتهت صلاحيته.",
           AUTH_REQUIRED: "انتهت جلسة الحساب. سجّل الدخول مرة أخرى.",
           FORBIDDEN: "ليس لديك صلاحية لتنفيذ هذا الإجراء.",
-          ORIGIN_NOT_ALLOWED: "عنوان الصفحة غير مسموح به في إعدادات الخادم."
+          ORIGIN_NOT_ALLOWED: "عنوان الصفحة غير مسموح به في إعدادات الخادم.",
+          AUTH_PEPPER_NOT_CONFIGURED: "سر AUTH_PEPPER غير مفعّل في إعدادات Runtime للـWorker. أضفه من Settings → Variables and Secrets ثم اضغط Deploy.",
+          OWNER_BOOTSTRAP_TOKEN_NOT_CONFIGURED: "سر OWNER_BOOTSTRAP_TOKEN غير مفعّل في إعدادات Runtime للـWorker. أضفه ثم اضغط Deploy.",
+          OWNER_ALREADY_EXISTS: "تم إنشاء حساب المالك مسبقًا. استخدم تسجيل الدخول بدل إعداد مالك جديد.",
+          BOOTSTRAP_REQUIRED: "إعداد حساب المالك غير مكتمل بعد.",
+          NETWORK_ERROR: "تعذر الاتصال بالخادم الآن. تحقق من الإنترنت ثم حاول مرة أخرى.",
+          BAD_RESPONSE: "استجاب الخادم بصورة غير متوقعة. أعد تحميل الصفحة وحاول مرة أخرى.",
+          SERVER_ERROR: "حدث خطأ داخلي في الخادم. تحقق من إعدادات Variables and Secrets في Cloudflare ثم حاول مرة أخرى."
         };
         return map[code] || "تعذر إتمام العملية. حاول مرة أخرى.";
       }
@@ -2677,13 +2753,22 @@
         var headers = Object.assign({ "x-salary-manager-app": "1" }, options.headers || {});
         if (options.body && !headers["content-type"] && !headers["Content-Type"]) headers["content-type"] = "application/json";
         if (authState.token) headers.authorization = "Bearer " + authState.token;
-        var response = await fetch(API_BASE + path, Object.assign({}, options, { headers: headers }));
+        var response;
+        try {
+          response = await fetch(API_BASE + path, Object.assign({ cache: "no-store" }, options, { headers: headers }));
+        } catch (networkError) {
+          var offlineError = new Error("NETWORK_ERROR");
+          offlineError.code = "NETWORK_ERROR";
+          offlineError.detail = String(networkError && networkError.message || networkError || "");
+          throw offlineError;
+        }
         var data = null;
         try { data = await response.json(); } catch (e) { data = { ok: false, error: "BAD_RESPONSE" }; }
         if (!response.ok) {
           var error = new Error(data && data.error ? data.error : "REQUEST_FAILED");
           error.code = data && data.error ? data.error : "REQUEST_FAILED";
           error.status = response.status;
+          error.detail = data && data.detail ? data.detail : "";
           throw error;
         }
         return data;
@@ -2804,11 +2889,32 @@
         }
       }
 
+      function updateOwnerConfigStatus(status) {
+        var box = $("#ownerConfigStatus");
+        var submit = $("#ownerSubmitButton");
+        if (!box || !submit) return;
+        var config = status && status.config ? status.config : {};
+        var ready = Boolean(config.authPepperConfigured && config.ownerBootstrapConfigured);
+        box.classList.add("show");
+        box.classList.toggle("ready", ready);
+        if (ready) {
+          box.textContent = "الخادم جاهز لإنشاء حساب المالك. أدخل رمز التهيئة نفسه الذي حفظته في Cloudflare.";
+          submit.disabled = false;
+        } else {
+          var missing = [];
+          if (!config.authPepperConfigured) missing.push("AUTH_PEPPER");
+          if (!config.ownerBootstrapConfigured) missing.push("OWNER_BOOTSTRAP_TOKEN");
+          box.textContent = "إعداد Cloudflare غير مكتمل. الأسرار غير المتاحة وقت التشغيل: " + missing.join("، ") + ". أضفها من Worker → Settings → Variables and Secrets كنوع Secret ثم اضغط Deploy.";
+          submit.disabled = true;
+        }
+      }
+
       async function initializeAuth() {
         try {
           var status = await apiFetch("/api/auth/status");
           authState.backendReady = true;
           authState.bootstrapRequired = Boolean(status.bootstrapRequired);
+          updateOwnerConfigStatus(status);
           $("#ownerSetupTab").style.display = authState.bootstrapRequired ? "block" : "none";
           if (authState.bootstrapRequired) setAuthPane("ownerPane");
           if (authState.token) {
@@ -2873,9 +2979,100 @@
       }
 
       function initPWA() {
-        if ("serviceWorker" in navigator && location.protocol !== "file:") {
-          navigator.serviceWorker.register("./sw.js").catch(function () {});
+        var waitingWorker = null;
+        var registration = null;
+        var acceptedUpdate = false;
+        var remoteVersion = "";
+        var banner = $("#appUpdateBanner");
+        var note = $("#appUpdateNote");
+        var applyButton = $("#applyUpdateButton");
+        var backupButton = $("#updateBackupButton");
+
+        function showUpdate(worker, version) {
+          if (worker) waitingWorker = worker;
+          if (version) remoteVersion = version;
+          if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+          if (note) note.textContent = "يتوفر إصدار أحدث" + (remoteVersion ? " (" + remoteVersion + ")" : "") + ". لن يتم تحديث الصفحة تلقائيًا. احفظ نسخة احتياطية إن رغبت، ثم اضغط «تحديث الآن».";
+          if (banner) banner.classList.add("show");
         }
+
+        async function checkHtmlVersion() {
+          try {
+            var url = new URL("./index.html", location.href);
+            url.searchParams.set("__update_check", Date.now());
+            var response = await fetch(url.href, { cache: "no-store", headers: { "cache-control": "no-cache" } });
+            if (!response.ok) return;
+            var text = await response.text();
+            var match = text.match(/id=["']appVersionFooter["'][^>]*data-version=["']([^"']+)["']/i) || text.match(/data-version=["']([^"']+)["'][^>]*id=["']appVersionFooter["']/i);
+            var version = match && match[1] ? match[1].trim() : "";
+            if (version && version !== APP_VERSION) showUpdate(null, version);
+          } catch (e) {}
+        }
+
+        async function refreshCurrentShell() {
+          var controller = navigator.serviceWorker.controller;
+          if (!controller) throw new Error("NO_ACTIVE_SERVICE_WORKER");
+          await new Promise(function (resolve, reject) {
+            var channel = new MessageChannel();
+            var timer = setTimeout(function () { reject(new Error("UPDATE_TIMEOUT")); }, 20000);
+            channel.port1.onmessage = function (event) {
+              clearTimeout(timer);
+              if (event.data && event.data.ok) resolve(); else reject(new Error(event.data && event.data.error || "UPDATE_FAILED"));
+            };
+            controller.postMessage({ type: "REFRESH_APP_SHELL" }, [channel.port2]);
+          });
+        }
+
+        if (backupButton) backupButton.addEventListener("click", function () {
+          exportData();
+          backupButton.textContent = "تم حفظ النسخة ✓";
+        });
+
+        if (applyButton) applyButton.addEventListener("click", async function () {
+          if (!window.confirm("سيتم تحديث التطبيق الآن. إن كنت تريد نسخة احتياطية فتأكد من حفظها أولًا. هل تريد المتابعة؟")) return;
+          acceptedUpdate = true;
+          applyButton.disabled = true;
+          applyButton.textContent = "جارٍ التحديث…";
+          try {
+            if (waitingWorker) {
+              waitingWorker.postMessage({ type: "SKIP_WAITING" });
+              return;
+            }
+            await refreshCurrentShell();
+            location.reload();
+          } catch (e) {
+            acceptedUpdate = false;
+            applyButton.disabled = false;
+            applyButton.textContent = "تحديث الآن";
+            showToast("تعذر تطبيق التحديث الآن. تحقق من الاتصال وحاول مرة أخرى.", true);
+          }
+        });
+
+        if ("serviceWorker" in navigator && location.protocol !== "file:") {
+          navigator.serviceWorker.addEventListener("controllerchange", function () {
+            if (acceptedUpdate) location.reload();
+          });
+          window.addEventListener("load", async function () {
+            try {
+              registration = await navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" });
+              if (registration.waiting) showUpdate(registration.waiting, "");
+              registration.addEventListener("updatefound", function () {
+                var worker = registration.installing;
+                if (!worker) return;
+                worker.addEventListener("statechange", function () {
+                  if (worker.state === "installed" && navigator.serviceWorker.controller) showUpdate(worker, "");
+                });
+              });
+              registration.update().catch(function () {});
+              checkHtmlVersion();
+              setInterval(function () {
+                if (registration) registration.update().catch(function () {});
+                checkHtmlVersion();
+              }, 30 * 60 * 1000);
+            } catch (e) { console.warn("Service worker registration failed", e); }
+          });
+        }
+
         window.addEventListener("beforeinstallprompt", function (event) {
           event.preventDefault();
           deferredInstallPrompt = event;
@@ -3661,11 +3858,30 @@
 
         $("#ownerForm").addEventListener("submit", async function (event) {
           event.preventDefault();
+          var submit = $("#ownerSubmitButton");
           try {
+            submit.disabled = true;
+            var status = await apiFetch("/api/auth/status?check=" + Date.now());
+            updateOwnerConfigStatus(status);
+            if (!status.bootstrapRequired) {
+              authState.bootstrapRequired = false;
+              $("#ownerSetupTab").style.display = "none";
+              setAuthPane("loginPane");
+              showToast("تم إنشاء حساب المالك مسبقًا. سجّل الدخول بحسابك.");
+              return;
+            }
+            if (!status.config || !status.config.authPepperConfigured) throw Object.assign(new Error("AUTH_PEPPER_NOT_CONFIGURED"), { code: "AUTH_PEPPER_NOT_CONFIGURED" });
+            if (!status.config.ownerBootstrapConfigured) throw Object.assign(new Error("OWNER_BOOTSTRAP_TOKEN_NOT_CONFIGURED"), { code: "OWNER_BOOTSTRAP_TOKEN_NOT_CONFIGURED" });
+            submit.disabled = true;
             var data = await apiFetch("/api/auth/bootstrap-owner", { method: "POST", body: JSON.stringify({ bootstrapToken: $("#ownerBootstrapToken").value, username: $("#ownerUsername").value.trim(), email: $("#ownerEmail").value.trim(), password: $("#ownerPassword").value, deviceLabel: navigator.platform || "Browser" }) });
             authState.bootstrapRequired = false; $("#ownerSetupTab").style.display = "none";
             await handleAuthSuccess(data, "تم إنشاء حساب المالك بنجاح");
-          } catch (error) { showToast(apiErrorMessage(error.code), true); }
+          } catch (error) {
+            console.error("Owner setup failed", error && error.code, error && error.detail || "");
+            showToast(apiErrorMessage(error.code), true);
+          } finally {
+            if (authState.bootstrapRequired) submit.disabled = false;
+          }
         });
 
         $("#requestResetButton").addEventListener("click", async function () {

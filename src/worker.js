@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 
-const VERSION = "3.1.1";
+const VERSION = "3.2.0";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
 const AUTH_NAME = "__salary_manager_auth_v311__";
@@ -32,6 +32,42 @@ function randomToken(n = 32) {
 async function sha256(value) {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(value || "")));
   return b64(new Uint8Array(d));
+}
+async function hmacSha256(secret, value) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(String(secret || "")),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", key, enc.encode(String(value || "")));
+  return b64(new Uint8Array(signature));
+}
+async function createSyncTicket(env, user) {
+  const expiresAt = Date.now() + 2 * 60 * 1000;
+  const payload = b64(new TextEncoder().encode(JSON.stringify({
+    accountId: user.accountId,
+    userId: user.id,
+    expiresAt,
+    nonce: randomToken(8)
+  })));
+  const signature = await hmacSha256(String(env.AUTH_PEPPER || ""), payload);
+  return { ticket: payload + "." + signature, expiresAt };
+}
+async function verifySyncTicket(env, ticket) {
+  const parts = String(ticket || "").split(".");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  const expected = await hmacSha256(String(env.AUTH_PEPPER || ""), parts[0]);
+  if (!safeEqual(expected, parts[1])) return null;
+  try {
+    const payload = JSON.parse(new TextDecoder().decode(unb64(parts[0])));
+    if (!payload?.accountId || !payload?.userId || Number(payload.expiresAt || 0) < Date.now()) return null;
+    return payload;
+  } catch (_) {
+    return null;
+  }
 }
 async function passwordHash(password, salt, pepper = "", iterations = PBKDF2_ITERATIONS) {
   const enc = new TextEncoder();
@@ -141,6 +177,25 @@ async function handleApi(request, env, url) {
     }
     const { response, body } = await internal(env, path, { ...b, pepper: String(env.AUTH_PEPPER || ""), ip: request.headers.get("cf-connecting-ip") || "" });
     return apiJson(request, env, body || { ok: false, error: "AUTH_FAILED" }, response.status || 400);
+  }
+
+  if (p === "/api/sync-ticket" && request.method === "POST") {
+    if (!String(env.AUTH_PEPPER || "")) return apiJson(request, env, { ok: false, error: "AUTH_PEPPER_NOT_CONFIGURED" }, 503);
+    const a = await requireAuth(request, env);
+    if (!a.ok) return a.response;
+    const created = await createSyncTicket(env, a.user);
+    return apiJson(request, env, { ok: true, ...created });
+  }
+
+  if (p === "/api/sync" && request.method === "GET") {
+    if (String(request.headers.get("upgrade") || "").toLowerCase() !== "websocket") {
+      return apiJson(request, env, { ok: false, error: "WEBSOCKET_REQUIRED" }, 426);
+    }
+    if (!String(env.AUTH_PEPPER || "")) return apiJson(request, env, { ok: false, error: "AUTH_PEPPER_NOT_CONFIGURED" }, 503);
+    const verified = await verifySyncTicket(env, url.searchParams.get("ticket"));
+    if (!verified) return apiJson(request, env, { ok: false, error: "AUTH_REQUIRED" }, 401);
+    const proxyRequest = new Request("https://account/data/live", { method: "GET", headers: request.headers });
+    return accountStub(env, verified.accountId).fetch(proxyRequest);
   }
 
   if (p === "/api/auth/session" && request.method === "GET") {
@@ -410,7 +465,19 @@ export class SalaryStore extends DurableObject {
     if (url.pathname === "/data/get") {
       const state = await this.ctx.storage.get("state");
       const updatedAt = await this.ctx.storage.get("updatedAt");
-      return json({ ok: true, state: state || null, updatedAt: updatedAt || null });
+      const revision = Number(await this.ctx.storage.get("revision") || 0);
+      return json({ ok: true, state: state || null, updatedAt: updatedAt || null, revision });
+    }
+    if (url.pathname === "/data/live" && request.method === "GET") {
+      if (String(request.headers.get("upgrade") || "").toLowerCase() !== "websocket") return json({ ok: false, error: "WEBSOCKET_REQUIRED" }, 426);
+      const pair = new WebSocketPair();
+      const [client, server] = Object.values(pair);
+      this.ctx.acceptWebSocket(server);
+      server.serializeAttachment({ connectedAt: Date.now() });
+      const revision = Number(await this.ctx.storage.get("revision") || 0);
+      const updatedAt = await this.ctx.storage.get("updatedAt");
+      try { server.send(JSON.stringify({ type: "ready", revision, updatedAt: updatedAt || null })); } catch (_) {}
+      return new Response(null, { status: 101, webSocket: client });
     }
     if (url.pathname === "/data/put" && request.method === "POST") {
       const b = await request.json().catch(() => null);
@@ -427,11 +494,26 @@ export class SalaryStore extends DurableObject {
           if (keys.length) await this.ctx.storage.delete(keys);
         }
       }
+      const revision = Number(await this.ctx.storage.get("revision") || 0) + 1;
       await this.ctx.storage.put("state", b.state);
       await this.ctx.storage.put("updatedAt", now);
-      return json({ ok: true, updatedAt: now });
+      await this.ctx.storage.put("revision", revision);
+      const message = JSON.stringify({ type: "revision", revision, updatedAt: now });
+      for (const socket of this.ctx.getWebSockets()) {
+        try { socket.send(message); } catch (_) {}
+      }
+      return json({ ok: true, updatedAt: now, revision });
     }
     return json({ ok: false, error: "NOT_FOUND" }, 404);
+  }
+  async webSocketMessage(ws, message) {
+    try {
+      const data = typeof message === "string" ? JSON.parse(message) : null;
+      if (data?.type === "ping") ws.send(JSON.stringify({ type: "pong", at: Date.now() }));
+    } catch (_) {}
+  }
+  async webSocketClose(ws, code, reason) {
+    try { ws.close(code || 1000, String(reason || "")); } catch (_) {}
   }
   async fetch(request) {
     const url = new URL(request.url);

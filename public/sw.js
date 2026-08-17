@@ -1,4 +1,4 @@
-const CACHE = "salary-manager-v3.4.0";
+const CACHE = "salary-manager-v3.5.0";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = ["./config.js", "./manifest.webmanifest", "./icons/app-icon-180-v3.4.0.png", "./icons/app-icon-192-v3.4.0.png", "./icons/app-icon-512-v3.4.0.png"];

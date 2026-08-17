@@ -6,7 +6,9 @@
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": [
+      "/api/*"
+    ]
   },
   "durable_objects": {
     "bindings": [
@@ -19,7 +21,15 @@
   "migrations": [
     {
       "tag": "v1",
-      "new_sqlite_classes": ["SalaryStore"]
+      "new_sqlite_classes": [
+        "SalaryStore"
+      ]
     }
-  ]
+  ],
+  "secrets": {
+    "required": [
+      "AUTH_PEPPER",
+      "OWNER_BOOTSTRAP_TOKEN"
+    ]
+  }
 }

@@ -1,7 +1,7 @@
-const CACHE = "salary-manager-v3.3.0";
+const CACHE = "salary-manager-v3.5.0";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
-const STATIC_CORE = ["./config.js", "./manifest.webmanifest", "./icons/app-icon-180-v3.3.0.png", "./icons/app-icon-192-v3.3.0.png", "./icons/app-icon-512-v3.3.0.png"];
+const STATIC_CORE = ["./config.js", "./manifest.webmanifest", "./icons/app-icon-180-v3.4.0.png", "./icons/app-icon-192-v3.4.0.png", "./icons/app-icon-512-v3.4.0.png"];
 
 function sameOrigin(url) { return url.origin === self.location.origin; }
 function inScope(url) { return sameOrigin(url) && url.href.startsWith(SCOPE); }
@@ -86,8 +86,8 @@ self.addEventListener("push", event => {
   const title = data.title || "مدير الراتب";
   const options = {
     body: data.body || "لديك إشعار جديد.",
-    icon: data.icon || "./icons/app-icon-192-v3.3.0.png",
-    badge: data.badge || "./icons/app-icon-192-v3.3.0.png",
+    icon: data.icon || "./icons/app-icon-192-v3.4.0.png",
+    badge: data.badge || "./icons/app-icon-192-v3.4.0.png",
     tag: data.tag || "salary-manager-owner-alert",
     renotify: true,
     data: { url: data.url || "./?open=admin" }

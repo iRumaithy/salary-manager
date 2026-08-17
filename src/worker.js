@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 
-const VERSION = "3.0.0";
+const VERSION = "3.1.0";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 150000;
 const AUTH_NAME = "__salary_manager_auth_v1__";
@@ -124,16 +124,16 @@ async function handleApi(request, env, url) {
   if (p === "/api/health") return apiJson(request, env, { ok: true, version: VERSION, storage: "Cloudflare Durable Objects", auth: "PBKDF2-SHA256" });
   if (p === "/api/auth/status" && request.method === "GET") {
     const { body } = await internal(env, "/auth/status");
-    return apiJson(request, env, { ok: true, ...(body || {}), config: { ownerBootstrapConfigured: !!env.OWNER_BOOTSTRAP_TOKEN, authPepperConfigured: !!env.AUTH_PEPPER } });
+    return apiJson(request, env, { ok: true, ...(body || {}), version: VERSION, config: { ownerBootstrapConfigured: Boolean(String(env.OWNER_BOOTSTRAP_TOKEN || "")), authPepperConfigured: Boolean(String(env.AUTH_PEPPER || "")) } });
   }
 
   if (["/api/auth/register", "/api/auth/login", "/api/auth/bootstrap-owner", "/api/auth/forgot", "/api/auth/reset-with-code"].includes(p) && request.method === "POST") {
-    if (!env.AUTH_PEPPER && p !== "/api/auth/forgot") return apiJson(request, env, { ok: false, error: "AUTH_PEPPER_NOT_CONFIGURED" }, 503);
+    if (!String(env.AUTH_PEPPER || "") && p !== "/api/auth/forgot") return apiJson(request, env, { ok: false, error: "AUTH_PEPPER_NOT_CONFIGURED", detail: "AUTH_PEPPER is missing from Worker runtime bindings" }, 503);
     const b = await request.json().catch(() => ({}));
     let path = p.replace("/api", "");
     if (p === "/api/auth/bootstrap-owner") {
       const expected = String(env.OWNER_BOOTSTRAP_TOKEN || "");
-      if (!expected) return apiJson(request, env, { ok: false, error: "OWNER_BOOTSTRAP_TOKEN_NOT_CONFIGURED" }, 503);
+      if (!expected) return apiJson(request, env, { ok: false, error: "OWNER_BOOTSTRAP_TOKEN_NOT_CONFIGURED", detail: "OWNER_BOOTSTRAP_TOKEN is missing from Worker runtime bindings" }, 503);
       if (!safeEqual(expected, String(b.bootstrapToken || ""))) return apiJson(request, env, { ok: false, error: "INVALID_BOOTSTRAP_TOKEN" }, 403);
       path = "/auth/register";
       b.superAdmin = true;

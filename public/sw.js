@@ -1,7 +1,7 @@
-const CACHE = "salary-manager-v3.2.2";
+const CACHE = "salary-manager-v3.3.0";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
-const STATIC_CORE = ["./config.js", "./manifest.webmanifest", "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"];
+const STATIC_CORE = ["./config.js", "./manifest.webmanifest", "./icons/app-icon-180-v3.3.0.png", "./icons/app-icon-192-v3.3.0.png", "./icons/app-icon-512-v3.3.0.png"];
 
 function sameOrigin(url) { return url.origin === self.location.origin; }
 function inScope(url) { return sameOrigin(url) && url.href.startsWith(SCOPE); }
@@ -75,6 +75,40 @@ self.addEventListener("activate", event => {
     caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith("salary-manager-v") && key !== CACHE).map(key => caches.delete(key)))),
     self.clients.claim()
   ]));
+});
+
+
+self.addEventListener("push", event => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (_) {
+    try { data = { body: event.data ? event.data.text() : "" }; } catch (_) {}
+  }
+  const title = data.title || "مدير الراتب";
+  const options = {
+    body: data.body || "لديك إشعار جديد.",
+    icon: data.icon || "./icons/app-icon-192-v3.3.0.png",
+    badge: data.badge || "./icons/app-icon-192-v3.3.0.png",
+    tag: data.tag || "salary-manager-owner-alert",
+    renotify: true,
+    data: { url: data.url || "./?open=admin" }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const target = new URL(event.notification.data?.url || "./?open=admin", SCOPE).href;
+  event.waitUntil((async () => {
+    const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of windows) {
+      if (client.url.startsWith(SCOPE)) {
+        await client.focus();
+        if ("navigate" in client) await client.navigate(target);
+        return;
+      }
+    }
+    await clients.openWindow(target);
+  })());
 });
 
 self.addEventListener("fetch", event => {

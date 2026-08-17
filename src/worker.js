@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
+import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.2.0";
+const VERSION = "3.3.0";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
 const AUTH_NAME = "__salary_manager_auth_v311__";
@@ -175,7 +176,8 @@ async function handleApi(request, env, url) {
       b.superAdmin = true;
       b.bootstrapAllowed = true;
     }
-    const { response, body } = await internal(env, path, { ...b, pepper: String(env.AUTH_PEPPER || ""), ip: request.headers.get("cf-connecting-ip") || "" });
+    const { response, body } = await internal(env, path, { ...b, pepper: String(env.AUTH_PEPPER || ""), ip: request.headers.get("cf-connecting-ip") || "", origin: new URL(request.url).origin });
+    if (p === "/api/auth/forgot") return apiJson(request, env, { ok: true }, response.ok ? 200 : response.status || 400);
     return apiJson(request, env, body || { ok: false, error: "AUTH_FAILED" }, response.status || 400);
   }
 
@@ -214,6 +216,27 @@ async function handleApi(request, env, url) {
     if (!a.ok) return a.response;
     const b = await request.json().catch(() => ({}));
     const { response, body } = await internal(env, "/auth/change-password", { token: a.token, currentPassword: b.currentPassword, newPassword: b.newPassword, pepper: String(env.AUTH_PEPPER || "") });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+
+  if (p === "/api/admin/push-status" && request.method === "GET") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const { response, body } = await internal(env, "/auth/admin/push-status", { token: a.token, subject: new URL(request.url).origin });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+  if (p === "/api/admin/push-subscribe" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/admin/push-subscribe", { token: a.token, subscription: b.subscription, deviceLabel: b.deviceLabel, subject: new URL(request.url).origin });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+  if (p === "/api/admin/push-unsubscribe" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/admin/push-unsubscribe", { token: a.token, endpoint: b.endpoint });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
 
@@ -308,6 +331,60 @@ export class SalaryStore extends DurableObject {
     if (!raw) return null;
     return await this.ctx.storage.get(raw.includes("@") ? `email:${normEmail(raw)}` : `username:${normUsername(raw)}`);
   }
+  async ensureVapid(subject = "") {
+    let vapid = await this.ctx.storage.get("push:vapid");
+    if (vapid?.publicKey && vapid?.privateKey) return vapid;
+    const keyPair = await crypto.subtle.generateKey(
+      { name: "ECDSA", namedCurve: "P-256" },
+      true,
+      ["sign", "verify"]
+    );
+    const publicRaw = new Uint8Array(await crypto.subtle.exportKey("raw", keyPair.publicKey));
+    const privateJwk = await crypto.subtle.exportKey("jwk", keyPair.privateKey);
+    vapid = {
+      subject: String(subject || "https://salary-manager.alromaithi-3bo0d.workers.dev").slice(0, 240),
+      publicKey: b64(publicRaw),
+      privateKey: String(privateJwk.d || ""),
+      createdAt: Date.now()
+    };
+    if (!vapid.privateKey) throw new Error("Unable to export VAPID private key");
+    await this.ctx.storage.put("push:vapid", vapid);
+    return vapid;
+  }
+  async sendOwnerResetPush(user, origin = "") {
+    try {
+      const vapid = await this.ctx.storage.get("push:vapid");
+      if (!vapid?.publicKey || !vapid?.privateKey) return;
+      const subscriptions = await this.ctx.storage.list({ prefix: "push:owner:" });
+      if (!subscriptions.size) return;
+      const payloadData = {
+        title: "طلب إعادة تعيين كلمة المرور",
+        body: "طلب المستخدم " + String(user?.username || "أحد المستخدمين") + " رمزًا لإعادة تعيين كلمة المرور.",
+        icon: "./icons/app-icon-192-v3.3.0.png",
+        badge: "./icons/app-icon-192-v3.3.0.png",
+        url: "./?open=admin",
+        tag: "salary-password-reset"
+      };
+      const message = { data: JSON.stringify(payloadData), options: { ttl: 3600, urgency: "high" } };
+      for (const [key, record] of subscriptions.entries()) {
+        const subscription = record?.subscription;
+        if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+          await this.ctx.storage.delete(key);
+          continue;
+        }
+        try {
+          const requestInit = await buildPushPayload(message, subscription, vapid);
+          const response = await fetch(subscription.endpoint, requestInit);
+          if (response.status === 404 || response.status === 410) await this.ctx.storage.delete(key);
+        } catch (error) {
+          console.error("Owner reset push failed", error);
+        }
+      }
+    } catch (error) {
+      console.error("Owner reset push setup failed", error);
+    }
+  }
+
   async authFetch(request, url) {
     const p = url.pathname;
     const b = await request.json().catch(() => ({}));
@@ -386,9 +463,11 @@ export class SalaryStore extends DurableObject {
     if (p === "/auth/forgot") {
       const id = await this.resolveUserId(b.login);
       if (id) {
+        const user = await this.ctx.storage.get(`user:${id}`);
         const old = await this.ctx.storage.get(`reset:${id}`) || {};
         await this.ctx.storage.put(`reset:${id}`, { ...old, userId: id, requestedAt: Date.now(), requestedIp: String(b.ip || "").slice(0, 80) });
         await this.audit("reset-request", { userId: id });
+        if (user) await this.sendOwnerResetPush(user, b.origin);
       }
       return json({ ok: true });
     }
@@ -417,6 +496,31 @@ export class SalaryStore extends DurableObject {
 
     const admin = await this.getSession(String(b.token || ""));
     if (p.startsWith("/auth/admin/") && admin?.user?.role !== "super_admin") return json({ ok: false, error: "FORBIDDEN" }, 403);
+    if (p === "/auth/admin/push-status") {
+      const vapid = await this.ensureVapid(b.subject);
+      const subscriptions = await this.ctx.storage.list({ prefix: "push:owner:" });
+      return json({ ok: true, publicKey: vapid.publicKey, subscriptionCount: subscriptions.size });
+    }
+    if (p === "/auth/admin/push-subscribe") {
+      const subscription = b.subscription;
+      if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) return json({ ok: false, error: "INVALID_PUSH_SUBSCRIPTION" }, 400);
+      await this.ensureVapid(b.subject);
+      const key = "push:owner:" + await sha256(subscription.endpoint);
+      await this.ctx.storage.put(key, {
+        subscription,
+        ownerUserId: admin.user.id,
+        deviceLabel: String(b.deviceLabel || "Owner device").slice(0, 100),
+        createdAt: Date.now()
+      });
+      await this.audit("owner-push-subscribe", { userId: admin.user.id });
+      const subscriptions = await this.ctx.storage.list({ prefix: "push:owner:" });
+      return json({ ok: true, subscriptionCount: subscriptions.size });
+    }
+    if (p === "/auth/admin/push-unsubscribe") {
+      const endpoint = String(b.endpoint || "");
+      if (endpoint) await this.ctx.storage.delete("push:owner:" + await sha256(endpoint));
+      return json({ ok: true });
+    }
     if (p === "/auth/admin/users") {
       const users = [...(await this.ctx.storage.list({ prefix: "user:" })).values()];
       const sessions = [...(await this.ctx.storage.list({ prefix: "session:" })).values()];

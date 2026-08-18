@@ -9,7 +9,7 @@
     "check": "node --check src/worker.js"
   },
   "devDependencies": {
-    "wrangler": "^4.0.0"
+    "wrangler": "^4.20.0"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "^1.0.2"

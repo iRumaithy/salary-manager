@@ -20,7 +20,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.4";
+      var v = "3.8.5";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -2853,7 +2853,7 @@
       <section class="settings-section">
         <div class="settings-section-head"><div><h3>إشعارات التحديثات</h3><p>استقبل إشعارًا خارجيًا واحدًا بعد اعتماد المالك للإصدار ونشره للمستخدمين، مع بقاء إشعار التحديث داخل التطبيق.</p></div></div>
         <div class="settings-status" id="generalPushStatus">جارٍ التحقق من حالة الإشعارات…</div>
-        <div class="settings-actions"><button class="primary-btn" id="enableGeneralPushButton" type="button">تفعيل إشعارات التحديث</button><button class="ghost-btn" id="disableGeneralPushButton" type="button">إيقاف إشعارات التحديث</button></div>
+        <div class="settings-actions"><button class="primary-btn" id="enableGeneralPushButton" type="button">تفعيل إشعارات التحديث</button><button class="soft-btn" id="testGeneralPushButton" type="button">اختبار الإشعار على هذا الجهاز</button><button class="ghost-btn" id="disableGeneralPushButton" type="button">إيقاف إشعارات التحديث</button></div>
       </section>
     </div>
     <div class="modal-foot"><button class="primary-btn" type="button" data-close-dialog="settingsDialog">تم</button></div>
@@ -2902,15 +2902,14 @@
       <div class="changelog-list">
         <section class="changelog-entry current">
           <div class="changelog-version">
-            <strong>الإصدار 3.8.4</strong>
+            <strong>الإصدار 3.8.5</strong>
             <time datetime="2026-08-18">18 أغسطس 2026</time>
           </div>
           <ul>
-            <li>منع ظهور نافذة تحديد الراتب ويوم نزوله عند إعادة إضافة التطبيق إذا كانت بيانات الحساب قد استُرجعت بالفعل من المزامنة.</li>
-            <li>منع إعادة سؤال المستخدم عن تفعيل إشعارات التحديث إذا كان الحساب لديه اشتراك إشعارات سابق؛ وإذا كان إذن iOS ما زال مفعّلًا تتم إعادة ربط النسخة الجديدة تلقائيًا.</li>
-            <li>ربط فحص إعدادات البداية باكتمال تسجيل الدخول والمزامنة أولًا حتى تحتفظ النسخة المعاد تثبيتها بإعدادات الحساب.</li>
-            <li>استبدال زر «+» أعلى الصفحة بزر تحديث الصفحة Refresh.</li>
-            <li>الإبقاء على تغيير الأيقونة وإعادة الإضافة من الإعدادات دون التأثير في بيانات الراتب أو تسجيل الدخول.</li>
+            <li>إصلاح منطق تفعيل الإشعارات على الأجهزة الجديدة: الاشتراك الموجود على جهاز آخر لن يمنع ظهور طلب التفعيل على هذا الجهاز.</li>
+            <li>إضافة اختبار إشعار خارجي لأي مستخدم على جهازه الحالي للتأكد من أن Web Push يعمل فعليًا قبل انتظار تحديث جديد.</li>
+            <li>تحسين تشخيص الإرسال من الخادم بإظهار عدد الإشعارات المقبولة والفاشلة وحالات الاستجابة بدل الاكتفاء بعدد الأجهزة المسجلة.</li>
+            <li>إعادة تسجيل اشتراك الجهاز تلقائيًا بعد تسجيل الدخول إذا كان إذن الإشعارات ممنوحًا، وربطه بالحساب الحالي بدقة.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -3123,6 +3122,8 @@
       EN_TRANSLATIONS["فتح مدير الراتب مباشرة"] = "Open Salary Manager directly";
       EN_TRANSLATIONS["جارٍ تجهيز جلسة المتصفح…"] = "Preparing browser session…";
       EN_TRANSLATIONS["اختبار إشعار التحديث الخارجي"] = "Test external update notification";
+      EN_TRANSLATIONS["اختبار الإشعار على هذا الجهاز"] = "Test notification on this device";
+      EN_TRANSLATIONS["جارٍ إرسال اختبار الإشعار…"] = "Sending test notification…";
       EN_TRANSLATIONS["يمكنك إرسال إشعار تجريبي للتأكد من أن جهاز المالك مسجل بشكل صحيح."] = "Send a test notification to verify that the owner device is registered correctly.";
       EN_TRANSLATIONS["جارٍ تجهيز رابط تسجيل الدخول الآمن…"] = "Preparing secure signed-in link…";
       EN_TRANSLATIONS["تم نقل تسجيل الدخول بأمان إلى المتصفح. سيبقى الحساب مسجلًا عند إعادة إضافة التطبيق من المتصفح."] = "Your sign-in was securely transferred to the browser. The account will stay signed in when the app is added again from the browser.";
@@ -3346,7 +3347,7 @@
       }
 
 
-      var APP_VERSION = "3.8.4";
+      var APP_VERSION = "3.8.5";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -4275,18 +4276,19 @@
         var label = $("#generalPushStatus");
         var enable = $("#enableGeneralPushButton");
         var disable = $("#disableGeneralPushButton");
+        var test = $("#testGeneralPushButton");
         if (!label || !enable || !disable) return;
         if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
           label.classList.remove("on");
           label.textContent = "هذا المتصفح لا يدعم إشعارات Web Push.";
-          enable.disabled = true; disable.disabled = true;
+          enable.disabled = true; disable.disabled = true; if (test) test.disabled = true;
           return;
         }
         var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
         if (ios && !isStandaloneApp()) {
           label.classList.remove("on");
           label.textContent = "على iPhone يجب إضافة مدير الراتب إلى الشاشة الرئيسية أولًا، ثم فتحه من الأيقونة لتفعيل الإشعارات.";
-          enable.disabled = false; disable.disabled = true;
+          enable.disabled = false; disable.disabled = true; if (test) test.disabled = true;
           return;
         }
         try {
@@ -4298,10 +4300,11 @@
           label.textContent = enabled ? "الإشعارات مفعلة لهذا الجهاز ✓" : "إشعارات التحديث متوقفة على هذا الجهاز.";
           enable.disabled = enabled;
           disable.disabled = !enabled;
+          if (test) test.disabled = !enabled;
         } catch (_) {
           label.classList.remove("on");
           label.textContent = "تعذر التحقق من حالة الإشعارات الآن.";
-          enable.disabled = false; disable.disabled = false;
+          enable.disabled = false; disable.disabled = false; if (test) test.disabled = true;
         }
         translateDom(document.body);
       }
@@ -4323,6 +4326,33 @@
             console.error("General push enable failed", error);
             showToast("تعذر تفعيل الإشعارات على هذا الجهاز الآن.", true);
           }
+          await refreshGeneralPushStatus();
+        }
+      }
+
+      async function testGeneralPushNotifications() {
+        var button = $("#testGeneralPushButton");
+        try {
+          if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) throw Object.assign(new Error("PUSH_UNSUPPORTED"), { code: "PUSH_UNSUPPORTED" });
+          if (Notification.permission !== "granted") throw Object.assign(new Error("PUSH_PERMISSION_DENIED"), { code: "PUSH_PERMISSION_DENIED" });
+          var registration = await navigator.serviceWorker.ready;
+          var subscription = await registration.pushManager.getSubscription();
+          if (!subscription) throw Object.assign(new Error("PUSH_NOT_SUBSCRIBED"), { code: "PUSH_NOT_SUBSCRIBED" });
+          if (button) { button.disabled = true; button.textContent = "جارٍ إرسال اختبار الإشعار…"; }
+          // Re-register first so the server has the latest endpoint/keys and account identity.
+          await apiFetch("/api/push/subscribe", { method: "POST", body: JSON.stringify({ subscription: subscription.toJSON(), deviceLabel: navigator.platform || "User device", appVersion: APP_VERSION }) });
+          var data = await apiFetch("/api/push/test-self", { method: "POST", body: JSON.stringify({ endpoint: subscription.endpoint }) });
+          if (Number(data.sent || 0) > 0) {
+            showToast("تم إرسال إشعار تجريبي لهذا الجهاز ✓");
+          } else {
+            var details = data.status ? " · استجابة خدمة الإشعارات: " + data.status : "";
+            showToast("لم يتم قبول إشعار الاختبار من خدمة الإشعارات" + details, true);
+          }
+        } catch (error) {
+          console.error("Self push test failed", error);
+          showToast("تعذر اختبار الإشعار على هذا الجهاز. تأكد من أن الإشعارات مفعلة ثم حاول مرة أخرى.", true);
+        } finally {
+          if (button) { button.textContent = "اختبار الإشعار على هذا الجهاز"; }
           await refreshGeneralPushStatus();
         }
       }
@@ -4354,10 +4384,8 @@
           setTimeout(function () { maybeOfferGeneralPush(); }, 900);
           return;
         }
-        try {
-          var existing = await getGeneralPushServerStatus(null);
-          if (authState.authenticated && existing && existing.accountSubscribed) return;
-        } catch (_) {}
+        // Do not use an account-level subscription on another device to suppress this device's prompt.
+        // Web Push permission/subscription is local to each installed web app/device.
         var until = 0;
         try { until = Number(localStorage.getItem(PUSH_PROMPT_KEY) || 0); } catch (_) {}
         if (until > Date.now()) return;
@@ -5347,6 +5375,7 @@
           });
         }
         $("#enableGeneralPushButton").addEventListener("click", function () { enableGeneralPushNotifications(true); });
+        $("#testGeneralPushButton").addEventListener("click", testGeneralPushNotifications);
         $("#disableGeneralPushButton").addEventListener("click", disableGeneralPushNotifications);
         $("#promptEnableGeneralPushButton").addEventListener("click", function () { enableGeneralPushNotifications(true); });
         $("#laterGeneralPushButton").addEventListener("click", function () {

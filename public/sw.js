@@ -1,9 +1,16 @@
-const CACHE = "salary-manager-v3.7.1";
+const CACHE = "salary-manager-v3.7.2";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = [
   "./config.js",
   "./manifest.webmanifest",
+  "./manifests/gold.webmanifest",
+  "./manifests/silver.webmanifest",
+  "./manifests/green-segments.webmanifest",
+  "./manifests/orbit.webmanifest",
+  "./manifests/half-silver.webmanifest",
+  "./manifests/coin-deep.webmanifest",
+  "./manifests/coin-clean.webmanifest",
   "./icons/choice/gold.png",
   "./icons/choice/gold-180.png",
   "./icons/choice/gold-192.png",

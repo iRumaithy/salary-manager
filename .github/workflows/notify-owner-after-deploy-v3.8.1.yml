@@ -1,0 +1,46 @@
+name: Notify owner after deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "public/**"
+      - "src/**"
+      - "package.json"
+      - "wrangler.jsonc"
+
+permissions:
+  contents: read
+
+jobs:
+  wait-for-cloudflare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read expected version
+        id: version
+        run: echo "value=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Wait for deploy and verify owner notification
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -e
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          for i in $(seq 1 120); do
+            BODY=$(curl -fsS --max-time 10 "${URL}?deploy_check=$(date +%s)" || true)
+            echo "$BODY"
+            LIVE=$(printf '%s' "$BODY" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).version||"")}catch{console.log("")}})')
+            if [ "$LIVE" = "$EXPECTED_VERSION" ]; then
+              SENT=$(printf '%s' "$BODY" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(Number(JSON.parse(s).release?.ownerNotification?.sent||0))}catch{console.log(0)}})')
+              SUBS=$(printf '%s' "$BODY" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(Number(JSON.parse(s).release?.ownerNotification?.subscriptionCount||0))}catch{console.log(0)}})')
+              if [ "$SENT" -gt 0 ]; then
+                echo "Version ${EXPECTED_VERSION} is live and owner review push was delivered to ${SENT} device(s)."
+                exit 0
+              fi
+              echo "Version is live, but owner push is not confirmed yet (subscriptions=${SUBS}, sent=${SENT}). Retrying..."
+            fi
+            sleep 5
+          done
+          echo "Deployment became live but owner notification was not confirmed. Open User management and use the notification test button." >&2
+          exit 1

@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.8.2";
+const VERSION = "3.8.3";
 const PREVIOUS_PUBLISHED_VERSION = "3.7.2";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;

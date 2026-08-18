@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.8.3";
+const VERSION = "3.8.4";
 const PREVIOUS_PUBLISHED_VERSION = "3.7.2";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -358,7 +358,8 @@ async function handleApi(request, env, url) {
 
   if (p === "/api/push/status" && request.method === "GET") {
     const endpoint = String(url.searchParams.get("endpoint") || "");
-    const { response, body } = await internal(env, "/auth/push/status", { subject: url.origin, endpoint });
+    const auth = await optionalAuth(request, env);
+    const { response, body } = await internal(env, "/auth/push/status", { subject: url.origin, endpoint, userId: auth?.user?.id || "" });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
   if (p === "/api/push/subscribe" && request.method === "POST") {
@@ -834,7 +835,14 @@ export class SalaryStore extends DurableObject {
       const endpoint = String(b.endpoint || "");
       const subscribed = endpoint ? !!(await this.ctx.storage.get("push:all:" + await sha256(endpoint))) : false;
       const subscriptions = await this.ctx.storage.list({ prefix: "push:all:" });
-      return json({ ok: true, publicKey: vapid.publicKey, subscriptionCount: subscriptions.size, subscribed });
+      const userId = String(b.userId || "");
+      let accountSubscribed = false;
+      if (userId) {
+        for (const record of subscriptions.values()) {
+          if (String(record?.userId || "") === userId) { accountSubscribed = true; break; }
+        }
+      }
+      return json({ ok: true, publicKey: vapid.publicKey, subscriptionCount: subscriptions.size, subscribed, accountSubscribed });
     }
     if (p === "/auth/push/subscribe") {
       const subscription = b.subscription;

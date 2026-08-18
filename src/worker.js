@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.8.1";
+const VERSION = "3.8.2";
 const PREVIOUS_PUBLISHED_VERSION = "3.7.2";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -265,8 +265,7 @@ async function handleApi(request, env, url) {
       release: {
         stagedVersion: release.stagedVersion || VERSION,
         publishedVersion: release.publishedVersion || PREVIOUS_PUBLISHED_VERSION,
-        published: Boolean(release.published),
-        ownerNotification: release.ownerNotification || null
+        published: Boolean(release.published)
       }
     });
   }
@@ -339,7 +338,13 @@ async function handleApi(request, env, url) {
     if (!a.ok) return a.response;
     const b = await request.json().catch(() => ({}));
     const { response, body } = await internal(env, "/auth/browser-handoff/create", { token: a.token, deviceLabel: b.deviceLabel });
-    return apiJson(request, env, body || { ok: false }, response.status);
+    if (!response.ok) return apiJson(request, env, body || { ok: false }, response.status);
+    let ownerPreviewToken = "";
+    if (a.user?.role === "super_admin") {
+      const release = await getReleaseState(env, url.origin);
+      ownerPreviewToken = String(release?.previewToken || "");
+    }
+    return apiJson(request, env, { ...(body || { ok: true }), ownerPreviewToken }, response.status);
   }
   if (p === "/api/auth/browser-handoff/consume" && request.method === "POST") {
     const b = await request.json().catch(() => ({}));
@@ -608,7 +613,10 @@ export class SalaryStore extends DurableObject {
     return { sent, removed, subscriptionCount: records.size };
   }
 
-  async ensureReleaseState(version, previousVersion, subject = "", notifyOwner = true) {
+  async ensureReleaseState(version, previousVersion, subject = "", notifyOwner = false) {
+    // v3.8.2: staged releases are shown to the owner inside the app only.
+    // External update notifications are sent only after the owner explicitly publishes the release.
+    notifyOwner = false;
     version = String(version || VERSION).slice(0, 30);
     previousVersion = String(previousVersion || PREVIOUS_PUBLISHED_VERSION).slice(0, 30);
     let publishedVersion = String(await this.ctx.storage.get("release:publishedVersion") || "");
@@ -635,31 +643,13 @@ export class SalaryStore extends DurableObject {
       await this.ctx.storage.put("release:previewToken", previewToken);
     }
     const published = publishedVersion === stagedVersion;
-    if (!published && notifyOwner) {
-      const notified = String(await this.ctx.storage.get("release:ownerNotifiedVersion") || "");
-      if (notified !== stagedVersion) {
-        const result = await this.sendOwnerReleasePush({
-          title: "تحديث جديد جاهز للمراجعة · مدير الراتب",
-          body: `الإصدار ${stagedVersion} جاهز لك أولًا. اختبره ثم انشره للمستخدمين من «إدارة المستخدمين».`,
-          icon: "./icons/choice/gold-192.png",
-          badge: "./icons/choice/gold-192.png",
-          url: "./?__sw_recovery=1&owner_preview=" + encodeURIComponent(previewToken) + "&update=1&open=admin",
-          tag: `salary-manager-owner-review-${stagedVersion}`
-        }, subject);
-        const ownerNotification = { version: stagedVersion, attemptedAt: Date.now(), ...result };
-        await this.ctx.storage.put("release:ownerLastPushResult", ownerNotification);
-        if (result.sent > 0) await this.ctx.storage.put("release:ownerNotifiedVersion", stagedVersion);
-        await this.audit("release-staged-owner-notified", { version: stagedVersion, sent: result.sent, subscriptionCount: result.subscriptionCount });
-      }
-    }
     return {
       stagedVersion,
       publishedVersion,
       published,
       stagedAt: stagedAt || null,
       publishedAt: Number(await this.ctx.storage.get("release:publishedAt") || 0) || null,
-      previewToken,
-      ownerNotification: await this.ctx.storage.get("release:ownerLastPushResult") || null
+      previewToken
     };
   }
 
@@ -758,8 +748,8 @@ export class SalaryStore extends DurableObject {
       if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
       const handoff = randomToken(32);
       const hash = await sha256(handoff);
-      const expiresAt = Date.now() + 2 * 60 * 1000;
-      await this.ctx.storage.put(`handoff:${hash}`, { userId: found.user.id, createdAt: Date.now(), expiresAt });
+      const expiresAt = Date.now() + 10 * 60 * 1000;
+      await this.ctx.storage.put(`handoff:${hash}`, { userId: found.user.id, createdAt: Date.now(), expiresAt, remainingUses: 3 });
       await this.audit("browser-handoff-create", { userId: found.user.id });
       return json({ ok: true, handoff, expiresAt });
     }
@@ -772,7 +762,9 @@ export class SalaryStore extends DurableObject {
         if (record) await this.ctx.storage.delete(key);
         return json({ ok: false, error: "INVALID_HANDOFF" }, 400);
       }
-      await this.ctx.storage.delete(key);
+      const uses = Math.max(1, Number(record.remainingUses || 1));
+      if (uses <= 1) await this.ctx.storage.delete(key);
+      else { record.remainingUses = uses - 1; await this.ctx.storage.put(key, record); }
       const user = await this.ctx.storage.get(`user:${record.userId}`);
       if (!user || user.status !== "active") return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
       const created = await this.createSession(user, b.deviceLabel || "Browser handoff");
@@ -833,7 +825,7 @@ export class SalaryStore extends DurableObject {
     }
 
     if (p === "/auth/system/release-state") {
-      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, true);
+      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false);
       return json({ ok: true, ...state });
     }
 
@@ -861,6 +853,8 @@ export class SalaryStore extends DurableObject {
       };
       await this.ctx.storage.put(key, record);
       if (record.role === "super_admin") {
+        // Keep an owner-specific copy for password-reset alerts and manual push tests,
+        // but do not send staged-release notifications automatically.
         await this.ctx.storage.put("push:owner:" + await sha256(subscription.endpoint), {
           subscription,
           ownerUserId: record.userId,
@@ -868,22 +862,6 @@ export class SalaryStore extends DurableObject {
           createdAt: record.createdAt,
           updatedAt: Date.now()
         });
-        const staged = String(await this.ctx.storage.get("release:stagedVersion") || "");
-        const published = String(await this.ctx.storage.get("release:publishedVersion") || "");
-        const previewToken = String(await this.ctx.storage.get("release:previewToken") || "");
-        if (staged && staged !== published && previewToken) {
-          const result = await this.sendOwnerReleasePush({
-            title: "تحديث جديد جاهز للمراجعة · مدير الراتب",
-            body: `الإصدار ${staged} جاهز لك أولًا. اختبره ثم انشره للمستخدمين من «إدارة المستخدمين».`,
-            icon: "./icons/choice/gold-192.png",
-            badge: "./icons/choice/gold-192.png",
-            url: "./?__sw_recovery=1&owner_preview=" + encodeURIComponent(previewToken) + "&update=1&open=admin",
-            tag: `salary-manager-owner-review-${staged}`
-          }, b.subject);
-          const ownerNotification = { version: staged, attemptedAt: Date.now(), ...result };
-          await this.ctx.storage.put("release:ownerLastPushResult", ownerNotification);
-          if (result.sent > 0) await this.ctx.storage.put("release:ownerNotifiedVersion", staged);
-        }
       }
       const last = await this.ctx.storage.get("push:lastUpdateVersion");
       if (!last && b.appVersion) await this.ctx.storage.put("push:lastUpdateVersion", String(b.appVersion).slice(0, 30));
@@ -897,7 +875,7 @@ export class SalaryStore extends DurableObject {
     }
     if (p === "/auth/system/broadcast-update") {
       // Backward-compatible alias: new versions are staged for the owner first.
-      const state = await this.ensureReleaseState(b.version, b.previousVersion || PREVIOUS_PUBLISHED_VERSION, b.subject, true);
+      const state = await this.ensureReleaseState(b.version, b.previousVersion || PREVIOUS_PUBLISHED_VERSION, b.subject, false);
       return json({ ok: true, staged: true, ...state });
     }
 
@@ -942,7 +920,7 @@ export class SalaryStore extends DurableObject {
       return json({ ok: true });
     }
     if (p === "/auth/admin/release-status") {
-      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, true);
+      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false);
       const all = await this.ctx.storage.list({ prefix: "push:all:" });
       const owners = await this.ctx.storage.list({ prefix: "push:owner:" });
       return json({ ok: true, ...state, userPushSubscriptions: all.size, ownerPushSubscriptions: owners.size });
@@ -971,11 +949,11 @@ export class SalaryStore extends DurableObject {
     if (p === "/auth/admin/test-update-push") {
       const result = await this.sendOwnerReleasePush({
         title: "اختبار إشعارات مدير الراتب ✓",
-        body: "الإشعارات الخارجية تعمل على هذا الجهاز. سيصلك تنبيه مماثل فور وجود إصدار جديد للمراجعة.",
+        body: "هذا اختبار يدوي فقط. إشعارات التحديث الفعلية للمستخدمين تُرسل مرة واحدة بعد اعتماد المالك للإصدار.",
         icon: "./icons/choice/gold-192.png",
         badge: "./icons/choice/gold-192.png",
         url: "./?open=admin",
-        tag: `salary-manager-owner-test-${Date.now()}`
+        tag: "salary-manager-owner-test"
       }, b.subject);
       await this.audit("owner-update-push-test", { adminId: admin.user.id, ...result });
       return json({ ok: true, ...result });

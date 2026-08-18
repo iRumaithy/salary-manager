@@ -1,10 +1,54 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.6.1";
+const VERSION = "3.7.0";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
 const AUTH_NAME = "__salary_manager_auth_v311__";
+const ICON_CHOICES = new Set(["gold", "silver", "green-segments", "orbit", "half-silver", "coin-deep", "coin-clean"]);
+function normalizeIconChoice(value) {
+  const id = String(value || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
+  return ICON_CHOICES.has(id) ? id : "gold";
+}
+function manifestResponse(url) {
+  const icon = normalizeIconChoice(url.searchParams.get("icon"));
+  const body = {
+    name: "مدير الراتب الشهري",
+    short_name: "مدير الراتب",
+    description: "إدارة الراتب والأقساط والمدفوعات الثابتة والمصروفات مع مزامنة آمنة بالحساب.",
+    lang: "ar",
+    dir: "rtl",
+    start_url: "./",
+    scope: "./",
+    display: "standalone",
+    background_color: "#f3efe7",
+    theme_color: "#123f3b",
+    icons: [
+      { src: `./icons/choice/${icon}.png`, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+    ]
+  };
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { "content-type": "application/manifest+json; charset=utf-8", "cache-control": "no-store" }
+  });
+}
+async function iconResponse(env, id, origin) {
+  const icon = normalizeIconChoice(id);
+  const source = new URL(`/icon-data/${icon}.b64`, origin);
+  const asset = await env.ASSETS.fetch(new Request(source.toString(), { method: "GET" }));
+  if (!asset?.ok) return new Response("Icon unavailable", { status: 404 });
+  const text = (await asset.text()).trim();
+  const raw = atob(text);
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  return new Response(bytes, {
+    status: 200,
+    headers: {
+      "content-type": "image/png",
+      "cache-control": "public, max-age=31536000, immutable"
+    }
+  });
+}
 
 function baseHeaders(extra = {}) {
   return { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...extra };
@@ -179,6 +223,27 @@ async function handleApi(request, env, url) {
     const { response, body } = await internal(env, path, { ...b, pepper: String(env.AUTH_PEPPER || ""), ip: request.headers.get("cf-connecting-ip") || "", origin: new URL(request.url).origin });
     if (p === "/api/auth/forgot") return apiJson(request, env, { ok: true }, response.ok ? 200 : response.status || 400);
     return apiJson(request, env, body || { ok: false, error: "AUTH_FAILED" }, response.status || 400);
+  }
+
+  if (p === "/api/push/status" && request.method === "GET") {
+    const endpoint = String(url.searchParams.get("endpoint") || "");
+    const { response, body } = await internal(env, "/auth/push/status", { subject: url.origin, endpoint });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+  if (p === "/api/push/subscribe" && request.method === "POST") {
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/push/subscribe", {
+      subscription: b.subscription,
+      deviceLabel: b.deviceLabel,
+      appVersion: b.appVersion,
+      subject: url.origin
+    });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+  if (p === "/api/push/unsubscribe" && request.method === "POST") {
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/push/unsubscribe", { endpoint: b.endpoint });
+    return apiJson(request, env, body || { ok: false }, response.status);
   }
 
   if (p === "/api/sync-ticket" && request.method === "POST") {
@@ -360,8 +425,8 @@ export class SalaryStore extends DurableObject {
       const payloadData = {
         title: "طلب إعادة تعيين كلمة المرور",
         body: "طلب المستخدم " + String(user?.username || "أحد المستخدمين") + " رمزًا لإعادة تعيين كلمة المرور.",
-        icon: "./icons/app-icon-192-v3.3.0.png",
-        badge: "./icons/app-icon-192-v3.3.0.png",
+        icon: "./icons/choice/gold.png",
+        badge: "./icons/choice/gold.png",
         url: "./?open=admin",
         tag: "salary-password-reset"
       };
@@ -492,6 +557,83 @@ export class SalaryStore extends DurableObject {
       await this.revokeUserSessions(id);
       await this.audit("reset-complete", { userId: id });
       return json({ ok: true });
+    }
+
+    if (p === "/auth/push/status") {
+      const vapid = await this.ensureVapid(b.subject);
+      const endpoint = String(b.endpoint || "");
+      const subscribed = endpoint ? !!(await this.ctx.storage.get("push:all:" + await sha256(endpoint))) : false;
+      const subscriptions = await this.ctx.storage.list({ prefix: "push:all:" });
+      return json({ ok: true, publicKey: vapid.publicKey, subscriptionCount: subscriptions.size, subscribed });
+    }
+    if (p === "/auth/push/subscribe") {
+      const subscription = b.subscription;
+      if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) return json({ ok: false, error: "INVALID_PUSH_SUBSCRIPTION" }, 400);
+      await this.ensureVapid(b.subject);
+      const key = "push:all:" + await sha256(subscription.endpoint);
+      await this.ctx.storage.put(key, {
+        subscription,
+        deviceLabel: String(b.deviceLabel || "User device").slice(0, 100),
+        appVersion: String(b.appVersion || "").slice(0, 30),
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      });
+      const last = await this.ctx.storage.get("push:lastUpdateVersion");
+      if (!last && b.appVersion) await this.ctx.storage.put("push:lastUpdateVersion", String(b.appVersion).slice(0, 30));
+      const subscriptions = await this.ctx.storage.list({ prefix: "push:all:" });
+      return json({ ok: true, subscriptionCount: subscriptions.size });
+    }
+    if (p === "/auth/push/unsubscribe") {
+      const endpoint = String(b.endpoint || "");
+      if (endpoint) await this.ctx.storage.delete("push:all:" + await sha256(endpoint));
+      return json({ ok: true });
+    }
+    if (p === "/auth/system/broadcast-update") {
+      const version = String(b.version || "").slice(0, 30);
+      if (!version) return json({ ok: false, error: "INVALID_VERSION" }, 400);
+      const previous = String(await this.ctx.storage.get("push:lastUpdateVersion") || "");
+      if (!previous) {
+        await this.ctx.storage.put("push:lastUpdateVersion", version);
+        return json({ ok: true, skipped: true, reason: "initialized", version, sent: 0 });
+      }
+      if (previous === version) return json({ ok: true, skipped: true, reason: "already-broadcast", version, sent: 0 });
+      const vapid = await this.ensureVapid(b.subject);
+      const all = await this.ctx.storage.list({ prefix: "push:all:" });
+      const owners = await this.ctx.storage.list({ prefix: "push:owner:" });
+      const records = new Map();
+      for (const [key, record] of [...all.entries(), ...owners.entries()]) {
+        const endpoint = record?.subscription?.endpoint;
+        if (endpoint && !records.has(endpoint)) records.set(endpoint, { key, record });
+      }
+      const payloadData = {
+        title: "تحديث جديد متوفر · مدير الراتب",
+        body: `الإصدار ${version} متوفر. افتح التطبيق، واحفظ نسخة احتياطية إن رغبت، ثم حدّث عندما تكون جاهزًا.`,
+        icon: "./icons/choice/gold.png",
+        badge: "./icons/choice/gold.png",
+        url: "./?update=1",
+        tag: `salary-manager-update-${version}`
+      };
+      const message = { data: JSON.stringify(payloadData), options: { ttl: 86400, urgency: "high" } };
+      let sent = 0, removed = 0;
+      for (const { key, record } of records.values()) {
+        const subscription = record?.subscription;
+        if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) continue;
+        try {
+          const requestInit = await buildPushPayload(message, subscription, vapid);
+          const response = await fetch(subscription.endpoint, requestInit);
+          if (response.ok || response.status === 201) sent += 1;
+          if (response.status === 404 || response.status === 410) {
+            const h = await sha256(subscription.endpoint);
+            await this.ctx.storage.delete(["push:all:" + h, "push:owner:" + h]);
+            removed += 1;
+          }
+        } catch (error) {
+          console.error("Update push failed", error);
+        }
+      }
+      await this.ctx.storage.put("push:lastUpdateVersion", version);
+      await this.audit("update-push-broadcast", { version, previous, sent, removed, subscriptionCount: records.size });
+      return json({ ok: true, version, previous, sent, removed, subscriptionCount: records.size });
     }
 
     const admin = await this.getSession(String(b.token || ""));
@@ -645,6 +787,9 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     try {
+      if (url.pathname === "/manifest.webmanifest") return manifestResponse(url);
+      const iconMatch = url.pathname.match(/^\/icons\/choice\/([a-z0-9-]+)\.png$/i);
+      if (iconMatch) return await iconResponse(env, iconMatch[1], url.origin);
       if (url.pathname.startsWith("/api/")) return await handleApi(request, env, url);
 
       if (url.pathname === "/" || url.pathname === "") {
@@ -671,5 +816,18 @@ export default {
       }
       return apiJson(request, env, { ok: false, error: "SERVER_ERROR", detail: String(e?.message || e).slice(0, 180), version: VERSION }, 500);
     }
+  },
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil((async () => {
+      try {
+        const { body } = await internal(env, "/auth/system/broadcast-update", {
+          version: VERSION,
+          subject: "https://salary-manager.alromaithi-3bo0d.workers.dev"
+        });
+        console.log("Update push check", body);
+      } catch (error) {
+        console.error("Scheduled update push failed", error);
+      }
+    })());
   }
 };

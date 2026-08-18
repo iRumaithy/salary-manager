@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.7.0";
+const VERSION = "3.7.1";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
 const AUTH_NAME = "__salary_manager_auth_v311__";
@@ -24,7 +24,8 @@ function manifestResponse(url) {
     background_color: "#f3efe7",
     theme_color: "#123f3b",
     icons: [
-      { src: `./icons/choice/${icon}.png`, sizes: "512x512", type: "image/png", purpose: "any maskable" }
+      { src: `./icons/choice/${icon}-192.png`, sizes: "192x192", type: "image/png", purpose: "any maskable" },
+      { src: `./icons/choice/${icon}-512.png`, sizes: "512x512", type: "image/png", purpose: "any maskable" }
     ]
   };
   return new Response(JSON.stringify(body), {
@@ -32,24 +33,6 @@ function manifestResponse(url) {
     headers: { "content-type": "application/manifest+json; charset=utf-8", "cache-control": "no-store" }
   });
 }
-async function iconResponse(env, id, origin) {
-  const icon = normalizeIconChoice(id);
-  const source = new URL(`/icon-data/${icon}.b64`, origin);
-  const asset = await env.ASSETS.fetch(new Request(source.toString(), { method: "GET" }));
-  if (!asset?.ok) return new Response("Icon unavailable", { status: 404 });
-  const text = (await asset.text()).trim();
-  const raw = atob(text);
-  const bytes = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
-  return new Response(bytes, {
-    status: 200,
-    headers: {
-      "content-type": "image/png",
-      "cache-control": "public, max-age=31536000, immutable"
-    }
-  });
-}
-
 function baseHeaders(extra = {}) {
   return { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...extra };
 }
@@ -425,8 +408,8 @@ export class SalaryStore extends DurableObject {
       const payloadData = {
         title: "طلب إعادة تعيين كلمة المرور",
         body: "طلب المستخدم " + String(user?.username || "أحد المستخدمين") + " رمزًا لإعادة تعيين كلمة المرور.",
-        icon: "./icons/choice/gold.png",
-        badge: "./icons/choice/gold.png",
+        icon: "./icons/choice/gold-192.png",
+        badge: "./icons/choice/gold-192.png",
         url: "./?open=admin",
         tag: "salary-password-reset"
       };
@@ -608,8 +591,8 @@ export class SalaryStore extends DurableObject {
       const payloadData = {
         title: "تحديث جديد متوفر · مدير الراتب",
         body: `الإصدار ${version} متوفر. افتح التطبيق، واحفظ نسخة احتياطية إن رغبت، ثم حدّث عندما تكون جاهزًا.`,
-        icon: "./icons/choice/gold.png",
-        badge: "./icons/choice/gold.png",
+        icon: "./icons/choice/gold-192.png",
+        badge: "./icons/choice/gold-192.png",
         url: "./?update=1",
         tag: `salary-manager-update-${version}`
       };
@@ -788,8 +771,6 @@ export default {
     const url = new URL(request.url);
     try {
       if (url.pathname === "/manifest.webmanifest") return manifestResponse(url);
-      const iconMatch = url.pathname.match(/^\/icons\/choice\/([a-z0-9-]+)\.png$/i);
-      if (iconMatch) return await iconResponse(env, iconMatch[1], url.origin);
       if (url.pathname.startsWith("/api/")) return await handleApi(request, env, url);
 
       if (url.pathname === "/" || url.pathname === "") {

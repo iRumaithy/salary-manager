@@ -20,7 +20,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.2";
+      var v = "3.8.3";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -2873,12 +2873,12 @@
   <dialog class="modal" id="installDialog">
     <div class="modal-head"><h2>إضافة التطبيق إلى الشاشة الرئيسية</h2><button class="close-btn" type="button" data-close-dialog="installDialog" aria-label="إغلاق">×</button></div>
     <div class="modal-body">
-      <div class="pwa-note" id="installInstructions">على iPhone: اضغط الرابط التالي لفتح مدير الراتب في متصفح الجهاز، ثم استخدم «إضافة إلى الشاشة الرئيسية». الأيقونة التي اعتمدتها داخل مدير الراتب تنتقل مع الرابط تلقائيًا، ولا تحتاج لإعادة اختيارها.</div>
+      <div class="pwa-note" id="installInstructions">على iPhone: اضغط مطولًا على الرابط التالي، ثم اختر نسخ الرابط. بعد ذلك افتح صفحة جديدة في المتصفح، الصق الرابط، ثم استخدم «إضافة إلى الشاشة الرئيسية». الأيقونة التي اعتمدتها داخل مدير الراتب تنتقل مع الرابط تلقائيًا، ولا تحتاج لإعادة اعتمادها في المتصفح.</div>
       <a class="browser-open-link" id="openBrowserLink" href="./?installIcon=gold" target="_blank" rel="noopener">
         <span>فتح مدير الراتب في المتصفح ↗</span>
-        <small id="browserLinkShort">فتح مدير الراتب مباشرة</small>
+        <small id="browserLinkShort">اضغط مطولًا ثم انسخ الرابط</small>
       </a>
-      <div class="install-followup-note" id="installReplaceNote"><strong>لا تحتاج لحذف النسخة الحالية أولًا.</strong> يمكنك إعادة الإضافة مباشرة من Safari بالأيقونة الجديدة. إذا احتفظ iOS بالاختصار القديم وأنشأ اختصارًا ثانيًا، تأكد من الجديد ثم احذف القديم لاحقًا إن رغبت.</div>
+      <div class="install-followup-note" id="installReplaceNote"><strong>لا تحتاج لحذف النسخة الحالية أولًا.</strong> بعد لصق الرابط في المتصفح يمكنك اختيار «إضافة إلى الشاشة الرئيسية» مباشرة. إذا احتفظ iOS بالاختصار القديم وأنشأ اختصارًا ثانيًا، تأكد من الجديد ثم احذف القديم لاحقًا إن رغبت.</div>
     </div>
     <div class="modal-foot"><button class="primary-btn" type="button" data-close-dialog="installDialog">حسنًا</button></div>
   </dialog>
@@ -2902,15 +2902,15 @@
       <div class="changelog-list">
         <section class="changelog-entry current">
           <div class="changelog-version">
-            <strong>الإصدار 3.8.2</strong>
+            <strong>الإصدار 3.8.3</strong>
             <time datetime="2026-08-18">18 أغسطس 2026</time>
           </div>
           <ul>
-            <li>إلغاء إشعار المراجعة الخارجي التلقائي للمالك لمنع تكرار نفس إشعار التحديث أثناء رفع الملفات والنشر.</li>
-            <li>إرسال إشعار التحديث الخارجي للمستخدمين مرة واحدة فقط بعد أن يعتمد المالك الإصدار ويضغط «نشر التحديث للمستخدمين».</li>
-            <li>إزالة وسيط Google من رابط فتح المتصفح وفتح مدير الراتب مباشرة دون صفحة تحذير إعادة التوجيه.</li>
-            <li>تقوية نقل جلسة الحساب إلى المتصفح مع رمز انتقال صالح لوقت قصير وعدة محاولات، وإضافة رمز معاينة المالك تلقائيًا عند اختبار إصدار غير منشور.</li>
-            <li>منع تكدس الإشعارات ذات الوسم نفسه داخل التطبيق المثبت بإغلاق الإشعار السابق قبل عرض الجديد.</li>
+            <li>تعديل نافذة «إضافة التطبيق إلى الشاشة الرئيسية» لتوضيح الطريقة المعتمدة على iPhone: اضغط مطولًا على رابط فتح المتصفح، انسخ الرابط، افتح صفحة جديدة في المتصفح، الصق الرابط، ثم اختر «إضافة إلى الشاشة الرئيسية».</li>
+            <li>تعطيل اللمسة الواحدة على رابط فتح المتصفح داخل التطبيق حتى لا يعيد iOS فتح نفس النسخة المثبتة؛ الفتح يتم فقط عبر الضغط المطول ونسخ الرابط.</li>
+            <li>الانتظار حتى يجهز رابط المتصفح الكامل قبل عرضه، حتى يحمل رمز نقل الجلسة ويحافظ على تسجيل الدخول بعد لصق الرابط في المتصفح.</li>
+            <li>تقليل تكرار إشعار التحديث الداخلي بعد التحديث عبر إظهار التنبيه فقط عند وجود إصدار أحدث فعلًا، بدل إعادة عرضه بسبب Service Worker بالنسخة نفسها.</li>
+            <li>الإبقاء على نقل الأيقونة المعتمدة تلقائيًا مع رابط المتصفح دون الحاجة لإعادة اعتمادها من جديد داخل المتصفح.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -3118,6 +3118,7 @@
       EN_TRANSLATIONS["فتح مدير الراتب في Safari ↗"] = "Open Salary Manager in Safari ↗";
       EN_TRANSLATIONS["فتح مدير الراتب في المتصفح ↗"] = "Open Salary Manager in browser ↗";
       EN_TRANSLATIONS["فتح عبر المتصفح الخارجي"] = "Open in external browser";
+      EN_TRANSLATIONS["اضغط مطولًا ثم انسخ الرابط"] = "Long-press, then copy the link";
       EN_TRANSLATIONS["فتح مدير الراتب مباشرة"] = "Open Salary Manager directly";
       EN_TRANSLATIONS["جارٍ تجهيز جلسة المتصفح…"] = "Preparing browser session…";
       EN_TRANSLATIONS["اختبار إشعار التحديث الخارجي"] = "Test external update notification";
@@ -3344,7 +3345,7 @@
       }
 
 
-      var APP_VERSION = "3.8.2";
+      var APP_VERSION = "3.8.3";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -4152,16 +4153,16 @@
         var link = $("#openBrowserLink");
         var shortLabel = $("#browserLinkShort");
         var safe = ICON_CHOICES.indexOf(choice) !== -1 ? choice : selectedIconChoice;
-        if (!link) return;
+        if (!link) return "";
         var target = buildBrowserInstallUrl(safe);
         link.target = "_blank";
         link.rel = "noopener noreferrer external";
+        link.setAttribute("data-browser-url", target);
         link.removeAttribute("aria-busy");
-        link.style.pointerEvents = "auto";
+        link.style.pointerEvents = "none";
+        if (shortLabel) shortLabel.textContent = "جارٍ تجهيز رابط المتصفح…";
         if (isStandaloneApp() && authState.authenticated) {
           link.setAttribute("aria-busy", "true");
-          link.style.pointerEvents = "none";
-          if (shortLabel) shortLabel.textContent = "جارٍ تجهيز جلسة المتصفح…";
           try {
             var handoff = await apiFetch("/api/auth/browser-handoff", {
               method: "POST",
@@ -4175,19 +4176,25 @@
             console.warn("Could not prepare browser auth handoff", error);
           } finally {
             link.removeAttribute("aria-busy");
-            link.style.pointerEvents = "auto";
           }
         }
-        // Open the real Salary Manager URL directly. Do not bounce through Google or another site.
-        // iOS decides whether a Home Screen web app uses Safari or a system web-view; web pages
-        // do not have a supported API that can force-launch Safari itself.
         link.href = target;
-        if (shortLabel) shortLabel.textContent = isStandaloneApp() ? "فتح مدير الراتب مباشرة" : (location.host || "فتح الرابط");
+        link.setAttribute("data-browser-url", target);
+        link.style.pointerEvents = "auto";
+        if (shortLabel) shortLabel.textContent = isStandaloneApp() ? "اضغط مطولًا ثم انسخ الرابط" : (location.host || "فتح الرابط");
+        return target;
       }
 
-      function openInstallDialog(message) {
-        refreshBrowserInstallLink(selectedIconChoice);
-        if (message && $("#installInstructions")) $("#installInstructions").textContent = localizedText(message);
+      async function openInstallDialog(message) {
+        var instructions = $("#installInstructions");
+        if (instructions && message) instructions.textContent = localizedText(message);
+        var link = $("#openBrowserLink");
+        if (link) {
+          link.style.pointerEvents = "none";
+          link.setAttribute("aria-busy", "true");
+        }
+        await refreshBrowserInstallLink(selectedIconChoice);
+        if (link) link.removeAttribute("aria-busy");
         $("#installDialog").showModal();
       }
 
@@ -4296,7 +4303,7 @@
         } catch (error) {
           if (error && error.code === "IOS_HOME_SCREEN_REQUIRED") {
             showToast("على iPhone يجب إضافة مدير الراتب إلى الشاشة الرئيسية أولًا، ثم فتحه من الأيقونة لتفعيل الإشعارات.", true);
-            openInstallDialog("افتح الرابط التالي في متصفح الجهاز ثم اختر «إضافة إلى الشاشة الرئيسية». سيستخدم الرابط الأيقونة التي اعتمدتها داخل التطبيق تلقائيًا.");
+            openInstallDialog("على iPhone: اضغط مطولًا على الرابط التالي ثم اختر نسخ الرابط. بعد ذلك افتح صفحة جديدة في المتصفح، الصق الرابط، ثم اختر «إضافة إلى الشاشة الرئيسية». سيستخدم الرابط الأيقونة التي اعتمدتها داخل التطبيق تلقائيًا.");
           } else if (error && error.code === "PUSH_PERMISSION_DENIED") {
             showToast("لم يتم السماح بالإشعارات من إعدادات الجهاز.", true);
           } else {
@@ -4352,6 +4359,10 @@
         function showUpdate(worker, version) {
           if (worker) waitingWorker = worker;
           if (version) remoteVersion = version;
+          if (remoteVersion && String(remoteVersion) === String(APP_VERSION)) {
+            if (banner) banner.classList.remove("show");
+            return;
+          }
           if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
           if (note) note.textContent = "يتوفر إصدار أحدث" + (remoteVersion ? " (" + remoteVersion + ")" : "") + ". لن يتم تحديث الصفحة تلقائيًا. احفظ نسخة احتياطية إن رغبت، ثم اضغط «تحديث الآن».";
           if (banner) banner.classList.add("show");
@@ -4461,12 +4472,18 @@
               var previewToken = new URLSearchParams(location.search).get("owner_preview");
               if (previewToken) swUrl.searchParams.set("owner_preview", previewToken);
               registration = await navigator.serviceWorker.register(swUrl.href, { updateViaCache: "none" });
-              if (registration.waiting) showUpdate(registration.waiting, "");
+              if (registration.waiting) {
+                waitingWorker = registration.waiting;
+                checkHtmlVersion();
+              }
               registration.addEventListener("updatefound", function () {
                 var worker = registration.installing;
                 if (!worker) return;
                 worker.addEventListener("statechange", function () {
-                  if (worker.state === "installed" && navigator.serviceWorker.controller) showUpdate(worker, "");
+                  if (worker.state === "installed" && navigator.serviceWorker.controller) {
+                    waitingWorker = worker;
+                    checkHtmlVersion();
+                  }
                 });
               });
               registration.update().catch(function () {});
@@ -5295,12 +5312,19 @@
           if (status) { status.classList.add("on"); status.textContent = "تم اعتماد الأيقونة من داخل التطبيق. عند فتح رابط Safari ستنتقل الأيقونة المختارة تلقائيًا دون إعادة اختيارها في المتصفح."; }
           showToast("تم اعتماد أيقونة التطبيق على هذا الجهاز");
         });
-        $("#reinstallIconButton").addEventListener("click", function () {
+        $("#reinstallIconButton").addEventListener("click", async function () {
           applyIconMetadata(pendingIconChoice, true);
-          refreshBrowserInstallLink(selectedIconChoice);
+          await refreshBrowserInstallLink(selectedIconChoice);
           $("#settingsDialog").close();
-          openInstallDialog("تم اعتماد الأيقونة داخل التطبيق. افتح الرابط التالي في متصفح الجهاز ثم اختر «إضافة إلى الشاشة الرئيسية». لا تحتاج لإعادة اعتماد الأيقونة في المتصفح.");
+          await openInstallDialog("على iPhone: اضغط مطولًا على رابط «فتح مدير الراتب في المتصفح»، ثم اختر نسخ الرابط. بعد ذلك افتح صفحة جديدة في المتصفح، الصق الرابط، ثم اختر «إضافة إلى الشاشة الرئيسية». لا تحتاج لإعادة اعتماد الأيقونة في المتصفح.");
         });
+        var openBrowserLink = $("#openBrowserLink");
+        if (openBrowserLink) {
+          openBrowserLink.addEventListener("click", function (event) {
+            event.preventDefault();
+            showToast("اضغط مطولًا على الرابط ثم اختر «نسخ الرابط»، وبعدها افتح صفحة جديدة في المتصفح والصق الرابط هناك.", true);
+          });
+        }
         $("#enableGeneralPushButton").addEventListener("click", function () { enableGeneralPushNotifications(true); });
         $("#disableGeneralPushButton").addEventListener("click", disableGeneralPushNotifications);
         $("#promptEnableGeneralPushButton").addEventListener("click", function () { enableGeneralPushNotifications(true); });
@@ -5315,7 +5339,7 @@
             try { await deferredInstallPrompt.prompt(); deferredInstallPrompt = null; return; } catch (e) {}
           }
           var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-          openInstallDialog(ios ? "افتح الرابط التالي في متصفح الجهاز، ثم اختر «إضافة إلى الشاشة الرئيسية». سيحمل الرابط الأيقونة التي اعتمدتها داخل مدير الراتب تلقائيًا." : "افتح الرابط التالي في المتصفح ثم استخدم «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية». سيستخدم التثبيت الأيقونة التي اعتمدتها داخل مدير الراتب.");
+          await openInstallDialog(ios ? "على iPhone: اضغط مطولًا على رابط «فتح مدير الراتب في المتصفح»، ثم اختر نسخ الرابط. بعد ذلك افتح صفحة جديدة في المتصفح، الصق الرابط، ثم اختر «إضافة إلى الشاشة الرئيسية». سيحمل الرابط الأيقونة التي اعتمدتها داخل مدير الراتب تلقائيًا." : "افتح الرابط التالي في المتصفح ثم استخدم «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية». سيستخدم التثبيت الأيقونة التي اعتمدتها داخل مدير الراتب.");
         });
 
         $("#loginForm").addEventListener("submit", async function (event) {

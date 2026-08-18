@@ -1,11 +1,12 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.8.0";
+const VERSION = "3.8.1";
 const PREVIOUS_PUBLISHED_VERSION = "3.7.2";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
 const AUTH_NAME = "__salary_manager_auth_v311__";
+const SESSION_COOKIE_NAME = "__salary_manager_session";
 const ICON_CHOICES = new Set(["gold", "silver", "green-segments", "orbit", "half-silver", "coin-deep", "coin-clean"]);
 function normalizeIconChoice(value) {
   const id = String(value || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
@@ -141,6 +142,9 @@ function bearerToken(request) {
   const m = h.match(/^Bearer\s+(.+)$/i);
   return m ? m[1].trim() : "";
 }
+function requestAuthToken(request) {
+  return bearerToken(request) || cookieValue(request, SESSION_COOKIE_NAME);
+}
 function allowedOrigin(request, env) {
   const origin = request.headers.get("origin") || "";
   if (!origin) return "";
@@ -153,6 +157,7 @@ function corsHeaders(request, env) {
   const origin = allowedOrigin(request, env);
   return origin ? {
     "access-control-allow-origin": origin,
+    "access-control-allow-credentials": "true",
     "vary": "Origin",
     "access-control-allow-methods": "GET,POST,PUT,OPTIONS",
     "access-control-allow-headers": "content-type,authorization,x-salary-manager-app",
@@ -161,6 +166,18 @@ function corsHeaders(request, env) {
 }
 function apiJson(request, env, body, status = 200, extra = {}) {
   return json(body, status, { ...corsHeaders(request, env), ...extra });
+}
+function apiJsonWithCookies(request, env, body, status = 200, cookies = [], extra = {}) {
+  const headers = new Headers(baseHeaders({ ...corsHeaders(request, env), ...extra }));
+  for (const cookie of cookies) if (cookie) headers.append("set-cookie", cookie);
+  return new Response(JSON.stringify(body), { status, headers });
+}
+function sessionCookie(token) {
+  const maxAge = Math.floor(SESSION_MS / 1000);
+  return `${SESSION_COOKIE_NAME}=${encodeURIComponent(String(token || ""))}; Path=/; Max-Age=${maxAge}; Secure; HttpOnly; SameSite=Lax`;
+}
+function clearSessionCookie() {
+  return `${SESSION_COOKIE_NAME}=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`;
 }
 async function internal(env, path, body = {}) {
   const r = await authStub(env).fetch(new Request("https://auth" + path, {
@@ -173,7 +190,7 @@ async function internal(env, path, body = {}) {
   return { response: r, body: data };
 }
 async function requireAuth(request, env, { admin = false } = {}) {
-  const token = bearerToken(request);
+  const token = requestAuthToken(request);
   if (!token) return { ok: false, response: apiJson(request, env, { ok: false, error: "AUTH_REQUIRED" }, 401) };
   const { body } = await internal(env, "/auth/session", { token });
   if (!body?.ok) return { ok: false, response: apiJson(request, env, { ok: false, error: "AUTH_REQUIRED" }, 401) };
@@ -210,7 +227,7 @@ async function hasValidOwnerPreviewCookie(request, env) {
 }
 
 async function optionalAuth(request, env) {
-  const token = bearerToken(request);
+  const token = requestAuthToken(request);
   if (!token) return null;
   try {
     const { body } = await internal(env, "/auth/session", { token });
@@ -238,7 +255,21 @@ async function handleApi(request, env, url) {
   if (request.headers.get("origin") && !allowedOrigin(request, env)) return apiJson(request, env, { ok: false, error: "ORIGIN_NOT_ALLOWED" }, 403);
 
   const p = url.pathname;
-  if (p === "/api/health") return apiJson(request, env, { ok: true, version: VERSION, storage: "Cloudflare Durable Objects", auth: "PBKDF2-SHA256" });
+  if (p === "/api/health") {
+    const release = await getReleaseState(env, url.origin);
+    return apiJson(request, env, {
+      ok: true,
+      version: VERSION,
+      storage: "Cloudflare Durable Objects",
+      auth: "PBKDF2-SHA256",
+      release: {
+        stagedVersion: release.stagedVersion || VERSION,
+        publishedVersion: release.publishedVersion || PREVIOUS_PUBLISHED_VERSION,
+        published: Boolean(release.published),
+        ownerNotification: release.ownerNotification || null
+      }
+    });
+  }
   if (p === "/api/auth/status" && request.method === "GET") {
     const { body } = await internal(env, "/auth/status");
     return apiJson(request, env, { ok: true, ...(body || {}), version: VERSION, config: { ownerBootstrapConfigured: Boolean(String(env.OWNER_BOOTSTRAP_TOKEN || "")), authPepperConfigured: Boolean(String(env.AUTH_PEPPER || "")) } });
@@ -275,6 +306,13 @@ async function handleApi(request, env, url) {
     return apiJson(request, env, body || { ok: false }, response.status);
   }
 
+  if (p === "/api/admin/test-update-push" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const { response, body } = await internal(env, "/auth/admin/test-update-push", { token: a.token, subject: url.origin });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+
   if (["/api/auth/register", "/api/auth/login", "/api/auth/bootstrap-owner", "/api/auth/forgot", "/api/auth/reset-with-code"].includes(p) && request.method === "POST") {
     if (!String(env.AUTH_PEPPER || "") && p !== "/api/auth/forgot") return apiJson(request, env, { ok: false, error: "AUTH_PEPPER_NOT_CONFIGURED", detail: "AUTH_PEPPER is missing from Worker runtime bindings" }, 503);
     const b = await request.json().catch(() => ({}));
@@ -289,10 +327,28 @@ async function handleApi(request, env, url) {
     }
     const { response, body } = await internal(env, path, { ...b, pepper: String(env.AUTH_PEPPER || ""), ip: request.headers.get("cf-connecting-ip") || "", origin: new URL(request.url).origin });
     if (p === "/api/auth/forgot") return apiJson(request, env, { ok: true }, response.ok ? 200 : response.status || 400);
-    const extra = {};
+    const cookies = [];
+    if (body?.token) cookies.push(sessionCookie(body.token));
     const ownerCookie = await ownerPreviewCookie(env, body?.user);
-    if (ownerCookie) extra["set-cookie"] = ownerCookie;
-    return apiJson(request, env, body || { ok: false, error: "AUTH_FAILED" }, response.status || 400, extra);
+    if (ownerCookie) cookies.push(ownerCookie);
+    return apiJsonWithCookies(request, env, body || { ok: false, error: "AUTH_FAILED" }, response.status || 400, cookies);
+  }
+
+  if (p === "/api/auth/browser-handoff" && request.method === "POST") {
+    const a = await requireAuth(request, env);
+    if (!a.ok) return a.response;
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/browser-handoff/create", { token: a.token, deviceLabel: b.deviceLabel });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+  if (p === "/api/auth/browser-handoff/consume" && request.method === "POST") {
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/browser-handoff/consume", { handoff: b.handoff, deviceLabel: b.deviceLabel });
+    const cookies = [];
+    if (body?.token) cookies.push(sessionCookie(body.token));
+    const ownerCookie = await ownerPreviewCookie(env, body?.user);
+    if (ownerCookie) cookies.push(ownerCookie);
+    return apiJsonWithCookies(request, env, body || { ok: false }, response.status, cookies);
   }
 
   if (p === "/api/push/status" && request.method === "GET") {
@@ -341,15 +397,18 @@ async function handleApi(request, env, url) {
   if (p === "/api/auth/session" && request.method === "GET") {
     const a = await requireAuth(request, env);
     if (!a.ok) return a.response;
-    const extra = {};
+    const cookies = [sessionCookie(a.token)];
     const ownerCookie = await ownerPreviewCookie(env, a.user);
-    if (ownerCookie) extra["set-cookie"] = ownerCookie;
-    return apiJson(request, env, { ok: true, user: a.user, session: a.session }, 200, extra);
+    if (ownerCookie) cookies.push(ownerCookie);
+    return apiJsonWithCookies(request, env, { ok: true, token: a.token, user: a.user, session: a.session }, 200, cookies);
   }
   if (p === "/api/auth/logout" && request.method === "POST") {
-    const token = bearerToken(request);
+    const token = requestAuthToken(request);
     if (token) await internal(env, "/auth/logout", { token });
-    return apiJson(request, env, { ok: true }, 200, { "set-cookie": "__sm_owner_preview=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax" });
+    return apiJsonWithCookies(request, env, { ok: true }, 200, [
+      clearSessionCookie(),
+      "__sm_owner_preview=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax"
+    ]);
   }
   if (p === "/api/auth/change-password" && request.method === "POST") {
     if (!env.AUTH_PEPPER) return apiJson(request, env, { ok: false, error: "AUTH_PEPPER_NOT_CONFIGURED" }, 503);
@@ -570,6 +629,7 @@ export class SalaryStore extends DurableObject {
       await this.ctx.storage.put("release:stagedAt", stagedAt);
       await this.ctx.storage.put("release:previewToken", previewToken);
       await this.ctx.storage.delete("release:ownerNotifiedVersion");
+      await this.ctx.storage.delete("release:ownerLastPushResult");
     } else if (!previewToken) {
       previewToken = randomToken(18);
       await this.ctx.storage.put("release:previewToken", previewToken);
@@ -586,6 +646,8 @@ export class SalaryStore extends DurableObject {
           url: "./?__sw_recovery=1&owner_preview=" + encodeURIComponent(previewToken) + "&update=1&open=admin",
           tag: `salary-manager-owner-review-${stagedVersion}`
         }, subject);
+        const ownerNotification = { version: stagedVersion, attemptedAt: Date.now(), ...result };
+        await this.ctx.storage.put("release:ownerLastPushResult", ownerNotification);
         if (result.sent > 0) await this.ctx.storage.put("release:ownerNotifiedVersion", stagedVersion);
         await this.audit("release-staged-owner-notified", { version: stagedVersion, sent: result.sent, subscriptionCount: result.subscriptionCount });
       }
@@ -596,7 +658,8 @@ export class SalaryStore extends DurableObject {
       published,
       stagedAt: stagedAt || null,
       publishedAt: Number(await this.ctx.storage.get("release:publishedAt") || 0) || null,
-      previewToken
+      previewToken,
+      ownerNotification: await this.ctx.storage.get("release:ownerLastPushResult") || null
     };
   }
 
@@ -675,7 +738,7 @@ export class SalaryStore extends DurableObject {
       const h = await passwordHash(String(b.password || ""), user.passwordSalt, pepper, user.passwordIterations || PBKDF2_ITERATIONS);
       if (!safeEqual(h, user.passwordHash)) {
         user.failedLoginCount = Number(user.failedLoginCount || 0) + 1;
-        if (user.failedLoginCount >= 8) { user.lockUntil = Date.now() + 15 * 60 * 1000; user.failedLoginCount = 0; }
+        if (user.failedLoginCount >= 8) { user.lockUntil = Date.now() + 2 * 60 * 1000; user.failedLoginCount = 0; }
         await this.ctx.storage.put(`user:${id}`, user);
         return json({ ok: false, error: "INVALID_CREDENTIALS" }, 401);
       }
@@ -689,6 +752,32 @@ export class SalaryStore extends DurableObject {
       const found = await this.getSession(String(b.token || ""));
       if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
       return json({ ok: true, session: found.session, user: await this.publicUser(found.user) });
+    }
+    if (p === "/auth/browser-handoff/create") {
+      const found = await this.getSession(String(b.token || ""));
+      if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
+      const handoff = randomToken(32);
+      const hash = await sha256(handoff);
+      const expiresAt = Date.now() + 2 * 60 * 1000;
+      await this.ctx.storage.put(`handoff:${hash}`, { userId: found.user.id, createdAt: Date.now(), expiresAt });
+      await this.audit("browser-handoff-create", { userId: found.user.id });
+      return json({ ok: true, handoff, expiresAt });
+    }
+    if (p === "/auth/browser-handoff/consume") {
+      const handoff = String(b.handoff || "");
+      if (!handoff) return json({ ok: false, error: "INVALID_HANDOFF" }, 400);
+      const key = `handoff:${await sha256(handoff)}`;
+      const record = await this.ctx.storage.get(key);
+      if (!record || Number(record.expiresAt || 0) < Date.now()) {
+        if (record) await this.ctx.storage.delete(key);
+        return json({ ok: false, error: "INVALID_HANDOFF" }, 400);
+      }
+      await this.ctx.storage.delete(key);
+      const user = await this.ctx.storage.get(`user:${record.userId}`);
+      if (!user || user.status !== "active") return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
+      const created = await this.createSession(user, b.deviceLabel || "Browser handoff");
+      await this.audit("browser-handoff-consume", { userId: user.id });
+      return json({ ok: true, token: created.token, session: created.session, user: await this.publicUser(user) });
     }
     if (p === "/auth/logout") {
       const found = await this.getSession(String(b.token || ""), false);
@@ -761,7 +850,7 @@ export class SalaryStore extends DurableObject {
       await this.ensureVapid(b.subject);
       const key = "push:all:" + await sha256(subscription.endpoint);
       const existing = await this.ctx.storage.get(key);
-      await this.ctx.storage.put(key, {
+      const record = {
         subscription,
         deviceLabel: String(b.deviceLabel || "User device").slice(0, 100),
         appVersion: String(b.appVersion || "").slice(0, 30),
@@ -769,7 +858,33 @@ export class SalaryStore extends DurableObject {
         role: b.role === "super_admin" || existing?.role === "super_admin" ? "super_admin" : "user",
         createdAt: Number(existing?.createdAt || Date.now()),
         updatedAt: Date.now()
-      });
+      };
+      await this.ctx.storage.put(key, record);
+      if (record.role === "super_admin") {
+        await this.ctx.storage.put("push:owner:" + await sha256(subscription.endpoint), {
+          subscription,
+          ownerUserId: record.userId,
+          deviceLabel: record.deviceLabel,
+          createdAt: record.createdAt,
+          updatedAt: Date.now()
+        });
+        const staged = String(await this.ctx.storage.get("release:stagedVersion") || "");
+        const published = String(await this.ctx.storage.get("release:publishedVersion") || "");
+        const previewToken = String(await this.ctx.storage.get("release:previewToken") || "");
+        if (staged && staged !== published && previewToken) {
+          const result = await this.sendOwnerReleasePush({
+            title: "تحديث جديد جاهز للمراجعة · مدير الراتب",
+            body: `الإصدار ${staged} جاهز لك أولًا. اختبره ثم انشره للمستخدمين من «إدارة المستخدمين».`,
+            icon: "./icons/choice/gold-192.png",
+            badge: "./icons/choice/gold-192.png",
+            url: "./?__sw_recovery=1&owner_preview=" + encodeURIComponent(previewToken) + "&update=1&open=admin",
+            tag: `salary-manager-owner-review-${staged}`
+          }, b.subject);
+          const ownerNotification = { version: staged, attemptedAt: Date.now(), ...result };
+          await this.ctx.storage.put("release:ownerLastPushResult", ownerNotification);
+          if (result.sent > 0) await this.ctx.storage.put("release:ownerNotifiedVersion", staged);
+        }
+      }
       const last = await this.ctx.storage.get("push:lastUpdateVersion");
       if (!last && b.appVersion) await this.ctx.storage.put("push:lastUpdateVersion", String(b.appVersion).slice(0, 30));
       const subscriptions = await this.ctx.storage.list({ prefix: "push:all:" });
@@ -797,12 +912,25 @@ export class SalaryStore extends DurableObject {
       const subscription = b.subscription;
       if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) return json({ ok: false, error: "INVALID_PUSH_SUBSCRIPTION" }, 400);
       await this.ensureVapid(b.subject);
-      const key = "push:owner:" + await sha256(subscription.endpoint);
-      await this.ctx.storage.put(key, {
+      const hash = await sha256(subscription.endpoint);
+      const key = "push:owner:" + hash;
+      const ownerRecord = {
         subscription,
         ownerUserId: admin.user.id,
         deviceLabel: String(b.deviceLabel || "Owner device").slice(0, 100),
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      await this.ctx.storage.put(key, ownerRecord);
+      const existingAll = await this.ctx.storage.get("push:all:" + hash);
+      await this.ctx.storage.put("push:all:" + hash, {
+        subscription,
+        deviceLabel: ownerRecord.deviceLabel,
+        appVersion: String(existingAll?.appVersion || VERSION),
+        userId: admin.user.id,
+        role: "super_admin",
+        createdAt: Number(existingAll?.createdAt || ownerRecord.createdAt),
+        updatedAt: Date.now()
       });
       await this.audit("owner-push-subscribe", { userId: admin.user.id });
       const subscriptions = await this.ctx.storage.list({ prefix: "push:owner:" });
@@ -839,6 +967,18 @@ export class SalaryStore extends DurableObject {
       const result = await this.sendPushToPrefix("push:all:", payload, b.subject);
       await this.audit("release-published-to-users", { version, adminId: admin.user.id, sent: result.sent, removed: result.removed, subscriptionCount: result.subscriptionCount });
       return json({ ok: true, stagedVersion: version, publishedVersion: version, published: true, publishedAt, ...result });
+    }
+    if (p === "/auth/admin/test-update-push") {
+      const result = await this.sendOwnerReleasePush({
+        title: "اختبار إشعارات مدير الراتب ✓",
+        body: "الإشعارات الخارجية تعمل على هذا الجهاز. سيصلك تنبيه مماثل فور وجود إصدار جديد للمراجعة.",
+        icon: "./icons/choice/gold-192.png",
+        badge: "./icons/choice/gold-192.png",
+        url: "./?open=admin",
+        tag: `salary-manager-owner-test-${Date.now()}`
+      }, b.subject);
+      await this.audit("owner-update-push-test", { adminId: admin.user.id, ...result });
+      return json({ ok: true, ...result });
     }
     if (p === "/auth/admin/users") {
       const users = [...(await this.ctx.storage.list({ prefix: "user:" })).values()];

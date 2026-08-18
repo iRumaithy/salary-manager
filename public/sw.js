@@ -1,4 +1,4 @@
-const CACHE = "salary-manager-v3.8.0";
+const CACHE = "salary-manager-v3.8.1";
 const OWNER_PREVIEW_TOKEN = new URL(self.location.href).searchParams.get("owner_preview") || "";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;

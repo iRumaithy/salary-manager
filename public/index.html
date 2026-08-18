@@ -20,7 +20,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.0";
+      var v = "3.8.1";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -2234,10 +2234,12 @@
     .release-control-box strong { display:block; color:var(--ink); margin-bottom:5px; }
     .release-control-box p { margin:0; color:var(--muted); font-size:12px; line-height:1.8; }
     .release-control-meta { display:flex; gap:7px; flex-wrap:wrap; margin-top:9px; }
+    .release-control-actions { display:grid; gap:8px; min-width:190px; }
+    .release-control-test-note { margin-top:7px !important; font-size:11px !important; }
     .release-chip { font-size:11px; font-weight:850; padding:6px 9px; border-radius:999px; background:#eef0eb; color:var(--muted); }
     .release-chip.ready { background:var(--gold-soft); color:#8a6117; }
     .release-chip.published { background:var(--teal-soft); color:var(--teal); }
-    @media (max-width:680px) { .release-control-box { grid-template-columns:1fr; } .release-control-box button { width:100%; } }
+    @media (max-width:680px) { .release-control-box { grid-template-columns:1fr; } .release-control-box button { width:100%; } .release-control-actions { min-width:0; } }
 
     .settings-section {
       display: grid;
@@ -2577,7 +2579,11 @@
                 <span class="release-chip" id="releasePushCountChip">إشعارات المستخدمين: —</span>
               </div>
             </div>
-            <button class="primary-btn" id="publishUpdateButton" type="button" disabled>نشر التحديث للمستخدمين</button>
+            <div class="release-control-actions">
+              <button class="primary-btn" id="publishUpdateButton" type="button" disabled>نشر التحديث للمستخدمين</button>
+              <button class="soft-btn" id="testOwnerUpdatePushButton" type="button">اختبار إشعار التحديث الخارجي</button>
+              <p class="release-control-test-note" id="ownerUpdatePushTestStatus">يمكنك إرسال إشعار تجريبي للتأكد من أن جهاز المالك مسجل بشكل صحيح.</p>
+            </div>
           </div>
           <div class="admin-notification-box">
             <div>
@@ -2598,9 +2604,9 @@
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.8.0" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.8.1" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
-        <span class="version-badge">الإصدار <b id="appVersion">3.8.0</b></span>
+        <span class="version-badge">الإصدار <b id="appVersion">3.8.1</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
         <span class="sync-pill offline" id="syncStatus">حفظ محلي</span>
       </div>
@@ -2833,13 +2839,13 @@
       <section class="settings-section">
         <div class="settings-section-head"><div><h3>أيقونة التطبيق</h3><p>اختر الشكل الذي تفضله لهذا الجهاز، ثم اضغط «اعتماد الأيقونة».</p></div></div>
         <div class="icon-choice-grid" id="iconChoiceGrid">
-          <button class="icon-choice" type="button" data-icon-choice="gold" aria-label="الأيقونة الذهبية"><img src="./icons/choice/gold.png?v=3.8.0" alt=""><span class="icon-check">✓</span></button>
-          <button class="icon-choice" type="button" data-icon-choice="silver" aria-label="الأيقونة الفضية"><img src="./icons/choice/silver.png?v=3.8.0" alt=""><span class="icon-check">✓</span></button>
-          <button class="icon-choice" type="button" data-icon-choice="green-segments" aria-label="الأيقونة الخضراء المقسمة"><img src="./icons/choice/green-segments.png?v=3.8.0" alt=""><span class="icon-check">✓</span></button>
-          <button class="icon-choice" type="button" data-icon-choice="orbit" aria-label="أيقونة الحلقة"><img src="./icons/choice/orbit.png?v=3.8.0" alt=""><span class="icon-check">✓</span></button>
-          <button class="icon-choice" type="button" data-icon-choice="half-silver" aria-label="الأيقونة الخضراء والفضية"><img src="./icons/choice/half-silver.png?v=3.8.0" alt=""><span class="icon-check">✓</span></button>
-          <button class="icon-choice" type="button" data-icon-choice="coin-deep" aria-label="أيقونة الدرهم الداكنة"><img src="./icons/choice/coin-deep.png?v=3.8.0" alt=""><span class="icon-check">✓</span></button>
-          <button class="icon-choice" type="button" data-icon-choice="coin-clean" aria-label="أيقونة الدرهم البسيطة"><img src="./icons/choice/coin-clean.png?v=3.8.0" alt=""><span class="icon-check">✓</span></button>
+          <button class="icon-choice" type="button" data-icon-choice="gold" aria-label="الأيقونة الذهبية"><img src="./icons/choice/gold.png?v=3.8.1" alt=""><span class="icon-check">✓</span></button>
+          <button class="icon-choice" type="button" data-icon-choice="silver" aria-label="الأيقونة الفضية"><img src="./icons/choice/silver.png?v=3.8.1" alt=""><span class="icon-check">✓</span></button>
+          <button class="icon-choice" type="button" data-icon-choice="green-segments" aria-label="الأيقونة الخضراء المقسمة"><img src="./icons/choice/green-segments.png?v=3.8.1" alt=""><span class="icon-check">✓</span></button>
+          <button class="icon-choice" type="button" data-icon-choice="orbit" aria-label="أيقونة الحلقة"><img src="./icons/choice/orbit.png?v=3.8.1" alt=""><span class="icon-check">✓</span></button>
+          <button class="icon-choice" type="button" data-icon-choice="half-silver" aria-label="الأيقونة الخضراء والفضية"><img src="./icons/choice/half-silver.png?v=3.8.1" alt=""><span class="icon-check">✓</span></button>
+          <button class="icon-choice" type="button" data-icon-choice="coin-deep" aria-label="أيقونة الدرهم الداكنة"><img src="./icons/choice/coin-deep.png?v=3.8.1" alt=""><span class="icon-check">✓</span></button>
+          <button class="icon-choice" type="button" data-icon-choice="coin-clean" aria-label="أيقونة الدرهم البسيطة"><img src="./icons/choice/coin-clean.png?v=3.8.1" alt=""><span class="icon-check">✓</span></button>
         </div>
         <div class="settings-actions"><button class="primary-btn" id="applyIconChoiceButton" type="button">اعتماد الأيقونة</button><button class="soft-btn" id="reinstallIconButton" type="button">تطبيقها على شاشة الهاتف</button></div>
         <div class="settings-status" id="iconChoiceStatus">سيتم اعتماد الأيقونة المختارة كتفضيل لتثبيت التطبيق على هذا الجهاز.</div>
@@ -2895,6 +2901,19 @@
     <div class="modal-body">
       <div class="changelog-list">
         <section class="changelog-entry current">
+          <div class="changelog-version">
+            <strong>الإصدار 3.8.1</strong>
+            <time datetime="2026-08-18">18 أغسطس 2026</time>
+          </div>
+          <ul>
+            <li>الحفاظ على تسجيل الدخول عند الانتقال من التطبيق المثبت إلى المتصفح وعند إعادة إضافة مدير الراتب من Safari.</li>
+            <li>إضافة جلسة دخول آمنة عبر Cookie مع رابط انتقال مؤقت من التطبيق إلى المتصفح؛ لا يحتاج المستخدم لتسجيل الدخول مرة أخرى عند إعادة الإضافة.</li>
+            <li>إصلاح ربط اشتراك إشعارات المالك وإعادة تسجيل الجهاز بصفة المالك بعد تسجيل الدخول.</li>
+            <li>جعل فحص النشر ينتظر نتيجة محاولة إرسال إشعار المراجعة للمالك بدل الاكتفاء بفحص رقم الإصدار.</li>
+            <li>إضافة زر «اختبار إشعار التحديث الخارجي» داخل إدارة المستخدمين للتحقق من سلامة Web Push.</li>
+          </ul>
+        </section>
+        <section class="changelog-entry">
           <div class="changelog-version">
             <strong>الإصدار 3.8.0</strong>
             <time datetime="2026-08-18">18 أغسطس 2026</time>
@@ -3088,6 +3107,10 @@
       EN_TRANSLATIONS["فتح مدير الراتب في Safari ↗"] = "Open Salary Manager in Safari ↗";
       EN_TRANSLATIONS["فتح مدير الراتب في المتصفح ↗"] = "Open Salary Manager in browser ↗";
       EN_TRANSLATIONS["فتح عبر المتصفح الخارجي"] = "Open in external browser";
+      EN_TRANSLATIONS["اختبار إشعار التحديث الخارجي"] = "Test external update notification";
+      EN_TRANSLATIONS["يمكنك إرسال إشعار تجريبي للتأكد من أن جهاز المالك مسجل بشكل صحيح."] = "Send a test notification to verify that the owner device is registered correctly.";
+      EN_TRANSLATIONS["جارٍ تجهيز رابط تسجيل الدخول الآمن…"] = "Preparing secure signed-in link…";
+      EN_TRANSLATIONS["تم نقل تسجيل الدخول بأمان إلى المتصفح. سيبقى الحساب مسجلًا عند إعادة إضافة التطبيق من المتصفح."] = "Your sign-in was securely transferred to the browser. The account will stay signed in when the app is added again from the browser.";
       EN_TRANSLATIONS["مراجعة ونشر التحديث"] = "Review and publish update";
       EN_TRANSLATIONS["نشر التحديث للمستخدمين"] = "Publish update to users";
       EN_TRANSLATIONS["جارٍ التحقق من حالة الإصدار…"] = "Checking release status…";
@@ -3308,7 +3331,7 @@
       }
 
 
-      var APP_VERSION = "3.8.0";
+      var APP_VERSION = "3.8.1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -3529,7 +3552,7 @@
         if (authState.token) headers.authorization = "Bearer " + authState.token;
         var response;
         try {
-          response = await fetch(API_BASE + path, Object.assign({ cache: "no-store" }, options, { headers: headers }));
+          response = await fetch(API_BASE + path, Object.assign({ cache: "no-store", credentials: "include" }, options, { headers: headers }));
         } catch (networkError) {
           var offlineError = new Error("NETWORK_ERROR");
           offlineError.code = "NETWORK_ERROR";
@@ -3829,30 +3852,63 @@
         }
       }
 
+      async function consumeBrowserHandoffFromUrl() {
+        var params = new URLSearchParams(location.search);
+        var handoff = params.get("handoff");
+        if (!handoff) return false;
+        try {
+          var data = await apiFetch("/api/auth/browser-handoff/consume", {
+            method: "POST",
+            body: JSON.stringify({ handoff: handoff, deviceLabel: navigator.platform || "Browser" })
+          });
+          rememberAuth(data);
+          params.delete("handoff");
+          params.delete("installVersion");
+          var cleanUrl = location.pathname + (params.toString() ? "?" + params.toString() : "") + location.hash;
+          history.replaceState(null, "", cleanUrl);
+          showToast("تم نقل تسجيل الدخول بأمان إلى المتصفح. سيبقى الحساب مسجلًا عند إعادة إضافة التطبيق من المتصفح.");
+          return true;
+        } catch (error) {
+          console.warn("Browser sign-in handoff failed", error);
+          params.delete("handoff");
+          var clean = location.pathname + (params.toString() ? "?" + params.toString() : "") + location.hash;
+          history.replaceState(null, "", clean);
+          return false;
+        }
+      }
+
+      function rebindPushIdentityAfterAuth() {
+        try {
+          if (!("Notification" in window) || Notification.permission !== "granted") return;
+          setTimeout(function () {
+            registerGeneralPushSubscription(false).then(function () {
+              refreshGeneralPushStatus();
+              if (authState.user?.role === "super_admin") refreshReleaseStatus();
+            }).catch(function () {});
+          }, 350);
+        } catch (_) {}
+      }
+
       async function initializeAuth() {
         try {
+          await consumeBrowserHandoffFromUrl();
           var status = await apiFetch("/api/auth/status");
           authState.backendReady = true;
           authState.bootstrapRequired = Boolean(status.bootstrapRequired);
           updateOwnerConfigStatus(status);
           $("#ownerSetupTab").style.display = authState.bootstrapRequired ? "block" : "none";
           if (authState.bootstrapRequired) setAuthPane("ownerPane");
-          if (authState.token) {
-            try {
-              var session = await apiFetch("/api/auth/session");
-              authState.user = session.user;
-              authState.authenticated = true;
-              authState.sessionVerified = true;
-              localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authState.user));
-              updateAccountUI();
-              await syncFromCloud({ silent: true, force: true });
-              startLiveSync();
-              if (authState.user?.role === "super_admin") setTimeout(refreshReleaseStatus, 120);
-            } catch (e) {
-              clearAuth();
-            }
-          } else {
-            updateAccountUI();
+          try {
+            // Always check the server session. On iOS 17.2+ the login cookie is copied when
+            // the Safari page is added to the Home Screen, while localStorage is not.
+            var session = await apiFetch("/api/auth/session");
+            rememberAuth(session);
+            await syncFromCloud({ silent: true, force: true });
+            startLiveSync();
+            rebindPushIdentityAfterAuth();
+            if (authState.user?.role === "super_admin") setTimeout(refreshReleaseStatus, 120);
+          } catch (sessionError) {
+            if (authState.token) clearAuth(); else updateAccountUI();
           }
         } catch (error) {
           authState.backendReady = false;
@@ -3865,8 +3921,10 @@
         rememberAuth(data);
         await syncFromCloud({ silent: true, force: true, initial: true, preserveLocalBackup: true });
         startLiveSync();
+        rebindPushIdentityAfterAuth();
         $("#authDialog").close();
         showToast(message);
+        if (authState.user?.role === "super_admin") setTimeout(refreshReleaseStatus, 180);
         if (authState.user?.role === "super_admin" && new URLSearchParams(location.search).get("open") === "admin") {
           setTimeout(function () { setView("adminView"); }, 80);
         }
@@ -3883,7 +3941,13 @@
           var pending = staged !== published;
           if ($("#stagedVersionChip")) { $("#stagedVersionChip").textContent = "قيد المراجعة: " + staged; $("#stagedVersionChip").classList.toggle("ready", pending); }
           if ($("#publishedVersionChip")) { $("#publishedVersionChip").textContent = "المتاح للمستخدمين: " + published; $("#publishedVersionChip").classList.toggle("published", !pending); }
-          if ($("#releasePushCountChip")) $("#releasePushCountChip").textContent = "إشعارات المستخدمين: " + Number(data.userPushSubscriptions || 0);
+          if ($("#releasePushCountChip")) $("#releasePushCountChip").textContent = "إشعارات المستخدمين: " + Number(data.userPushSubscriptions || 0) + " · المالك: " + Number(data.ownerPushSubscriptions || 0);
+          var testStatus = $("#ownerUpdatePushTestStatus");
+          if (testStatus && data.ownerNotification) {
+            var sent = Number(data.ownerNotification.sent || 0);
+            var subs = Number(data.ownerNotification.subscriptionCount || 0);
+            testStatus.textContent = sent > 0 ? "آخر إشعار مراجعة للمالك تم إرساله بنجاح إلى " + sent + " جهاز." : "آخر محاولة لم ترسل إشعارًا. الأجهزة المسجلة للمالك: " + subs + ". استخدم زر الاختبار للتحقق.";
+          }
           if (status) status.textContent = pending
             ? "الإصدار " + staged + " وصل لك للمراجعة فقط. المستخدمون ما زالوا على " + published + " ولن يصلهم إشعار التحديث حتى تضغط «نشر التحديث للمستخدمين»."
             : "الإصدار " + published + " منشور للمستخدمين حاليًا ولا يوجد إصدار بانتظار المراجعة.";
@@ -3892,6 +3956,28 @@
         } catch (error) {
           if (status) status.textContent = "تعذر التحقق من حالة الإصدار الآن.";
           if (button) button.disabled = true;
+        }
+      }
+
+      async function testOwnerUpdatePush() {
+        if (!authState.authenticated || authState.user?.role !== "super_admin") return;
+        var button = $("#testOwnerUpdatePushButton");
+        var status = $("#ownerUpdatePushTestStatus");
+        try {
+          if (button) { button.disabled = true; button.textContent = "جارٍ إرسال الاختبار…"; }
+          var data = await apiFetch("/api/admin/test-update-push", { method: "POST", body: "{}" });
+          if (data.sent > 0) {
+            if (status) status.textContent = "تم إرسال إشعار تجريبي بنجاح إلى " + Number(data.sent) + " جهاز للمالك ✓";
+            showToast("تم إرسال إشعار تجريبي. يجب أن يظهر خارج التطبيق خلال لحظات.");
+          } else {
+            if (status) status.textContent = "لم يوجد اشتراك Push صالح للمالك. فعّل إشعارات التحديثات على هذا الجهاز ثم أعد الاختبار.";
+            showToast("لم يتم العثور على جهاز مالك مسجل للإشعارات.", true);
+          }
+        } catch (error) {
+          if (status) status.textContent = "تعذر إرسال إشعار الاختبار الآن.";
+          showToast("تعذر إرسال إشعار الاختبار الآن.", true);
+        } finally {
+          if (button) { button.disabled = false; button.textContent = "اختبار إشعار التحديث الخارجي"; }
         }
       }
 
@@ -4055,15 +4141,36 @@
         return "https://www.google.com/url?q=" + encodeURIComponent(buildBrowserInstallUrl(choice));
       }
 
-      function refreshBrowserInstallLink(choice) {
+      async function refreshBrowserInstallLink(choice) {
         var link = $("#openBrowserLink");
         var shortLabel = $("#browserLinkShort");
         var safe = ICON_CHOICES.indexOf(choice) !== -1 ? choice : selectedIconChoice;
-        if (link) {
-          link.href = isStandaloneApp() ? buildExternalBrowserRelayUrl(safe) : buildBrowserInstallUrl(safe);
-          link.target = "_blank";
-          link.rel = "noopener noreferrer external";
+        if (!link) return;
+        var target = buildBrowserInstallUrl(safe);
+        link.target = "_blank";
+        link.rel = "noopener noreferrer external";
+        link.removeAttribute("aria-busy");
+        link.style.pointerEvents = "auto";
+        if (isStandaloneApp() && authState.authenticated) {
+          link.setAttribute("aria-busy", "true");
+          link.style.pointerEvents = "none";
+          if (shortLabel) shortLabel.textContent = "جارٍ تجهيز رابط تسجيل الدخول الآمن…";
+          try {
+            var handoff = await apiFetch("/api/auth/browser-handoff", {
+              method: "POST",
+              body: JSON.stringify({ deviceLabel: navigator.platform || "Home Screen app" })
+            });
+            var signed = new URL(target);
+            signed.searchParams.set("handoff", handoff.handoff);
+            target = signed.href;
+          } catch (error) {
+            console.warn("Could not prepare browser auth handoff", error);
+          } finally {
+            link.removeAttribute("aria-busy");
+            link.style.pointerEvents = "auto";
+          }
         }
+        link.href = isStandaloneApp() ? "https://www.google.com/url?q=" + encodeURIComponent(target) : target;
         if (shortLabel) shortLabel.textContent = isStandaloneApp() ? "فتح عبر المتصفح الخارجي" : (location.host || "فتح الرابط");
       }
 
@@ -5284,6 +5391,7 @@
         $("#syncNowButton").addEventListener("click", function () { syncFromCloud({ silent: false, force: true }); });
         $("#adminRefreshButton").addEventListener("click", function () { renderAdminUsers(); refreshReleaseStatus(); });
         $("#publishUpdateButton").addEventListener("click", publishUpdateToUsers);
+        $("#testOwnerUpdatePushButton").addEventListener("click", testOwnerUpdatePush);
         $("#enableOwnerPushButton").addEventListener("click", enableOwnerPushNotifications);
         $("#adminUserList").addEventListener("click", async function (event) {
           var reset = event.target.closest("[data-admin-reset]");

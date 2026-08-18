@@ -1,0 +1,40 @@
+name: Notify owner after deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "public/**"
+      - "src/**"
+      - "package.json"
+      - "wrangler.jsonc"
+
+permissions:
+  contents: read
+
+jobs:
+  wait-for-cloudflare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read expected version
+        id: version
+        run: echo "value=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Wait for deployed Worker and trigger owner review notification
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -e
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          for i in $(seq 1 120); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?deploy_check=$(date +%s)" || true)
+            echo "$BODY"
+            if echo "$BODY" | grep -q "\"version\":\"${EXPECTED_VERSION}\""; then
+              echo "Version ${EXPECTED_VERSION} is live. The health request triggered the owner staging notification."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Timed out waiting for Cloudflare deployment" >&2
+          exit 1

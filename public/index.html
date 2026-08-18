@@ -20,7 +20,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.3";
+      var v = "3.8.4";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -2184,7 +2184,7 @@
       .commitment-action-row,
       .expense-delete,
       .backup-menu,
-      #installButton,
+      #refreshPageButton,
       #accountButton,
       #adminTab,
       .app-update-banner {
@@ -2310,9 +2310,9 @@
             <span class="language-short" id="languageToggleShort" aria-hidden="true">EN</span>
             <span class="action-label" id="languageToggleLabel">English</span>
           </button>
-          <button class="ghost-btn" id="installButton" type="button" title="إضافة التطبيق إلى الشاشة الرئيسية">
-            <span aria-hidden="true">＋</span>
-            <span class="action-label">تثبيت</span>
+          <button class="ghost-btn" id="refreshPageButton" type="button" title="تحديث الصفحة" aria-label="تحديث الصفحة">
+            <span aria-hidden="true" style="font-size:1.25em;line-height:1">↻</span>
+            <span class="action-label">تحديث الصفحة</span>
           </button>
           <button class="ghost-btn account-btn" id="accountButton" type="button" title="الحساب والمزامنة">
             <span class="account-dot" aria-hidden="true"></span>
@@ -2902,15 +2902,15 @@
       <div class="changelog-list">
         <section class="changelog-entry current">
           <div class="changelog-version">
-            <strong>الإصدار 3.8.3</strong>
+            <strong>الإصدار 3.8.4</strong>
             <time datetime="2026-08-18">18 أغسطس 2026</time>
           </div>
           <ul>
-            <li>تعديل نافذة «إضافة التطبيق إلى الشاشة الرئيسية» لتوضيح الطريقة المعتمدة على iPhone: اضغط مطولًا على رابط فتح المتصفح، انسخ الرابط، افتح صفحة جديدة في المتصفح، الصق الرابط، ثم اختر «إضافة إلى الشاشة الرئيسية».</li>
-            <li>تعطيل اللمسة الواحدة على رابط فتح المتصفح داخل التطبيق حتى لا يعيد iOS فتح نفس النسخة المثبتة؛ الفتح يتم فقط عبر الضغط المطول ونسخ الرابط.</li>
-            <li>الانتظار حتى يجهز رابط المتصفح الكامل قبل عرضه، حتى يحمل رمز نقل الجلسة ويحافظ على تسجيل الدخول بعد لصق الرابط في المتصفح.</li>
-            <li>تقليل تكرار إشعار التحديث الداخلي بعد التحديث عبر إظهار التنبيه فقط عند وجود إصدار أحدث فعلًا، بدل إعادة عرضه بسبب Service Worker بالنسخة نفسها.</li>
-            <li>الإبقاء على نقل الأيقونة المعتمدة تلقائيًا مع رابط المتصفح دون الحاجة لإعادة اعتمادها من جديد داخل المتصفح.</li>
+            <li>منع ظهور نافذة تحديد الراتب ويوم نزوله عند إعادة إضافة التطبيق إذا كانت بيانات الحساب قد استُرجعت بالفعل من المزامنة.</li>
+            <li>منع إعادة سؤال المستخدم عن تفعيل إشعارات التحديث إذا كان الحساب لديه اشتراك إشعارات سابق؛ وإذا كان إذن iOS ما زال مفعّلًا تتم إعادة ربط النسخة الجديدة تلقائيًا.</li>
+            <li>ربط فحص إعدادات البداية باكتمال تسجيل الدخول والمزامنة أولًا حتى تحتفظ النسخة المعاد تثبيتها بإعدادات الحساب.</li>
+            <li>استبدال زر «+» أعلى الصفحة بزر تحديث الصفحة Refresh.</li>
+            <li>الإبقاء على تغيير الأيقونة وإعادة الإضافة من الإعدادات دون التأثير في بيانات الراتب أو تسجيل الدخول.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -3119,6 +3119,7 @@
       EN_TRANSLATIONS["فتح مدير الراتب في المتصفح ↗"] = "Open Salary Manager in browser ↗";
       EN_TRANSLATIONS["فتح عبر المتصفح الخارجي"] = "Open in external browser";
       EN_TRANSLATIONS["اضغط مطولًا ثم انسخ الرابط"] = "Long-press, then copy the link";
+      EN_TRANSLATIONS["تحديث الصفحة"] = "Refresh page";
       EN_TRANSLATIONS["فتح مدير الراتب مباشرة"] = "Open Salary Manager directly";
       EN_TRANSLATIONS["جارٍ تجهيز جلسة المتصفح…"] = "Preparing browser session…";
       EN_TRANSLATIONS["اختبار إشعار التحديث الخارجي"] = "Test external update notification";
@@ -3345,7 +3346,7 @@
       }
 
 
-      var APP_VERSION = "3.8.3";
+      var APP_VERSION = "3.8.4";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -3903,6 +3904,15 @@
         } catch (_) {}
       }
 
+      function maybePromptForSalaryAfterStartup() {
+        if (state.salary) return;
+        setTimeout(function () {
+          if (state.salary) return;
+          if ($("#authDialog").open || authState.bootstrapRequired) return;
+          openSalaryDialog();
+        }, 450);
+      }
+
       async function initializeAuth() {
         try {
           await consumeBrowserHandoffFromUrl();
@@ -3928,6 +3938,9 @@
           authState.backendReady = false;
           updateAccountUI();
           setSyncStatus("الخادم غير متاح · حفظ محلي", false);
+        } finally {
+          maybePromptForSalaryAfterStartup();
+          setTimeout(function () { maybeOfferGeneralPush(); }, 250);
         }
       }
 
@@ -4329,21 +4342,29 @@
         await refreshGeneralPushStatus();
       }
 
-      function maybeOfferGeneralPush() {
+      async function maybeOfferGeneralPush() {
         if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return;
         var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
         if (Notification.permission === "granted") {
-          setTimeout(function () { registerGeneralPushSubscription(false).then(refreshGeneralPushStatus).catch(function () {}); }, 900);
+          setTimeout(function () { registerGeneralPushSubscription(false).then(refreshGeneralPushStatus).catch(function () {}); }, 450);
           return;
         }
         if (Notification.permission === "denied" || (ios && !isStandaloneApp())) return;
+        if (!authState.backendReady) {
+          setTimeout(function () { maybeOfferGeneralPush(); }, 900);
+          return;
+        }
+        try {
+          var existing = await getGeneralPushServerStatus(null);
+          if (authState.authenticated && existing && existing.accountSubscribed) return;
+        } catch (_) {}
         var until = 0;
         try { until = Number(localStorage.getItem(PUSH_PROMPT_KEY) || 0); } catch (_) {}
         if (until > Date.now()) return;
         setTimeout(function () {
           var dialog = $("#notificationPromptDialog");
           if (dialog && !dialog.open && !document.querySelector("dialog[open]")) dialog.showModal();
-        }, 2400);
+        }, 1800);
       }
 
       function initPWA() {
@@ -4493,7 +4514,7 @@
                 if (registration) registration.update().catch(function () {});
                 checkHtmlVersion();
               }, 30 * 60 * 1000);
-              setTimeout(maybeOfferGeneralPush, 350);
+              // Notification onboarding is evaluated after account restoration in initializeAuth().
             } catch (e) { console.warn("Service worker registration failed", e); }
           });
         }
@@ -5334,12 +5355,8 @@
         });
 
         $("#accountButton").addEventListener("click", function () { updateAccountUI(); $("#authDialog").showModal(); });
-        $("#installButton").addEventListener("click", async function () {
-          if (deferredInstallPrompt && !/iphone|ipad|ipod/i.test(navigator.userAgent)) {
-            try { await deferredInstallPrompt.prompt(); deferredInstallPrompt = null; return; } catch (e) {}
-          }
-          var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-          await openInstallDialog(ios ? "على iPhone: اضغط مطولًا على رابط «فتح مدير الراتب في المتصفح»، ثم اختر نسخ الرابط. بعد ذلك افتح صفحة جديدة في المتصفح، الصق الرابط، ثم اختر «إضافة إلى الشاشة الرئيسية». سيحمل الرابط الأيقونة التي اعتمدتها داخل مدير الراتب تلقائيًا." : "افتح الرابط التالي في المتصفح ثم استخدم «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية». سيستخدم التثبيت الأيقونة التي اعتمدتها داخل مدير الراتب.");
+        $("#refreshPageButton").addEventListener("click", function () {
+          location.reload();
         });
 
         $("#loginForm").addEventListener("submit", async function (event) {
@@ -5587,9 +5604,6 @@
         }
       });
 
-      if (!state.salary) {
-        setTimeout(function () { if (!$("#authDialog").open && !authState.bootstrapRequired) openSalaryDialog(); }, 1200);
-      }
     })();
   </script>
 </body>

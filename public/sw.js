@@ -1,10 +1,37 @@
-const CACHE = "salary-manager-v3.7.0";
+const CACHE = "salary-manager-v3.7.1";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = [
   "./config.js",
-  "./manifest.webmanifest?icon=gold",
-  "./icons/choice/gold.png"
+  "./manifest.webmanifest",
+  "./icons/choice/gold.png",
+  "./icons/choice/gold-180.png",
+  "./icons/choice/gold-192.png",
+  "./icons/choice/gold-512.png",
+  "./icons/choice/silver.png",
+  "./icons/choice/silver-180.png",
+  "./icons/choice/silver-192.png",
+  "./icons/choice/silver-512.png",
+  "./icons/choice/green-segments.png",
+  "./icons/choice/green-segments-180.png",
+  "./icons/choice/green-segments-192.png",
+  "./icons/choice/green-segments-512.png",
+  "./icons/choice/orbit.png",
+  "./icons/choice/orbit-180.png",
+  "./icons/choice/orbit-192.png",
+  "./icons/choice/orbit-512.png",
+  "./icons/choice/half-silver.png",
+  "./icons/choice/half-silver-180.png",
+  "./icons/choice/half-silver-192.png",
+  "./icons/choice/half-silver-512.png",
+  "./icons/choice/coin-deep.png",
+  "./icons/choice/coin-deep-180.png",
+  "./icons/choice/coin-deep-192.png",
+  "./icons/choice/coin-deep-512.png",
+  "./icons/choice/coin-clean.png",
+  "./icons/choice/coin-clean-180.png",
+  "./icons/choice/coin-clean-192.png",
+  "./icons/choice/coin-clean-512.png",
 ];
 
 function sameOrigin(url) { return url.origin === self.location.origin; }
@@ -129,8 +156,8 @@ self.addEventListener("push", event => {
   try { data = event.data ? event.data.json() : {}; } catch (_) { try { data = { body: event.data ? event.data.text() : "" }; } catch (_) {} }
   event.waitUntil(self.registration.showNotification(data.title || "مدير الراتب", {
     body: data.body || "لديك إشعار جديد.",
-    icon: data.icon || "./icons/choice/gold.png",
-    badge: data.badge || "./icons/choice/gold.png",
+    icon: data.icon || "./icons/choice/gold-192.png",
+    badge: data.badge || "./icons/choice/gold-192.png",
     tag: data.tag || "salary-manager-owner-alert",
     renotify: true,
     data: { url: data.url || "./" }

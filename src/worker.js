@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.8.4";
+const VERSION = "3.8.5";
 const PREVIOUS_PUBLISHED_VERSION = "3.7.2";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -380,6 +380,16 @@ async function handleApi(request, env, url) {
     const { response, body } = await internal(env, "/auth/push/unsubscribe", { endpoint: b.endpoint });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
+  if (p === "/api/push/test-self" && request.method === "POST") {
+    const b = await request.json().catch(() => ({}));
+    const auth = await optionalAuth(request, env);
+    const { response, body } = await internal(env, "/auth/push/test-self", {
+      endpoint: b.endpoint,
+      userId: auth?.user?.id || "",
+      subject: url.origin
+    });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
 
   if (p === "/api/sync-ticket" && request.method === "POST") {
     if (!String(env.AUTH_PEPPER || "")) return apiJson(request, env, { ok: false, error: "AUTH_PEPPER_NOT_CONFIGURED" }, 503);
@@ -560,29 +570,37 @@ export class SalaryStore extends DurableObject {
   async sendPushToPrefix(prefix, payloadData, subject = "") {
     const vapid = await this.ensureVapid(subject);
     const subscriptions = await this.ctx.storage.list({ prefix });
-    if (!subscriptions.size) return { sent: 0, removed: 0, subscriptionCount: 0 };
+    if (!subscriptions.size) return { sent: 0, failed: 0, removed: 0, subscriptionCount: 0, statusCounts: {} };
     const message = { data: JSON.stringify(payloadData), options: { ttl: 86400, urgency: "high" } };
-    let sent = 0, removed = 0;
+    let sent = 0, failed = 0, removed = 0;
+    const statusCounts = {};
     for (const [key, record] of subscriptions.entries()) {
       const subscription = record?.subscription;
       if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
         await this.ctx.storage.delete(key);
         removed += 1;
+        failed += 1;
+        statusCounts.invalid = (statusCounts.invalid || 0) + 1;
         continue;
       }
       try {
         const requestInit = await buildPushPayload(message, subscription, vapid);
         const response = await fetch(subscription.endpoint, requestInit);
+        const statusKey = String(response.status || 0);
+        statusCounts[statusKey] = (statusCounts[statusKey] || 0) + 1;
         if (response.ok || response.status === 201) sent += 1;
+        else failed += 1;
         if (response.status === 404 || response.status === 410) {
           await this.ctx.storage.delete(key);
           removed += 1;
         }
       } catch (error) {
+        failed += 1;
+        statusCounts.exception = (statusCounts.exception || 0) + 1;
         console.error("Push delivery failed", prefix, error);
       }
     }
-    return { sent, removed, subscriptionCount: subscriptions.size };
+    return { sent, failed, removed, subscriptionCount: subscriptions.size, statusCounts };
   }
 
   async sendOwnerReleasePush(payloadData, subject = "") {
@@ -615,7 +633,7 @@ export class SalaryStore extends DurableObject {
   }
 
   async ensureReleaseState(version, previousVersion, subject = "", notifyOwner = false) {
-    // v3.8.2: staged releases are shown to the owner inside the app only.
+    // v3.8.5: staged releases are shown to the owner inside the app only.
     // External update notifications are sent only after the owner explicitly publishes the release.
     notifyOwner = false;
     version = String(version || VERSION).slice(0, 30);
@@ -880,6 +898,37 @@ export class SalaryStore extends DurableObject {
       const endpoint = String(b.endpoint || "");
       if (endpoint) await this.ctx.storage.delete("push:all:" + await sha256(endpoint));
       return json({ ok: true });
+    }
+    if (p === "/auth/push/test-self") {
+      const endpoint = String(b.endpoint || "");
+      if (!endpoint) return json({ ok: false, error: "INVALID_PUSH_SUBSCRIPTION" }, 400);
+      const key = "push:all:" + await sha256(endpoint);
+      const record = await this.ctx.storage.get(key);
+      if (!record?.subscription) return json({ ok: false, error: "PUSH_NOT_SUBSCRIBED" }, 404);
+      const requestedUserId = String(b.userId || "");
+      if (requestedUserId && record.userId && String(record.userId) !== requestedUserId) return json({ ok: false, error: "FORBIDDEN" }, 403);
+      const vapid = await this.ensureVapid(b.subject);
+      const payloadData = {
+        title: "اختبار إشعارات مدير الراتب ✓",
+        body: "الإشعارات الخارجية تعمل على هذا الجهاز. سيصلك إشعار التحديث بعد اعتماد المالك للإصدار.",
+        icon: "./icons/choice/gold-192.png",
+        badge: "./icons/choice/gold-192.png",
+        url: "./",
+        tag: "salary-manager-self-test"
+      };
+      const message = { data: JSON.stringify(payloadData), options: { ttl: 300, urgency: "high" } };
+      try {
+        const requestInit = await buildPushPayload(message, record.subscription, vapid);
+        const response = await fetch(record.subscription.endpoint, requestInit);
+        if (response.status === 404 || response.status === 410) await this.ctx.storage.delete(key);
+        const sent = response.ok || response.status === 201 ? 1 : 0;
+        await this.audit("push-self-test", { userId: record.userId || requestedUserId || "", sent, status: response.status });
+        return json({ ok: sent > 0, sent, status: response.status, removed: response.status === 404 || response.status === 410 ? 1 : 0 }, sent > 0 ? 200 : 502);
+      } catch (error) {
+        console.error("Self push test failed", error);
+        await this.audit("push-self-test", { userId: record.userId || requestedUserId || "", sent: 0, status: "exception" });
+        return json({ ok: false, sent: 0, status: "exception", error: "PUSH_DELIVERY_FAILED" }, 502);
+      }
     }
     if (p === "/auth/system/broadcast-update") {
       // Backward-compatible alias: new versions are staged for the owner first.

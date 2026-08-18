@@ -1,4 +1,4 @@
-const CACHE = "salary-manager-v3.8.1";
+const CACHE = "salary-manager-v3.8.2";
 const OWNER_PREVIEW_TOKEN = new URL(self.location.href).searchParams.get("owner_preview") || "";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
@@ -163,14 +163,22 @@ self.addEventListener("message", event => {
 self.addEventListener("push", event => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (_) { try { data = { body: event.data ? event.data.text() : "" }; } catch (_) {} }
-  event.waitUntil(self.registration.showNotification(data.title || "مدير الراتب", {
-    body: data.body || "لديك إشعار جديد.",
-    icon: data.icon || "./icons/choice/gold-192.png",
-    badge: data.badge || "./icons/choice/gold-192.png",
-    tag: data.tag || "salary-manager-owner-alert",
-    renotify: true,
-    data: { url: data.url || "./" }
-  }));
+  event.waitUntil((async () => {
+    const tag = data.tag || "salary-manager-alert";
+    // Ensure one visible notification per release/tag in this installed app.
+    try {
+      const existing = await self.registration.getNotifications({ tag });
+      for (const notification of existing) notification.close();
+    } catch (_) {}
+    await self.registration.showNotification(data.title || "مدير الراتب", {
+      body: data.body || "لديك إشعار جديد.",
+      icon: data.icon || "./icons/choice/gold-192.png",
+      badge: data.badge || "./icons/choice/gold-192.png",
+      tag,
+      renotify: false,
+      data: { url: data.url || "./" }
+    });
+  })());
 });
 
 self.addEventListener("notificationclick", event => {

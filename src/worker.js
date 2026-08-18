@@ -1,7 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.7.2";
+const VERSION = "3.8.0";
+const PREVIOUS_PUBLISHED_VERSION = "3.7.2";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
 const AUTH_NAME = "__salary_manager_auth_v311__";
@@ -180,6 +181,58 @@ async function requireAuth(request, env, { admin = false } = {}) {
   return { ok: true, token, session: body.session, user: body.user };
 }
 
+function cookieValue(request, name) {
+  const raw = String(request.headers.get("cookie") || "");
+  for (const part of raw.split(";")) {
+    const i = part.indexOf("=");
+    if (i < 0) continue;
+    if (part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return "";
+}
+
+async function ownerPreviewCookie(env, user) {
+  if (!user?.id || user?.role !== "super_admin" || !String(env.AUTH_PEPPER || "")) return "";
+  const userId = String(user.id);
+  const signature = await hmacSha256(String(env.AUTH_PEPPER), "owner-preview:" + userId);
+  const value = encodeURIComponent(userId + "." + signature);
+  return `__sm_owner_preview=${value}; Path=/; Max-Age=2592000; Secure; HttpOnly; SameSite=Lax`;
+}
+
+async function hasValidOwnerPreviewCookie(request, env) {
+  const raw = cookieValue(request, "__sm_owner_preview");
+  const dot = raw.indexOf(".");
+  if (dot <= 0 || !String(env.AUTH_PEPPER || "")) return false;
+  const userId = raw.slice(0, dot);
+  const signature = raw.slice(dot + 1);
+  const expected = await hmacSha256(String(env.AUTH_PEPPER), "owner-preview:" + userId);
+  return safeEqual(signature, expected);
+}
+
+async function optionalAuth(request, env) {
+  const token = bearerToken(request);
+  if (!token) return null;
+  try {
+    const { body } = await internal(env, "/auth/session", { token });
+    return body?.ok ? body : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function getReleaseState(env, subject = "") {
+  const { body } = await internal(env, "/auth/system/release-state", {
+    version: VERSION,
+    previousVersion: PREVIOUS_PUBLISHED_VERSION,
+    subject
+  });
+  return body || {
+    stagedVersion: VERSION,
+    publishedVersion: PREVIOUS_PUBLISHED_VERSION,
+    published: false
+  };
+}
+
 async function handleApi(request, env, url) {
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request, env) });
   if (request.headers.get("origin") && !allowedOrigin(request, env)) return apiJson(request, env, { ok: false, error: "ORIGIN_NOT_ALLOWED" }, 403);
@@ -189,6 +242,37 @@ async function handleApi(request, env, url) {
   if (p === "/api/auth/status" && request.method === "GET") {
     const { body } = await internal(env, "/auth/status");
     return apiJson(request, env, { ok: true, ...(body || {}), version: VERSION, config: { ownerBootstrapConfigured: Boolean(String(env.OWNER_BOOTSTRAP_TOKEN || "")), authPepperConfigured: Boolean(String(env.AUTH_PEPPER || "")) } });
+  }
+
+  if (p === "/api/update/status" && request.method === "GET") {
+    const auth = await optionalAuth(request, env);
+    const release = await getReleaseState(env, url.origin);
+    const isOwner = auth?.user?.role === "super_admin";
+    const targetVersion = isOwner ? String(release.stagedVersion || VERSION) : String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
+    return apiJson(request, env, {
+      ok: true,
+      role: isOwner ? "owner" : "user",
+      targetVersion,
+      stagedVersion: String(release.stagedVersion || VERSION),
+      publishedVersion: String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION),
+      published: String(release.publishedVersion || "") === String(release.stagedVersion || VERSION),
+      stagedAt: release.stagedAt || null,
+      publishedAt: release.publishedAt || null
+    });
+  }
+
+  if (p === "/api/admin/release-status" && request.method === "GET") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const { response, body } = await internal(env, "/auth/admin/release-status", { token: a.token, version: VERSION, previousVersion: PREVIOUS_PUBLISHED_VERSION, subject: url.origin });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+
+  if (p === "/api/admin/publish-update" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const { response, body } = await internal(env, "/auth/admin/publish-update", { token: a.token, version: VERSION, previousVersion: PREVIOUS_PUBLISHED_VERSION, subject: url.origin });
+    return apiJson(request, env, body || { ok: false }, response.status);
   }
 
   if (["/api/auth/register", "/api/auth/login", "/api/auth/bootstrap-owner", "/api/auth/forgot", "/api/auth/reset-with-code"].includes(p) && request.method === "POST") {
@@ -205,7 +289,10 @@ async function handleApi(request, env, url) {
     }
     const { response, body } = await internal(env, path, { ...b, pepper: String(env.AUTH_PEPPER || ""), ip: request.headers.get("cf-connecting-ip") || "", origin: new URL(request.url).origin });
     if (p === "/api/auth/forgot") return apiJson(request, env, { ok: true }, response.ok ? 200 : response.status || 400);
-    return apiJson(request, env, body || { ok: false, error: "AUTH_FAILED" }, response.status || 400);
+    const extra = {};
+    const ownerCookie = await ownerPreviewCookie(env, body?.user);
+    if (ownerCookie) extra["set-cookie"] = ownerCookie;
+    return apiJson(request, env, body || { ok: false, error: "AUTH_FAILED" }, response.status || 400, extra);
   }
 
   if (p === "/api/push/status" && request.method === "GET") {
@@ -215,10 +302,13 @@ async function handleApi(request, env, url) {
   }
   if (p === "/api/push/subscribe" && request.method === "POST") {
     const b = await request.json().catch(() => ({}));
+    const auth = await optionalAuth(request, env);
     const { response, body } = await internal(env, "/auth/push/subscribe", {
       subscription: b.subscription,
       deviceLabel: b.deviceLabel,
       appVersion: b.appVersion,
+      userId: auth?.user?.id || "",
+      role: auth?.user?.role || "user",
       subject: url.origin
     });
     return apiJson(request, env, body || { ok: false }, response.status);
@@ -251,12 +341,15 @@ async function handleApi(request, env, url) {
   if (p === "/api/auth/session" && request.method === "GET") {
     const a = await requireAuth(request, env);
     if (!a.ok) return a.response;
-    return apiJson(request, env, { ok: true, user: a.user, session: a.session });
+    const extra = {};
+    const ownerCookie = await ownerPreviewCookie(env, a.user);
+    if (ownerCookie) extra["set-cookie"] = ownerCookie;
+    return apiJson(request, env, { ok: true, user: a.user, session: a.session }, 200, extra);
   }
   if (p === "/api/auth/logout" && request.method === "POST") {
     const token = bearerToken(request);
     if (token) await internal(env, "/auth/logout", { token });
-    return apiJson(request, env, { ok: true });
+    return apiJson(request, env, { ok: true }, 200, { "set-cookie": "__sm_owner_preview=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax" });
   }
   if (p === "/api/auth/change-password" && request.method === "POST") {
     if (!env.AUTH_PEPPER) return apiJson(request, env, { ok: false, error: "AUTH_PEPPER_NOT_CONFIGURED" }, 503);
@@ -399,6 +492,114 @@ export class SalaryStore extends DurableObject {
     await this.ctx.storage.put("push:vapid", vapid);
     return vapid;
   }
+  async sendPushToPrefix(prefix, payloadData, subject = "") {
+    const vapid = await this.ensureVapid(subject);
+    const subscriptions = await this.ctx.storage.list({ prefix });
+    if (!subscriptions.size) return { sent: 0, removed: 0, subscriptionCount: 0 };
+    const message = { data: JSON.stringify(payloadData), options: { ttl: 86400, urgency: "high" } };
+    let sent = 0, removed = 0;
+    for (const [key, record] of subscriptions.entries()) {
+      const subscription = record?.subscription;
+      if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+        await this.ctx.storage.delete(key);
+        removed += 1;
+        continue;
+      }
+      try {
+        const requestInit = await buildPushPayload(message, subscription, vapid);
+        const response = await fetch(subscription.endpoint, requestInit);
+        if (response.ok || response.status === 201) sent += 1;
+        if (response.status === 404 || response.status === 410) {
+          await this.ctx.storage.delete(key);
+          removed += 1;
+        }
+      } catch (error) {
+        console.error("Push delivery failed", prefix, error);
+      }
+    }
+    return { sent, removed, subscriptionCount: subscriptions.size };
+  }
+
+  async sendOwnerReleasePush(payloadData, subject = "") {
+    const ownerSpecific = await this.ctx.storage.list({ prefix: "push:owner:" });
+    const general = await this.ctx.storage.list({ prefix: "push:all:" });
+    const records = new Map();
+    for (const [key, record] of ownerSpecific.entries()) {
+      const endpoint = record?.subscription?.endpoint;
+      if (endpoint) records.set(endpoint, { key, record });
+    }
+    for (const [key, record] of general.entries()) {
+      if (record?.role !== "super_admin") continue;
+      const endpoint = record?.subscription?.endpoint;
+      if (endpoint && !records.has(endpoint)) records.set(endpoint, { key, record });
+    }
+    if (!records.size) return { sent: 0, removed: 0, subscriptionCount: 0 };
+    const vapid = await this.ensureVapid(subject);
+    const message = { data: JSON.stringify(payloadData), options: { ttl: 86400, urgency: "high" } };
+    let sent = 0, removed = 0;
+    for (const { key, record } of records.values()) {
+      const subscription = record?.subscription;
+      try {
+        const requestInit = await buildPushPayload(message, subscription, vapid);
+        const response = await fetch(subscription.endpoint, requestInit);
+        if (response.ok || response.status === 201) sent += 1;
+        if (response.status === 404 || response.status === 410) { await this.ctx.storage.delete(key); removed += 1; }
+      } catch (error) { console.error("Owner release push failed", error); }
+    }
+    return { sent, removed, subscriptionCount: records.size };
+  }
+
+  async ensureReleaseState(version, previousVersion, subject = "", notifyOwner = true) {
+    version = String(version || VERSION).slice(0, 30);
+    previousVersion = String(previousVersion || PREVIOUS_PUBLISHED_VERSION).slice(0, 30);
+    let publishedVersion = String(await this.ctx.storage.get("release:publishedVersion") || "");
+    if (!publishedVersion) {
+      // This deployment is staged on top of the explicitly bundled previous release.
+      // Do not infer the published version from the older push-broadcast marker.
+      publishedVersion = previousVersion;
+      await this.ctx.storage.put("release:publishedVersion", publishedVersion);
+    }
+    let stagedVersion = String(await this.ctx.storage.get("release:stagedVersion") || "");
+    let stagedAt = Number(await this.ctx.storage.get("release:stagedAt") || 0);
+    let previewToken = String(await this.ctx.storage.get("release:previewToken") || "");
+    if (stagedVersion !== version) {
+      stagedVersion = version;
+      stagedAt = Date.now();
+      previewToken = randomToken(18);
+      await this.ctx.storage.put("release:stagedVersion", version);
+      await this.ctx.storage.put("release:stagedAt", stagedAt);
+      await this.ctx.storage.put("release:previewToken", previewToken);
+      await this.ctx.storage.delete("release:ownerNotifiedVersion");
+    } else if (!previewToken) {
+      previewToken = randomToken(18);
+      await this.ctx.storage.put("release:previewToken", previewToken);
+    }
+    const published = publishedVersion === stagedVersion;
+    if (!published && notifyOwner) {
+      const notified = String(await this.ctx.storage.get("release:ownerNotifiedVersion") || "");
+      if (notified !== stagedVersion) {
+        const result = await this.sendOwnerReleasePush({
+          title: "تحديث جديد جاهز للمراجعة · مدير الراتب",
+          body: `الإصدار ${stagedVersion} جاهز لك أولًا. اختبره ثم انشره للمستخدمين من «إدارة المستخدمين».`,
+          icon: "./icons/choice/gold-192.png",
+          badge: "./icons/choice/gold-192.png",
+          url: "./?__sw_recovery=1&owner_preview=" + encodeURIComponent(previewToken) + "&update=1&open=admin",
+          tag: `salary-manager-owner-review-${stagedVersion}`
+        }, subject);
+        if (result.sent > 0) await this.ctx.storage.put("release:ownerNotifiedVersion", stagedVersion);
+        await this.audit("release-staged-owner-notified", { version: stagedVersion, sent: result.sent, subscriptionCount: result.subscriptionCount });
+      }
+    }
+    return {
+      stagedVersion,
+      publishedVersion,
+      published,
+      stagedAt: stagedAt || null,
+      publishedAt: Number(await this.ctx.storage.get("release:publishedAt") || 0) || null,
+      previewToken
+    };
+  }
+
   async sendOwnerResetPush(user, origin = "") {
     try {
       const vapid = await this.ctx.storage.get("push:vapid");
@@ -542,6 +743,11 @@ export class SalaryStore extends DurableObject {
       return json({ ok: true });
     }
 
+    if (p === "/auth/system/release-state") {
+      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, true);
+      return json({ ok: true, ...state });
+    }
+
     if (p === "/auth/push/status") {
       const vapid = await this.ensureVapid(b.subject);
       const endpoint = String(b.endpoint || "");
@@ -554,11 +760,14 @@ export class SalaryStore extends DurableObject {
       if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) return json({ ok: false, error: "INVALID_PUSH_SUBSCRIPTION" }, 400);
       await this.ensureVapid(b.subject);
       const key = "push:all:" + await sha256(subscription.endpoint);
+      const existing = await this.ctx.storage.get(key);
       await this.ctx.storage.put(key, {
         subscription,
         deviceLabel: String(b.deviceLabel || "User device").slice(0, 100),
         appVersion: String(b.appVersion || "").slice(0, 30),
-        createdAt: Date.now(),
+        userId: String(b.userId || existing?.userId || "").slice(0, 80),
+        role: b.role === "super_admin" || existing?.role === "super_admin" ? "super_admin" : "user",
+        createdAt: Number(existing?.createdAt || Date.now()),
         updatedAt: Date.now()
       });
       const last = await this.ctx.storage.get("push:lastUpdateVersion");
@@ -572,51 +781,9 @@ export class SalaryStore extends DurableObject {
       return json({ ok: true });
     }
     if (p === "/auth/system/broadcast-update") {
-      const version = String(b.version || "").slice(0, 30);
-      if (!version) return json({ ok: false, error: "INVALID_VERSION" }, 400);
-      const previous = String(await this.ctx.storage.get("push:lastUpdateVersion") || "");
-      if (!previous) {
-        await this.ctx.storage.put("push:lastUpdateVersion", version);
-        return json({ ok: true, skipped: true, reason: "initialized", version, sent: 0 });
-      }
-      if (previous === version) return json({ ok: true, skipped: true, reason: "already-broadcast", version, sent: 0 });
-      const vapid = await this.ensureVapid(b.subject);
-      const all = await this.ctx.storage.list({ prefix: "push:all:" });
-      const owners = await this.ctx.storage.list({ prefix: "push:owner:" });
-      const records = new Map();
-      for (const [key, record] of [...all.entries(), ...owners.entries()]) {
-        const endpoint = record?.subscription?.endpoint;
-        if (endpoint && !records.has(endpoint)) records.set(endpoint, { key, record });
-      }
-      const payloadData = {
-        title: "تحديث جديد متوفر · مدير الراتب",
-        body: `الإصدار ${version} متوفر. افتح التطبيق، واحفظ نسخة احتياطية إن رغبت، ثم حدّث عندما تكون جاهزًا.`,
-        icon: "./icons/choice/gold-192.png",
-        badge: "./icons/choice/gold-192.png",
-        url: "./?update=1",
-        tag: `salary-manager-update-${version}`
-      };
-      const message = { data: JSON.stringify(payloadData), options: { ttl: 86400, urgency: "high" } };
-      let sent = 0, removed = 0;
-      for (const { key, record } of records.values()) {
-        const subscription = record?.subscription;
-        if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) continue;
-        try {
-          const requestInit = await buildPushPayload(message, subscription, vapid);
-          const response = await fetch(subscription.endpoint, requestInit);
-          if (response.ok || response.status === 201) sent += 1;
-          if (response.status === 404 || response.status === 410) {
-            const h = await sha256(subscription.endpoint);
-            await this.ctx.storage.delete(["push:all:" + h, "push:owner:" + h]);
-            removed += 1;
-          }
-        } catch (error) {
-          console.error("Update push failed", error);
-        }
-      }
-      await this.ctx.storage.put("push:lastUpdateVersion", version);
-      await this.audit("update-push-broadcast", { version, previous, sent, removed, subscriptionCount: records.size });
-      return json({ ok: true, version, previous, sent, removed, subscriptionCount: records.size });
+      // Backward-compatible alias: new versions are staged for the owner first.
+      const state = await this.ensureReleaseState(b.version, b.previousVersion || PREVIOUS_PUBLISHED_VERSION, b.subject, true);
+      return json({ ok: true, staged: true, ...state });
     }
 
     const admin = await this.getSession(String(b.token || ""));
@@ -645,6 +812,33 @@ export class SalaryStore extends DurableObject {
       const endpoint = String(b.endpoint || "");
       if (endpoint) await this.ctx.storage.delete("push:owner:" + await sha256(endpoint));
       return json({ ok: true });
+    }
+    if (p === "/auth/admin/release-status") {
+      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, true);
+      const all = await this.ctx.storage.list({ prefix: "push:all:" });
+      const owners = await this.ctx.storage.list({ prefix: "push:owner:" });
+      return json({ ok: true, ...state, userPushSubscriptions: all.size, ownerPushSubscriptions: owners.size });
+    }
+    if (p === "/auth/admin/publish-update") {
+      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false);
+      const version = String(state.stagedVersion || b.version || VERSION).slice(0, 30);
+      if (!version) return json({ ok: false, error: "INVALID_VERSION" }, 400);
+      if (state.publishedVersion === version) return json({ ok: true, alreadyPublished: true, ...state });
+      const publishedAt = Date.now();
+      await this.ctx.storage.put("release:publishedVersion", version);
+      await this.ctx.storage.put("release:publishedAt", publishedAt);
+      await this.ctx.storage.put("push:lastUpdateVersion", version);
+      const payload = {
+        title: "تحديث جديد متوفر · مدير الراتب",
+        body: `تم اعتماد الإصدار ${version}. افتح مدير الراتب ثم اختر وقت التحديث المناسب لك.`,
+        icon: "./icons/choice/gold-192.png",
+        badge: "./icons/choice/gold-192.png",
+        url: "./?update=1",
+        tag: `salary-manager-update-${version}`
+      };
+      const result = await this.sendPushToPrefix("push:all:", payload, b.subject);
+      await this.audit("release-published-to-users", { version, adminId: admin.user.id, sent: result.sent, removed: result.removed, subscriptionCount: result.subscriptionCount });
+      return json({ ok: true, stagedVersion: version, publishedVersion: version, published: true, publishedAt, ...result });
     }
     if (p === "/auth/admin/users") {
       const users = [...(await this.ctx.storage.list({ prefix: "user:" })).values()];
@@ -767,22 +961,48 @@ export class SalaryStore extends DurableObject {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const stageRelease = () => internal(env, "/auth/system/release-state", {
+      version: VERSION,
+      previousVersion: PREVIOUS_PUBLISHED_VERSION,
+      subject: url.origin
+    }).catch(error => console.error("Release stage check failed", error));
+
     try {
-      if (url.pathname === "/manifest.webmanifest") return manifestResponse(url);
+      if (ctx && (url.pathname === "/" || url.pathname === "/index.html" || url.pathname === "/api/health" || url.pathname === "/api/auth/status")) {
+        ctx.waitUntil(stageRelease());
+      }
+
       if (url.pathname.startsWith("/api/")) return await handleApi(request, env, url);
 
-      if (url.pathname === "/" || url.pathname === "") {
-        const indexUrl = new URL("/index.html", url.origin);
-        indexUrl.search = url.search;
-        const assetRequest = new Request(indexUrl.toString(), {
-          method: "GET",
-          headers: request.headers,
-          redirect: "follow"
-        });
+      const isAppShell = url.pathname === "/" || url.pathname === "" || url.pathname === "/index.html";
+      const isWorkerScript = url.pathname === "/sw.js";
+      if (isAppShell || isWorkerScript) {
+        const requestedPreview = String(url.searchParams.get("owner_preview") || "");
+        const release = await getReleaseState(env, url.origin);
+        const tokenPreview = Boolean(requestedPreview && release.previewToken && safeEqual(requestedPreview, String(release.previewToken)));
+        const ownerCookiePreview = await hasValidOwnerPreviewCookie(request, env);
+        const preview = tokenPreview || ownerCookiePreview;
+        const publishedVersion = String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
+        const latestPublished = publishedVersion === VERSION;
+        const useLatest = preview || latestPublished;
+        let assetPath;
+        if (isWorkerScript) {
+          assetPath = useLatest ? "/sw.js" : `/releases/${PREVIOUS_PUBLISHED_VERSION}/sw.js`;
+        } else {
+          assetPath = useLatest ? "/index.html" : `/releases/${PREVIOUS_PUBLISHED_VERSION}/index.html`;
+        }
+        const assetUrl = new URL(assetPath, url.origin);
+        if (tokenPreview) assetUrl.searchParams.set("owner_preview", requestedPreview);
+        const assetRequest = new Request(assetUrl.toString(), { method: "GET", headers: request.headers, redirect: "follow" });
         const response = await env.ASSETS.fetch(assetRequest);
-        if (response && response.ok) return response;
+        if (response && response.ok) {
+          const headers = new Headers(response.headers);
+          headers.set("cache-control", "no-store");
+          headers.set("x-salary-release", useLatest ? VERSION : publishedVersion);
+          return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+        }
         return new Response("Salary Manager app shell unavailable", { status: response ? response.status : 503 });
       }
 
@@ -801,13 +1021,14 @@ export default {
   async scheduled(controller, env, ctx) {
     ctx.waitUntil((async () => {
       try {
-        const { body } = await internal(env, "/auth/system/broadcast-update", {
+        const { body } = await internal(env, "/auth/system/release-state", {
           version: VERSION,
+          previousVersion: PREVIOUS_PUBLISHED_VERSION,
           subject: "https://salary-manager.alromaithi-3bo0d.workers.dev"
         });
-        console.log("Update push check", body);
+        console.log("Release stage check", body);
       } catch (error) {
-        console.error("Scheduled update push failed", error);
+        console.error("Scheduled release stage check failed", error);
       }
     })());
   }

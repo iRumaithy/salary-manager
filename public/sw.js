@@ -1,12 +1,10 @@
-const CACHE = "salary-manager-v3.6.1";
+const CACHE = "salary-manager-v3.7.0";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = [
   "./config.js",
-  "./manifest.webmanifest",
-  "./icons/app-icon-180-v3.6.0.png",
-  "./icons/app-icon-192-v3.6.0.png",
-  "./icons/app-icon-512-v3.6.0.png"
+  "./manifest.webmanifest?icon=gold",
+  "./icons/choice/gold.png"
 ];
 
 function sameOrigin(url) { return url.origin === self.location.origin; }
@@ -95,8 +93,7 @@ self.addEventListener("install", event => {
     let cache = null;
     try { cache = await caches.open(CACHE); } catch (_) {}
     await Promise.allSettled([refreshShell(cache), cacheStatic(cache)]);
-    // Emergency 3.6.1 recovery only: activate immediately to replace the broken 3.6.0 worker.
-    await self.skipWaiting();
+    // Keep the new worker waiting until the user explicitly approves the update.
   })());
 });
 
@@ -132,17 +129,17 @@ self.addEventListener("push", event => {
   try { data = event.data ? event.data.json() : {}; } catch (_) { try { data = { body: event.data ? event.data.text() : "" }; } catch (_) {} }
   event.waitUntil(self.registration.showNotification(data.title || "مدير الراتب", {
     body: data.body || "لديك إشعار جديد.",
-    icon: data.icon || "./icons/app-icon-192-v3.6.0.png",
-    badge: data.badge || "./icons/app-icon-192-v3.6.0.png",
+    icon: data.icon || "./icons/choice/gold.png",
+    badge: data.badge || "./icons/choice/gold.png",
     tag: data.tag || "salary-manager-owner-alert",
     renotify: true,
-    data: { url: data.url || "./?open=admin" }
+    data: { url: data.url || "./" }
   }));
 });
 
 self.addEventListener("notificationclick", event => {
   event.notification.close();
-  const target = new URL(event.notification.data?.url || "./?open=admin", SCOPE).href;
+  const target = new URL(event.notification.data?.url || "./", SCOPE).href;
   event.waitUntil((async () => {
     const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const client of windows) {
@@ -161,7 +158,7 @@ self.addEventListener("fetch", event => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (sameOrigin(url) && url.pathname.startsWith("/api/")) return;
-  if (inScope(url) && (url.searchParams.has("__update_check") || url.searchParams.has("__sw_recovery") || url.searchParams.has("__app_shell") || url.searchParams.has("__static"))) return;
+  if (inScope(url) && (url.searchParams.has("__update_check") || url.searchParams.has("__sw_recovery") || url.searchParams.has("__app_shell") || url.searchParams.has("__static") || url.searchParams.has("__updated"))) return;
   if (!inScope(url)) return;
   const scopePath = new URL(SCOPE).pathname.replace(/\/$/, "");
   const isNavigation = request.mode === "navigate" || url.pathname === scopePath + "/" || url.pathname === scopePath + "/index.html";

@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.8.5";
+const VERSION = "3.8.6";
 const PREVIOUS_PUBLISHED_VERSION = "3.7.2";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -633,7 +633,7 @@ export class SalaryStore extends DurableObject {
   }
 
   async ensureReleaseState(version, previousVersion, subject = "", notifyOwner = false) {
-    // v3.8.5: staged releases are shown to the owner inside the app only.
+    // v3.8.6: staged releases are shown to the owner inside the app only.
     // External update notifications are sent only after the owner explicitly publishes the release.
     notifyOwner = false;
     version = String(version || VERSION).slice(0, 30);

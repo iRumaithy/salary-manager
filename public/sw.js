@@ -1,4 +1,4 @@
-const CACHE = "salary-manager-v3.8.7-wallet-r15";
+const CACHE = "salary-manager-v3.8.7-wallet-r16";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = [

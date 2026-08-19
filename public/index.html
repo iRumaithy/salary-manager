@@ -20,7 +20,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.7-wallet-r15";
+      var v = "3.8.7-wallet-r16";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -2438,7 +2438,7 @@
     @media (max-width: 620px) { .payday-choice-grid, .statement-metrics { grid-template-columns:1fr; } }
 
   
-    /* 3.8.7 r15: keep the hero focused on salary/date/current balance; percentage usage caused confusion. */
+    /* 3.8.7 r16: keep the hero focused on salary/date/current balance; percentage usage caused confusion. */
     .salary-card .salary-foot { display: none !important; }
 
   </style>
@@ -2625,8 +2625,8 @@
                   <strong id="legendRecurring"><span class="money-with-symbol"><span class="aed-symbol" aria-hidden="true"></span><span>0.00</span></span></strong>
                 </div>
                 <div class="legend-row">
-                  <span class="legend-dot" style="background:#2d7a69"></span>
-                  <span>المحوّل إلى المدخرات</span>
+                  <span class="legend-dot" style="background:#73c9e6"></span>
+                  <span>المدخرات</span>
                   <strong id="legendSavings"><span class="money-with-symbol"><span class="aed-symbol" aria-hidden="true"></span><span>0.00</span></span></strong>
                 </div>
                 <div class="legend-row">
@@ -3716,7 +3716,7 @@
 
 
       var APP_VERSION = "3.8.7";
-      var APP_RELEASE_ID = "3.8.7-wallet-r15";
+      var APP_RELEASE_ID = "3.8.7-wallet-r16";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -5309,33 +5309,40 @@
         var paydayKey = toDateInput(payday);
         if (state.processedPaydays[paydayKey]) return false;
         var carry = safeNumber(state.walletBalance);
+        var savingsBefore = safeNumber(state.savingsBalance);
         var movedToSavings = 0;
+        var chargedCommitments = [];
         if (choice === "savings" && carry > 0) {
           state.walletBalance -= carry;
           state.savingsBalance = Math.max(0, safeNumber(state.savingsBalance) + carry);
           movedToSavings = carry;
           addTransaction("savings_transfer", -carry, "ترحيل الرصيد السابق إلى المدخرات", paydayKey, "", { savingsDelta: carry, source: "payday-carry", paydayKey: paydayKey });
         }
-        state.walletBalance += safeNumber(state.salary);
-        addTransaction("salary", safeNumber(state.salary), "نزول الراتب", paydayKey, "", { paydayKey: paydayKey });
+        var salaryAdded = safeNumber(state.salary);
+        state.walletBalance += salaryAdded;
+        addTransaction("salary", salaryAdded, "نزول الراتب", paydayKey, "", { paydayKey: paydayKey });
 
         var chargeMap = getCommitmentChargeMap(defaultMonth);
         state.commitments.forEach(function (item) {
           if (!isCommitmentActive(item, defaultMonth) || commitmentAlreadyCharged(paydayKey, item.id)) return;
           var amount = safeNumber(item.amount);
           if (amount <= 0) return;
+          var paidMonths = Array.isArray(item.paidMonths) ? item.paidMonths.slice() : [];
+          var hadPaidMonth = paidMonths.indexOf(defaultMonth) !== -1;
           state.walletBalance -= amount;
           chargeMap[item.id] = amount;
           addTransaction("commitment", -amount, item.name || "قسط أو سلفة", paydayKey, item.id, { paydayKey: paydayKey });
-          var paidMonths = Array.isArray(item.paidMonths) ? item.paidMonths : [];
-          if (paidMonths.indexOf(defaultMonth) === -1) paidMonths.push(defaultMonth);
+          if (!hadPaidMonth) paidMonths.push(defaultMonth);
           item.paidMonths = paidMonths;
+          chargedCommitments.push({ id: String(item.id || ""), amount: amount, hadPaidMonth: hadPaidMonth });
         });
         state.processedPaydays[paydayKey] = {
           processedAt: new Date().toISOString(),
           carryBefore: carry,
+          savingsBefore: savingsBefore,
           movedToSavings: movedToSavings,
-          salary: safeNumber(state.salary),
+          salary: salaryAdded,
+          chargedCommitments: chargedCommitments,
           choice: choice === "savings" ? "savings" : "keep"
         };
         state.walletStarted = true;
@@ -5499,16 +5506,16 @@
         $("#usedPercentBar").style.width = clampedUsed + "%";
         setText("#usedPercentText", Math.round(metrics.usedPercent) + "%");
 
-        // توزيع الراتب في r15 لا يعرض نسبة متبقية. الحلقة تقارن الأقسام الأربعة فقط
+        // توزيع الراتب في r16 يقارن الأقسام الأربعة فقط ويعرض رصيد المدخرات الحالي
         // حتى يكون اللون الأكبر هو القسم الأعلى تخصيصًا/صرفًا بوضوح.
         var distributionCommitments = Math.max(0, metrics.scheduledCommitmentsTotal);
         var distributionRecurring = Math.max(0, metrics.scheduledRecurringTotal);
-        var distributionSavings = Math.max(0, metrics.savingsMoved);
+        var distributionSavings = Math.max(0, metrics.savingsTotal);
         var distributionExpenses = Math.max(0, metrics.expensesTotal);
         var distributionItems = [
           { label:"الأقساط والسلف", value:distributionCommitments, color:"#14756c" },
           { label:"المدفوعات الثابتة", value:distributionRecurring, color:"#705a9b" },
-          { label:"المدخرات", value:distributionSavings, color:"#2d7a69" },
+          { label:"المدخرات", value:distributionSavings, color:"#73c9e6" },
           { label:"المصروفات", value:distributionExpenses, color:"#ef7e5b" }
         ];
         var distributionTotal = distributionItems.reduce(function (sum, item) { return sum + item.value; }, 0);
@@ -5959,51 +5966,66 @@
       function rollbackProcessedPayday(paydayKey) {
         paydayKey = String(paydayKey || "");
         if (!paydayKey || !state.processedPaydays || !state.processedPaydays[paydayKey]) return false;
+        var record = state.processedPaydays[paydayKey] || {};
         var transactions = Array.isArray(state.transactions) ? state.transactions : [];
         var paydayTransactions = transactions.filter(function (tx) {
           return String(tx.paydayKey || "") === paydayKey &&
             (tx.type === "salary" || tx.type === "commitment" || tx.type === "savings_transfer");
         });
-        if (!paydayTransactions.length) {
-          delete state.processedPaydays[paydayKey];
-          return false;
+
+        var commitmentTransactions = paydayTransactions.filter(function (tx) { return tx.type === "commitment"; });
+        var chargedTotalFromTransactions = commitmentTransactions.reduce(function (sum, tx) {
+          return sum + Math.abs(safeNumber(tx.amount));
+        }, 0);
+        var chargedTotalFromRecord = Array.isArray(record.chargedCommitments) ? record.chargedCommitments.reduce(function (sum, item) {
+          return sum + Math.abs(safeNumber(item && item.amount));
+        }, 0) : 0;
+        var chargedTotal = chargedTotalFromTransactions || chargedTotalFromRecord;
+        var salaryAdded = safeNumber(record.salary);
+        if (!salaryAdded) {
+          salaryAdded = paydayTransactions.filter(function (tx) { return tx.type === "salary"; }).reduce(function (sum, tx) {
+            return sum + Math.max(0, safeNumber(tx.amount));
+          }, 0);
+        }
+        var movedToSavings = Math.max(0, safeNumber(record.movedToSavings));
+        if (!movedToSavings) {
+          movedToSavings = paydayTransactions.filter(function (tx) { return tx.type === "savings_transfer"; }).reduce(function (sum, tx) {
+            var delta = safeNumber(tx.savingsDelta);
+            return sum + (delta > 0 ? delta : Math.abs(Math.min(0, safeNumber(tx.amount))));
+          }, 0);
         }
 
-        var affectedCommitments = {};
-        paydayTransactions.forEach(function (tx) {
-          var amount = safeNumber(tx.amount);
-          if (tx.type === "salary") {
-            state.walletBalance -= amount;
-          } else if (tx.type === "commitment") {
-            state.walletBalance -= amount; // amount is negative, so this restores the deducted installment.
-            if (tx.refId) affectedCommitments[String(tx.refId)] = true;
-          } else if (tx.type === "savings_transfer") {
-            state.walletBalance -= amount; // restore the carried amount to the current balance.
-            var savingsDelta = safeNumber(tx.savingsDelta);
-            if (savingsDelta <= 0) savingsDelta = Math.abs(amount);
-            state.savingsBalance = Math.max(0, safeNumber(state.savingsBalance) - savingsDelta);
-          }
+        // نعكس عملية يوم الراتب فقط، مع الحفاظ على أي مصروفات أو حركات أخرى حدثت بعدها.
+        // المعادلة المباشرة تمنع ضياع الرصيد السابق عند اختيار تحويله إلى المدخرات ثم تصحيح موعد الراتب.
+        state.walletBalance = safeNumber(state.walletBalance) - salaryAdded + chargedTotal + movedToSavings;
+        if (movedToSavings > 0) state.savingsBalance = Math.max(0, safeNumber(state.savingsBalance) - movedToSavings);
+
+        var monthKey = paydayKey.slice(0, 7);
+        var chargeMap = getCommitmentChargeMap(monthKey);
+        var recordCommitments = Array.isArray(record.chargedCommitments) ? record.chargedCommitments : [];
+        var paidStateById = {};
+        recordCommitments.forEach(function (entry) {
+          if (entry && entry.id) paidStateById[String(entry.id)] = Boolean(entry.hadPaidMonth);
         });
+        var affectedCommitments = {};
+        commitmentTransactions.forEach(function (tx) { if (tx.refId) affectedCommitments[String(tx.refId)] = true; });
+        recordCommitments.forEach(function (entry) { if (entry && entry.id) affectedCommitments[String(entry.id)] = true; });
 
         state.transactions = transactions.filter(function (tx) {
           return !(String(tx.paydayKey || "") === paydayKey &&
             (tx.type === "salary" || tx.type === "commitment" || tx.type === "savings_transfer"));
         });
 
-        var monthKey = paydayKey.slice(0, 7);
-        var chargeMap = getCommitmentChargeMap(monthKey);
         Object.keys(affectedCommitments).forEach(function (commitmentId) {
-          var stillCharged = state.transactions.some(function (tx) {
-            return tx.type === "commitment" && String(tx.refId || "") === commitmentId &&
-              String(tx.month || calendarMonthForDate(tx.date)) === monthKey;
-          });
-          if (!stillCharged) {
-            delete chargeMap[commitmentId];
-            var item = state.commitments.find(function (entry) { return String(entry.id) === commitmentId; });
-            if (item && Array.isArray(item.paidMonths)) {
-              item.paidMonths = item.paidMonths.filter(function (m) { return m !== monthKey; });
-            }
-          }
+          delete chargeMap[commitmentId];
+          var item = state.commitments.find(function (entry) { return String(entry.id) === commitmentId; });
+          if (!item) return;
+          var paidMonths = Array.isArray(item.paidMonths) ? item.paidMonths.slice() : [];
+          var hadPaidMonth = Object.prototype.hasOwnProperty.call(paidStateById, commitmentId) ? paidStateById[commitmentId] : false;
+          var idx = paidMonths.indexOf(monthKey);
+          if (hadPaidMonth && idx === -1) paidMonths.push(monthKey);
+          if (!hadPaidMonth && idx !== -1) paidMonths.splice(idx, 1);
+          item.paidMonths = paidMonths;
         });
 
         delete state.processedPaydays[paydayKey];

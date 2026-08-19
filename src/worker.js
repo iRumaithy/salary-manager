@@ -2,10 +2,10 @@ import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
 const VERSION = "3.8.7";
-const RELEASE_ID = "3.8.7-calendar-r5";
+const RELEASE_ID = "3.8.7-calendar-r6";
 const UPDATE_SIGNAL_VERSION = "3.8.7\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.7";
-const PREVIOUS_RELEASE_ID = "3.8.7-r3";
+const PREVIOUS_RELEASE_ID = "3.8.7-calendar-r5";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
 const AUTH_NAME = "__salary_manager_auth_v311__";
@@ -649,7 +649,6 @@ export class SalaryStore extends DurableObject {
 
   async ensureReleaseState(version, previousVersion, subject = "", notifyOwner = false, releaseId = "", previousReleaseId = "") {
     // الإصدارات تُعرض للمستخدم برقم VERSION، بينما RELEASE_ID يميز بناءً جديدًا حتى لو بقي رقم الإصدار نفسه.
-    notifyOwner = false;
     version = String(version || VERSION).slice(0, 30);
     releaseId = String(releaseId || version || RELEASE_ID).slice(0, 80);
     previousVersion = String(previousVersion || PREVIOUS_PUBLISHED_VERSION).slice(0, 30);
@@ -681,6 +680,7 @@ export class SalaryStore extends DurableObject {
       await this.ctx.storage.put("release:stagedAt", stagedAt);
       await this.ctx.storage.put("release:previewToken", previewToken);
       await this.ctx.storage.delete("release:ownerNotifiedVersion");
+      await this.ctx.storage.delete("release:ownerNotifiedReleaseId");
       await this.ctx.storage.delete("release:ownerLastPushResult");
     } else {
       if (stagedVersion !== version) {
@@ -694,6 +694,24 @@ export class SalaryStore extends DurableObject {
     }
 
     const published = publishedReleaseId === stagedReleaseId;
+    let ownerNotification = await this.ctx.storage.get("release:ownerLastPushResult");
+    if (notifyOwner && !published) {
+      const notifiedReleaseId = String(await this.ctx.storage.get("release:ownerNotifiedReleaseId") || "");
+      if (notifiedReleaseId !== stagedReleaseId) {
+        const result = await this.sendOwnerReleasePush({
+          title: "تحديث جديد بانتظار المراجعة · مدير الراتب",
+          body: `يوجد تحديث جديد للإصدار ${stagedVersion}. افتح إدارة المستخدمين وراجعه قبل نشره للمستخدمين.`,
+          icon: "./icons/choice/gold-192.png",
+          badge: "./icons/choice/gold-192.png",
+          url: "./?open=admin",
+          tag: `salary-manager-owner-review-${stagedReleaseId}`
+        }, subject);
+        ownerNotification = { ...result, releaseId: stagedReleaseId, at: Date.now() };
+        await this.ctx.storage.put("release:ownerLastPushResult", ownerNotification);
+        // لا نعتبره مُبلّغًا إلا إذا وصل فعليًا إلى جهاز واحد على الأقل؛ بذلك يمكن إعادة المحاولة بعد إعادة ربط اشتراك الجهاز عند الدخول.
+        if (Number(result.sent || 0) > 0) await this.ctx.storage.put("release:ownerNotifiedReleaseId", stagedReleaseId);
+      }
+    }
     return {
       stagedVersion,
       stagedReleaseId,
@@ -702,7 +720,8 @@ export class SalaryStore extends DurableObject {
       published,
       stagedAt: stagedAt || null,
       publishedAt: Number(await this.ctx.storage.get("release:publishedAt") || 0) || null,
-      previewToken
+      previewToken,
+      ownerNotification: ownerNotification || null
     };
   }
 
@@ -1011,7 +1030,7 @@ export class SalaryStore extends DurableObject {
       return json({ ok: true });
     }
     if (p === "/auth/admin/release-status") {
-      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false, b.releaseId, b.previousReleaseId);
+      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, true, b.releaseId, b.previousReleaseId);
       const all = await this.ctx.storage.list({ prefix: "push:all:" });
       const owners = await this.ctx.storage.list({ prefix: "push:owner:" });
       return json({ ok: true, ...state, userPushSubscriptions: all.size, ownerPushSubscriptions: owners.size });
@@ -1202,11 +1221,12 @@ export default {
         const publishedReleaseId = String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
         const latestPublished = publishedReleaseId === RELEASE_ID;
         const useLatest = preview || latestPublished;
+        const safePublishedReleaseId = /^[A-Za-z0-9._-]{1,80}$/.test(publishedReleaseId) ? publishedReleaseId : PREVIOUS_RELEASE_ID;
         let assetPath;
         if (isWorkerScript) {
-          assetPath = useLatest ? "/sw.js" : `/releases/${PREVIOUS_RELEASE_ID}/sw.js`;
+          assetPath = useLatest ? "/sw.js" : `/releases/${safePublishedReleaseId}/sw.js`;
         } else {
-          assetPath = useLatest ? "/index.html" : `/releases/${PREVIOUS_RELEASE_ID}/index.html`;
+          assetPath = useLatest ? "/index.html" : `/releases/${safePublishedReleaseId}/index.html`;
         }
         const assetUrl = new URL(assetPath, url.origin);
         if (tokenPreview) assetUrl.searchParams.set("owner_preview", requestedPreview);

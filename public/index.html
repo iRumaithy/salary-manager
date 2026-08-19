@@ -2493,7 +2493,7 @@
               <span id="allocationSubline">سيظهر هنا ملخص الأقساط والمدفوعات الثابتة ومصروفاتك</span>
             </div>
             <div class="mini-progress" aria-label="نسبة الرصيد المستخدم">
-              <div class="mini-progress-head"><span>المستخدم من الرصيد المتاح</span><b id="usedPercentText">0%</b></div>
+              <div class="mini-progress-head"><span id="usedBasisLabel">المستخدم من الراتب</span><b id="usedPercentText">0%</b></div>
               <div class="mini-progress-track"><div class="mini-progress-fill" id="usedPercentBar"></div></div>
             </div>
           </div>
@@ -3127,11 +3127,11 @@
             <time datetime="2026-08-19">19 أغسطس 2026</time>
           </div>
           <ul>
-            <li>تحويل احتساب الرصيد إلى دورة راتب تبدأ في يوم نزول الراتب الذي يحدده المستخدم وتنتهي قبل موعد الراتب التالي بيوم.</li>
-            <li>يبدأ كل مستخدم أول دورة برصيد مرحّل قدره صفر، ثم يُرحّل المتبقي الحقيقي تلقائيًا ابتداءً من دورة الراتب الثانية.</li>
-            <li>إضافة الراتب الجديد فوق الرصيد المتبقي من الدورة السابقة دون تصفيره، مع خصم الأقساط والمدفوعات الثابتة المستحقة داخل الدورة.</li>
-            <li>ربط المصروفات بتاريخها الفعلي بدورة الراتب الصحيحة، بحيث تُخصم العملية من الرصيد الخاص بالدورة التي يقع تاريخها ضمنها.</li>
-            <li>عرض الرصيد المرحّل بشكل هادئ بجوار «الراتب المتبقي» ابتداءً من الدورة الثانية فقط، دون إظهار أي رصيد سابق للمستخدم في أول دورة.</li>
+            <li>إعادة بناء ترحيل الرصيد من الصفر مع الحفاظ على طريقة احتساب السلف والأقساط والمدفوعات الثابتة كما كانت قبل إضافة ميزة الترحيل.</li>
+            <li>الرصيد المرحّل يساوي فقط المبلغ المتبقي فعليًا عند حلول موعد الراتب الجديد، ثم يُضاف إليه الراتب الجديد قبل خصم التزامات الشهر الجديد.</li>
+            <li>يبدأ كل مستخدم أول دورة برصيد مرحّل قدره صفر، ولا يتم إنشاء أو افتراض أي رصيد سابق.</li>
+            <li>إظهار الرصيد المرحّل وتطبيقه على الدورة الحالية الفعلية فقط؛ عند استعراض شهر قادم يظهر الراتب المتوقع دون أي ترحيل حتى يحين موعده فعليًا.</li>
+            <li>ربط المصروفات بتاريخ العملية داخل دورة الراتب، مع إبقاء جميع السلف والأقساط النشطة محسوبة مرة واحدة بالطريقة الأصلية.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -3582,7 +3582,8 @@
 
 
       var APP_VERSION = "3.8.7";
-      var APP_BUILD = "3.8.7-r3";
+      var APP_BUILD = "3.8.7-r4";
+      var APP_RELEASE_ID = "3.8.7\u200B";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -4653,7 +4654,7 @@
         function showUpdate(worker, version) {
           if (worker) waitingWorker = worker;
           if (version) remoteVersion = version;
-          if (remoteVersion && String(remoteVersion) === String(APP_VERSION)) {
+          if (remoteVersion && (String(remoteVersion) === String(APP_RELEASE_ID) || String(remoteVersion) === String(APP_VERSION))) {
             if (banner) banner.classList.remove("show");
             return;
           }
@@ -4667,7 +4668,7 @@
           try {
             var release = await apiFetch("/api/update/status?check=" + Date.now());
             var version = String(release.targetVersion || "").trim();
-            if (version && version !== APP_VERSION) showUpdate(null, version);
+            if (version && version !== APP_RELEASE_ID && version !== APP_VERSION) showUpdate(null, version);
             else if (banner) banner.classList.remove("show");
           } catch (e) {}
         }
@@ -4858,13 +4859,8 @@
 
       function itemDueDatesInCycle(item, cycle, recurring) {
         if (!cycle || !item || (recurring && item.isPaused)) return [];
-        // توافق كامل مع طريقة إدخال السلف/الأقساط القديمة:
-        // startDate و endDate يحددان شهري البداية والنهاية، بينما dueDay هو يوم الخصم الفعلي.
-        // لذلك لا نستبعد قسطًا لأن يوم startDate نفسه جاء بعد dueDay داخل الشهر؛
-        // كان النظام قبل 3.8.7 يعتبر الالتزام فعالًا طوال شهر البداية/النهاية.
-        var startMonth = String(item.startDate || "").slice(0, 7);
-        var endMonth = String(item.endDate || "").slice(0, 7);
-        if (!startMonth) return [];
+        // يوم الاستحقاق يستخدم للعرض والمتابعة فقط. احتساب قيمة الالتزام نفسها
+        // يبقى بالطريقة الأصلية: التزام نشط في شهر الدورة = يُحجز مرة واحدة من الراتب.
         var dates = [];
         var cursor = new Date(cycle.start.getFullYear(), cycle.start.getMonth(), 1);
         var lastMonth = new Date(cycle.end.getFullYear(), cycle.end.getMonth(), 1);
@@ -4872,15 +4868,11 @@
         while (cursor <= lastMonth && guard < 4) {
           var due = dueDateInCalendarMonth(cursor.getFullYear(), cursor.getMonth(), item.dueDay);
           var key = dateKey(due);
-          var dueMonth = toMonthKey(due);
-          if (compareDateKeys(key, cycle.startKey) >= 0 && compareDateKeys(key, cycle.endKey) <= 0 &&
-              dueMonth >= startMonth && (!endMonth || dueMonth <= endMonth)) {
-            dates.push(due);
-          }
+          if (compareDateKeys(key, cycle.startKey) >= 0 && compareDateKeys(key, cycle.endKey) <= 0) dates.push(due);
           cursor.setMonth(cursor.getMonth() + 1);
           guard += 1;
         }
-        return dates;
+        return dates.slice(0, 1);
       }
 
       function cycleStatusKey(cycle) {
@@ -4922,38 +4914,17 @@
       }
 
       function rawCycleTotals(cycle) {
-        var activeCommitments = [];
-        var activeRecurring = [];
-        var commitmentsTotal = 0;
-        var recurringTotal = 0;
-        var savingsTotal = 0;
-
-        state.commitments.forEach(function (item) {
-          var occurrences = itemDueDatesInCycle(item, cycle, false);
-          if (!occurrences.length) return;
-          activeCommitments.push(item);
-          commitmentsTotal += safeNumber(item.amount) * occurrences.length;
-        });
-
-        state.recurringPayments.forEach(function (item) {
-          var occurrences = itemDueDatesInCycle(item, cycle, true);
-          if (!occurrences.length) return;
-          activeRecurring.push(item);
-          var total = safeNumber(item.amount) * occurrences.length;
-          recurringTotal += total;
-          if (item.type === "ادخار") savingsTotal += total;
-        });
-
-        var monthExpenses = state.expenses.filter(function (item) {
-          return isDateInsideCycle(item.date, cycle);
-        });
-        var expensesTotal = monthExpenses.reduce(function (sum, item) {
-          return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount));
-        }, 0);
-        var excludedExpensesTotal = monthExpenses.reduce(function (sum, item) {
-          return sum + (item.excludeFromBudget ? safeNumber(item.amount) : 0);
-        }, 0);
-
+        var monthKey = cycle ? cycle.monthKey : state.selectedMonth;
+        // IMPORTANT: preserve the original pre-3.8.7 budget logic for commitments.
+        // Every active monthly commitment/fixed payment is reserved exactly once.
+        var activeCommitments = state.commitments.filter(function (item) { return legacyCommitmentActive(item, monthKey); });
+        var activeRecurring = state.recurringPayments.filter(function (item) { return legacyRecurringActive(item, monthKey); });
+        var commitmentsTotal = activeCommitments.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
+        var recurringTotal = activeRecurring.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
+        var savingsTotal = activeRecurring.reduce(function (sum, item) { return sum + (item.type === "ادخار" ? safeNumber(item.amount) : 0); }, 0);
+        var monthExpenses = state.expenses.filter(function (item) { return cycle ? isDateInsideCycle(item.date, cycle) : String(item.date || "").slice(0, 7) === monthKey; });
+        var expensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0);
+        var excludedExpensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? safeNumber(item.amount) : 0); }, 0);
         return {
           activeCommitments: activeCommitments,
           activeRecurring: activeRecurring,
@@ -4967,42 +4938,60 @@
       }
 
       function cycleAccountingEnabledFor(cycle) {
-        return Boolean(state.salary > 0 && state.salaryPayDay && state.salaryCycleVersion >= 2 && /^\d{4}-\d{2}-\d{2}$/.test(state.salaryCycleAnchorDate || "") && cycle && compareDateKeys(cycle.startKey, state.salaryCycleAnchorDate) >= 0);
+        return Boolean(state.salary > 0 && state.salaryPayDay && state.salaryCycleVersion >= 3 && /^\d{4}-\d{2}-\d{2}$/.test(state.salaryCycleAnchorDate || "") && cycle && compareDateKeys(cycle.startKey, state.salaryCycleAnchorDate) >= 0);
       }
 
-      function setSalaryCycleAnchorCarryover(carryover, hasPreviousCycle) {
+      function setSalaryCycleAnchorCarryover(carryover, hasPreviousCycle, cycleOverride) {
         if (!state.salaryPayDay || state.salary <= 0) return;
-        var cycle = salaryCycleForDate(today, state.salaryPayDay);
-        state.salaryCycleVersion = 2;
+        var cycle = cycleOverride || salaryCycleForDate(today, state.salaryPayDay);
+        state.salaryCycleVersion = 3;
         state.salaryCycleAnchorDate = cycle.startKey;
         state.salaryCycleAnchorCarryover = signedNumber(carryover);
         state.salaryCycleAnchorHasPrevious = Boolean(hasPreviousCycle);
       }
 
       function initializeSalaryCycleFromLegacy() {
-        if (!state.salaryPayDay || state.salary <= 0 || state.salaryCycleVersion >= 2) return;
-        var calendarMonth = toMonthKey(today);
+        if (!state.salaryPayDay || state.salary <= 0 || state.salaryCycleVersion >= 3) return;
         var previousDefault = defaultMonth;
-        // النسخة المصححة 3.8.7: أول دورة تبدأ دائمًا من راتب المستخدم الحالي برصيد مرحّل صفر.
-        // لا نحاول استنتاج رصيد سابق من بيانات الشهر الميلادي القديمة؛ يبدأ الترحيل الحقيقي من الدورة التالية.
-        setSalaryCycleAnchorCarryover(0, false);
-        var cycle = currentSalaryCycle();
-        defaultMonth = cycle ? cycle.monthKey : calendarMonth;
+        var calendarMonth = toMonthKey(today);
+        // إلغاء أي ترحيل تم إنشاؤه بواسطة النسخ السابقة من 3.8.7.
+        // أول دورة بعد التحديث تبدأ دائمًا من صفر ترحيل، ثم يبدأ الترحيل الحقيقي عند الراتب التالي.
+        var cycle = salaryCycleForDate(today, state.salaryPayDay);
+        setSalaryCycleAnchorCarryover(0, false, cycle);
+        defaultMonth = cycle.monthKey;
         if (state.selectedMonth === previousDefault || state.selectedMonth === calendarMonth) state.selectedMonth = defaultMonth;
+      }
+
+      function rollSalaryCycleToToday(showRolloverToast) {
+        if (!state.salaryPayDay || state.salary <= 0) return false;
+        if (state.salaryCycleVersion < 3 || !state.salaryCycleAnchorDate) initializeSalaryCycleFromLegacy();
+        var current = salaryCycleForDate(today, state.salaryPayDay);
+        var anchor = salaryCycleForDate(state.salaryCycleAnchorDate, state.salaryPayDay);
+        var changed = false;
+        var guard = 0;
+        while (anchor && compareDateKeys(anchor.startKey, current.startKey) < 0 && guard < 120) {
+          var totals = rawCycleTotals(anchor);
+          // الرصيد المرحّل = المتبقي الفعلي عند نهاية الدورة السابقة فقط.
+          var previousBalance = signedNumber(state.salaryCycleAnchorCarryover) + state.salary - totals.commitmentsTotal - totals.recurringTotal - totals.expensesTotal;
+          var next = nextSalaryCycle(anchor);
+          setSalaryCycleAnchorCarryover(previousBalance, true, next);
+          anchor = next;
+          changed = true;
+          guard += 1;
+        }
+        if (changed && showRolloverToast) showToast("بدأت دورة راتب جديدة: تم ترحيل المتبقي الفعلي وإضافة الراتب الجديد ثم خصم التزامات الدورة الجديدة");
+        return changed;
       }
 
       function updateCurrentCycleContext(showRolloverToast) {
         var previousDefault = defaultMonth;
         var wasViewingCurrent = state.selectedMonth === previousDefault;
         today = new Date();
+        var changed = rollSalaryCycleToToday(showRolloverToast);
         var cycle = currentSalaryCycle();
-        defaultMonth = cycle && state.salaryCycleVersion >= 2 ? cycle.monthKey : toMonthKey(today);
+        defaultMonth = cycle && state.salaryCycleVersion >= 3 ? cycle.monthKey : toMonthKey(today);
         if (wasViewingCurrent) state.selectedMonth = defaultMonth;
-        var changedCycle = previousDefault !== defaultMonth;
-        if (changedCycle && showRolloverToast && wasViewingCurrent && cycleAccountingEnabledFor(cycle)) {
-          showToast("بدأت دورة راتب جديدة: تمت إضافة الراتب وترحيل الرصيد المتبقي من الدورة السابقة تلقائيًا");
-        }
-        return changedCycle;
+        return changed || previousDefault !== defaultMonth;
       }
 
       function currentCycleDaysRemaining(cycle) {
@@ -5014,43 +5003,41 @@
       }
 
       function calculateSalaryCycleMetrics(targetCycle) {
-        var anchorCycle = salaryCycleForDate(state.salaryCycleAnchorDate, state.salaryPayDay);
-        var carryover = signedNumber(state.salaryCycleAnchorCarryover);
-        var cycle = anchorCycle;
-        var guard = 0;
-        while (cycle && compareDateKeys(cycle.startKey, targetCycle.startKey) <= 0 && guard < 240) {
-          var totals = rawCycleTotals(cycle);
-          var openingFunds = carryover + state.salary;
-          var balance = openingFunds - totals.commitmentsTotal - totals.recurringTotal - totals.expensesTotal;
-          if (cycle.startKey === targetCycle.startKey) {
-            var current = currentSalaryCycle();
-            var isCurrent = current && current.startKey === cycle.startKey;
-            var daysLeft = isCurrent ? currentCycleDaysRemaining(cycle) : (compareDateKeys(cycle.endKey, dateKey(today)) < 0 ? 0 : Math.round((cycle.end.getTime() - cycle.start.getTime()) / 86400000) + 1);
-            var spendingDays = Math.max(1, daysLeft || 1);
-            var daily = daysLeft > 0 ? Math.max(0, balance) / spendingDays : 0;
-            var used = totals.commitmentsTotal + totals.recurringTotal + totals.expensesTotal;
-            var basis = Math.max(0, openingFunds);
-            return Object.assign({}, totals, {
-              balance: balance,
-              carryover: carryover,
-              openingFunds: openingFunds,
-              cycle: cycle,
-              cycleMode: true,
-              hasPreviousCycle: Boolean(state.salaryCycleAnchorHasPrevious || cycle.startKey !== anchorCycle.startKey),
-              daysLeft: daysLeft,
-              calendarDaysLeft: daysLeft,
-              nextSalary: getNextSalaryInfo(),
-              usingSalaryCountdown: isCurrent,
-              daily: daily,
-              used: used,
-              usedPercent: basis > 0 ? (used / basis) * 100 : 0
-            });
-          }
-          carryover = balance;
-          cycle = nextSalaryCycle(cycle);
-          guard += 1;
+        if (!targetCycle) return null;
+        var totals = rawCycleTotals(targetCycle);
+        var current = currentSalaryCycle();
+        var isCurrent = Boolean(current && current.startKey === targetCycle.startKey);
+        var isFuture = Boolean(current && compareDateKeys(targetCycle.startKey, current.startKey) > 0);
+        var carryover = 0;
+        var hasPreviousCycle = false;
+        // الترحيل يطبق فعليًا ومرئيًا على الدورة الحالية فقط.
+        if (isCurrent && state.salaryCycleAnchorDate === targetCycle.startKey) {
+          carryover = signedNumber(state.salaryCycleAnchorCarryover);
+          hasPreviousCycle = Boolean(state.salaryCycleAnchorHasPrevious);
         }
-        return null;
+        var openingFunds = state.salary + carryover;
+        var balance = openingFunds - totals.commitmentsTotal - totals.recurringTotal - totals.expensesTotal;
+        var fullCycleDays = Math.round((targetCycle.end.getTime() - targetCycle.start.getTime()) / 86400000) + 1;
+        var daysLeft = isCurrent ? currentCycleDaysRemaining(targetCycle) : (isFuture ? fullCycleDays : 0);
+        var daily = daysLeft > 0 ? Math.max(0, balance) / Math.max(1, daysLeft) : 0;
+        var used = totals.commitmentsTotal + totals.recurringTotal + totals.expensesTotal;
+        return Object.assign({}, totals, {
+          balance: balance,
+          carryover: carryover,
+          openingFunds: openingFunds,
+          cycle: targetCycle,
+          cycleMode: true,
+          isCurrentCycle: isCurrent,
+          isFutureCycle: isFuture,
+          hasPreviousCycle: hasPreviousCycle,
+          daysLeft: daysLeft,
+          calendarDaysLeft: daysLeft,
+          nextSalary: { days: daysLeft, date: targetCycle.nextStart },
+          usingSalaryCountdown: isCurrent,
+          daily: daily,
+          used: used,
+          usedPercent: openingFunds > 0 ? (used / openingFunds) * 100 : 0
+        });
       }
 
       function normalizeSavedState(saved) {
@@ -5067,7 +5054,7 @@
         state.expenses = Array.isArray(saved.expenses) ? saved.expenses : [];
         today = new Date();
         if (state.salary > 0 && state.salaryPayDay > 0) {
-          if (state.salaryCycleVersion < 2 || !state.salaryCycleAnchorDate) initializeSalaryCycleFromLegacy();
+          if (state.salaryCycleVersion < 3 || !state.salaryCycleAnchorDate) initializeSalaryCycleFromLegacy();
           else updateCurrentCycleContext(false);
         } else {
           defaultMonth = toMonthKey(today);
@@ -5139,8 +5126,6 @@
       }
 
       function isCommitmentActive(item, monthKey) {
-        var cycle = state.salaryPayDay ? salaryCycleForMonth(monthKey) : null;
-        if (cycleAccountingEnabledFor(cycle)) return itemDueDatesInCycle(item, cycle, false).length > 0;
         return legacyCommitmentActive(item, monthKey);
       }
 
@@ -5151,8 +5136,6 @@
       }
 
       function isRecurringActive(item, monthKey) {
-        var cycle = state.salaryPayDay ? salaryCycleForMonth(monthKey) : null;
-        if (cycleAccountingEnabledFor(cycle)) return itemDueDatesInCycle(item, cycle, true).length > 0;
         return legacyRecurringActive(item, monthKey);
       }
 
@@ -5270,11 +5253,11 @@
         setText("#salaryPaydayText", state.salaryPayDay ? "يوم " + state.salaryPayDay + " من كل شهر" : "غير محدد");
         var carryInline = $("#salaryCarryoverInline");
         if (carryInline) {
-          var showCarryover = Boolean(metrics.cycleMode && metrics.hasPreviousCycle);
+          var showCarryover = Boolean(metrics.cycleMode && metrics.isCurrentCycle && metrics.hasPreviousCycle);
           carryInline.hidden = !showCarryover;
           if (showCarryover) setMoney("#salaryCarryoverText", metrics.carryover);
         }
-        var nextSalary = getNextSalaryInfo();
+        var nextSalary = metrics.cycleMode && metrics.cycle ? { days: metrics.daysLeft, date: metrics.cycle.nextStart } : getNextSalaryInfo();
         if (nextSalary.days == null) {
           setText("#nextSalaryCountdown", "حدد يوم نزول الراتب لعرض موعد الراتب القادم");
         } else if (nextSalary.days === 0) {
@@ -5299,6 +5282,7 @@
 
         var clampedUsed = Math.min(100, Math.max(0, metrics.usedPercent));
         $("#usedPercentBar").style.width = clampedUsed + "%";
+        setText("#usedBasisLabel", metrics.cycleMode && metrics.isCurrentCycle && metrics.hasPreviousCycle ? "المستخدم من الرصيد المتاح" : "المستخدم من الراتب");
         setText("#usedPercentText", Math.round(metrics.usedPercent) + "%");
         var distributionBasis = metrics.cycleMode ? Math.max(0, metrics.openingFunds) : state.salary;
         setText("#remainingPercent", distributionBasis > 0 ? Math.max(0, Math.round((metrics.balance / distributionBasis) * 100)) + "%" : "100%");
@@ -5350,7 +5334,7 @@
           status.textContent = "وضع مريح";
         }
 
-        setText("#allocationHeadline", "تم تخصيص " + Math.round(metrics.usedPercent) + "% من الرصيد المتاح");
+        setText("#allocationHeadline", "تم تخصيص " + Math.round(metrics.usedPercent) + (metrics.cycleMode && metrics.isCurrentCycle && metrics.hasPreviousCycle ? "% من الرصيد المتاح" : "% من الراتب"));
         if (metrics.cycleMode) {
           setText("#allocationSubline", "متبقٍ " + formatMoney(metrics.balance) + " لإدارة بقية دورة الراتب");
         } else {
@@ -5360,7 +5344,7 @@
           if (compareDateKeys(metrics.cycle.endKey, dateKey(today)) < 0) {
             setText("#monthlyInsight", "انتهت دورة الراتب برصيد " + formatMoney(metrics.balance) + "، ويُرحّل هذا الرصيد تلقائيًا إلى الدورة التالية.");
           } else {
-            setText("#monthlyInsight", "الرصيد المتبقي يُرحّل تلقائيًا إلى راتب الدورة القادمة. حد الصرف اليومي المقترح " + formatMoney(metrics.daily) + ".");
+            setText("#monthlyInsight", metrics.isCurrentCycle ? "عند موعد الراتب القادم فقط، يُرحّل المتبقي الفعلي ويُضاف إلى الراتب الجديد. حد الصرف اليومي المقترح " + formatMoney(metrics.daily) + "." : "هذه معاينة للدورة المختارة بدون احتساب أي رصيد مرحّل مستقبلي.");
           }
         } else if (state.selectedMonth < defaultMonth) {
           setText("#monthlyInsight", "انتهى الشهر برصيد " + formatMoney(metrics.balance) + " بعد احتساب كل ما سجلته.");
@@ -5656,7 +5640,7 @@
         today = new Date();
 
         if (value > 0 && payDay > 0) {
-          if (previousSalary <= 0 || state.salaryCycleVersion < 2 || !state.salaryCycleAnchorDate) {
+          if (previousSalary <= 0 || state.salaryCycleVersion < 3 || !state.salaryCycleAnchorDate) {
             // أول استخدام لدورة الراتب: لا يوجد رصيد سابق مفترض.
             setSalaryCycleAnchorCarryover(0, false);
           } else if (payDay !== previousPayDay) {

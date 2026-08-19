@@ -299,8 +299,13 @@ async function handleApi(request, env, url) {
     const auth = await optionalAuth(request, env);
     const release = await getReleaseState(env, url.origin);
     const isOwner = auth?.user?.role === "super_admin";
-    const displayTargetVersion = isOwner ? String(release.stagedVersion || VERSION) : String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
-    const targetReleaseId = isOwner ? String(release.stagedReleaseId || RELEASE_ID) : String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
+    const publicPublishedVersion = String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
+    const rawPublicReleaseId = String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
+    const publicPublishedReleaseId = publicPublishedVersion === PREVIOUS_PUBLISHED_VERSION
+      ? PREVIOUS_RELEASE_ID
+      : rawPublicReleaseId;
+    const displayTargetVersion = isOwner ? String(release.stagedVersion || VERSION) : publicPublishedVersion;
+    const targetReleaseId = isOwner ? String(release.stagedReleaseId || RELEASE_ID) : publicPublishedReleaseId;
     // البنايات القديمة من 3.8.7 كانت تقارن رقم الإصدار فقط. محرف غير مرئي يجعلها ترى تحديثًا جديدًا مع بقاء الرقم ظاهرًا 3.8.7.
     const targetVersion = targetReleaseId === RELEASE_ID ? UPDATE_SIGNAL_VERSION : displayTargetVersion;
     return apiJson(request, env, {
@@ -310,9 +315,9 @@ async function handleApi(request, env, url) {
       targetReleaseId,
       stagedVersion: String(release.stagedVersion || VERSION),
       stagedReleaseId: String(release.stagedReleaseId || RELEASE_ID),
-      publishedVersion: String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION),
-      publishedReleaseId: String(release.publishedReleaseId || PREVIOUS_RELEASE_ID),
-      published: String(release.publishedReleaseId || "") === String(release.stagedReleaseId || RELEASE_ID),
+      publishedVersion: publicPublishedVersion,
+      publishedReleaseId: publicPublishedReleaseId,
+      published: publicPublishedReleaseId === String(release.stagedReleaseId || RELEASE_ID),
       stagedAt: release.stagedAt || null,
       publishedAt: release.publishedAt || null
     });
@@ -677,9 +682,16 @@ export class SalaryStore extends DurableObject {
       await this.ctx.storage.put("release:publishedReleaseId", publishedReleaseId);
     }
 
-    // Repair the accidental 3.8.7 pre-publish state created by earlier staging builds.
-    // The owner has not published 3.8.7 yet, so all normal users must remain on 3.8.6.
-    if (publishedVersion === VERSION && ACCIDENTAL_PREPUBLISH_RELEASE_IDS.has(publishedReleaseId)) {
+    // Repair any inconsistent pre-publish state created by earlier 3.8.7 staging builds.
+    // Public users must remain on the canonical 3.8.6 release until the owner explicitly publishes 3.8.7.
+    const hasAccidentalReleaseId = ACCIDENTAL_PREPUBLISH_RELEASE_IDS.has(publishedReleaseId);
+    const previousVersionHasWrongReleaseId =
+      publishedVersion === PREVIOUS_PUBLISHED_VERSION && publishedReleaseId !== PREVIOUS_RELEASE_ID;
+    const currentVersionWasAccidentallyPublished =
+      publishedVersion === VERSION && hasAccidentalReleaseId;
+    if (previousVersionHasWrongReleaseId || currentVersionWasAccidentallyPublished) {
+      const fromVersion = publishedVersion;
+      const fromReleaseId = publishedReleaseId;
       publishedVersion = PREVIOUS_PUBLISHED_VERSION;
       publishedReleaseId = PREVIOUS_RELEASE_ID;
       await this.ctx.storage.put("release:publishedVersion", publishedVersion);
@@ -687,7 +699,7 @@ export class SalaryStore extends DurableObject {
       await this.ctx.storage.delete("release:publishedAt");
       await this.ctx.storage.put("push:lastUpdateVersion", publishedVersion);
       await this.ctx.storage.put("push:lastUpdateReleaseId", publishedReleaseId);
-      await this.audit("release-published-state-repaired", { fromVersion: VERSION, toVersion: publishedVersion, toReleaseId: publishedReleaseId });
+      await this.audit("release-published-state-repaired", { fromVersion, fromReleaseId, toVersion: publishedVersion, toReleaseId: publishedReleaseId });
     }
 
     let stagedVersion = String(await this.ctx.storage.get("release:stagedVersion") || "");
@@ -1243,7 +1255,13 @@ export default {
         const shellAuth = await optionalAuth(request, env);
         const preview = shellAuth?.user?.role === "super_admin";
         const publishedVersion = String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
-        const publishedReleaseId = String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
+        const rawPublishedReleaseId = String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
+        // Defensive normalization: 3.8.6 can only map to its canonical archived release id.
+        // This prevents a stale Durable Object pair such as version=3.8.6 + releaseId=3.8.7-r3
+        // from ever routing users to a deleted/nonexistent archive.
+        const publishedReleaseId = publishedVersion === PREVIOUS_PUBLISHED_VERSION
+          ? PREVIOUS_RELEASE_ID
+          : rawPublishedReleaseId;
         const latestPublished = publishedReleaseId === RELEASE_ID;
         const useLatest = preview || latestPublished;
         const safePublishedReleaseId = /^[A-Za-z0-9._-]{1,80}$/.test(publishedReleaseId) ? publishedReleaseId : PREVIOUS_RELEASE_ID;

@@ -1,8 +1,11 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.8.7\u200B";
+const VERSION = "3.8.7";
+const RELEASE_ID = "3.8.7-calendar-r5";
+const UPDATE_SIGNAL_VERSION = "3.8.7\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.7";
+const PREVIOUS_RELEASE_ID = "3.8.7-r3";
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
 const AUTH_NAME = "__salary_manager_auth_v311__";
@@ -240,12 +243,16 @@ async function optionalAuth(request, env) {
 async function getReleaseState(env, subject = "") {
   const { body } = await internal(env, "/auth/system/release-state", {
     version: VERSION,
+    releaseId: RELEASE_ID,
     previousVersion: PREVIOUS_PUBLISHED_VERSION,
+    previousReleaseId: PREVIOUS_RELEASE_ID,
     subject
   });
   return body || {
     stagedVersion: VERSION,
+    stagedReleaseId: RELEASE_ID,
     publishedVersion: PREVIOUS_PUBLISHED_VERSION,
+    publishedReleaseId: PREVIOUS_RELEASE_ID,
     published: false
   };
 }
@@ -264,7 +271,9 @@ async function handleApi(request, env, url) {
       auth: "PBKDF2-SHA256",
       release: {
         stagedVersion: release.stagedVersion || VERSION,
+        stagedReleaseId: release.stagedReleaseId || RELEASE_ID,
         publishedVersion: release.publishedVersion || PREVIOUS_PUBLISHED_VERSION,
+        publishedReleaseId: release.publishedReleaseId || PREVIOUS_RELEASE_ID,
         published: Boolean(release.published)
       }
     });
@@ -278,14 +287,20 @@ async function handleApi(request, env, url) {
     const auth = await optionalAuth(request, env);
     const release = await getReleaseState(env, url.origin);
     const isOwner = auth?.user?.role === "super_admin";
-    const targetVersion = isOwner ? String(release.stagedVersion || VERSION) : String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
+    const displayTargetVersion = isOwner ? String(release.stagedVersion || VERSION) : String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
+    const targetReleaseId = isOwner ? String(release.stagedReleaseId || RELEASE_ID) : String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
+    // البنايات القديمة من 3.8.7 كانت تقارن رقم الإصدار فقط. محرف غير مرئي يجعلها ترى تحديثًا جديدًا مع بقاء الرقم ظاهرًا 3.8.7.
+    const targetVersion = targetReleaseId === RELEASE_ID ? UPDATE_SIGNAL_VERSION : displayTargetVersion;
     return apiJson(request, env, {
       ok: true,
       role: isOwner ? "owner" : "user",
       targetVersion,
+      targetReleaseId,
       stagedVersion: String(release.stagedVersion || VERSION),
+      stagedReleaseId: String(release.stagedReleaseId || RELEASE_ID),
       publishedVersion: String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION),
-      published: String(release.publishedVersion || "") === String(release.stagedVersion || VERSION),
+      publishedReleaseId: String(release.publishedReleaseId || PREVIOUS_RELEASE_ID),
+      published: String(release.publishedReleaseId || "") === String(release.stagedReleaseId || RELEASE_ID),
       stagedAt: release.stagedAt || null,
       publishedAt: release.publishedAt || null
     });
@@ -294,14 +309,14 @@ async function handleApi(request, env, url) {
   if (p === "/api/admin/release-status" && request.method === "GET") {
     const a = await requireAuth(request, env, { admin: true });
     if (!a.ok) return a.response;
-    const { response, body } = await internal(env, "/auth/admin/release-status", { token: a.token, version: VERSION, previousVersion: PREVIOUS_PUBLISHED_VERSION, subject: url.origin });
+    const { response, body } = await internal(env, "/auth/admin/release-status", { token: a.token, version: VERSION, releaseId: RELEASE_ID, previousVersion: PREVIOUS_PUBLISHED_VERSION, previousReleaseId: PREVIOUS_RELEASE_ID, subject: url.origin });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
 
   if (p === "/api/admin/publish-update" && request.method === "POST") {
     const a = await requireAuth(request, env, { admin: true });
     if (!a.ok) return a.response;
-    const { response, body } = await internal(env, "/auth/admin/publish-update", { token: a.token, version: VERSION, previousVersion: PREVIOUS_PUBLISHED_VERSION, subject: url.origin });
+    const { response, body } = await internal(env, "/auth/admin/publish-update", { token: a.token, version: VERSION, releaseId: RELEASE_ID, previousVersion: PREVIOUS_PUBLISHED_VERSION, previousReleaseId: PREVIOUS_RELEASE_ID, subject: url.origin });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
 
@@ -632,39 +647,58 @@ export class SalaryStore extends DurableObject {
     return { sent, removed, subscriptionCount: records.size };
   }
 
-  async ensureReleaseState(version, previousVersion, subject = "", notifyOwner = false) {
-    // v3.8.6: staged releases are shown to the owner inside the app only.
-    // External update notifications are sent only after the owner explicitly publishes the release.
+  async ensureReleaseState(version, previousVersion, subject = "", notifyOwner = false, releaseId = "", previousReleaseId = "") {
+    // الإصدارات تُعرض للمستخدم برقم VERSION، بينما RELEASE_ID يميز بناءً جديدًا حتى لو بقي رقم الإصدار نفسه.
     notifyOwner = false;
     version = String(version || VERSION).slice(0, 30);
+    releaseId = String(releaseId || version || RELEASE_ID).slice(0, 80);
     previousVersion = String(previousVersion || PREVIOUS_PUBLISHED_VERSION).slice(0, 30);
+    previousReleaseId = String(previousReleaseId || previousVersion || PREVIOUS_RELEASE_ID).slice(0, 80);
+
     let publishedVersion = String(await this.ctx.storage.get("release:publishedVersion") || "");
     if (!publishedVersion) {
-      // This deployment is staged on top of the explicitly bundled previous release.
-      // Do not infer the published version from the older push-broadcast marker.
       publishedVersion = previousVersion;
       await this.ctx.storage.put("release:publishedVersion", publishedVersion);
     }
+    let publishedReleaseId = String(await this.ctx.storage.get("release:publishedReleaseId") || "");
+    if (!publishedReleaseId) {
+      publishedReleaseId = previousReleaseId;
+      await this.ctx.storage.put("release:publishedReleaseId", publishedReleaseId);
+    }
+
     let stagedVersion = String(await this.ctx.storage.get("release:stagedVersion") || "");
+    let stagedReleaseId = String(await this.ctx.storage.get("release:stagedReleaseId") || "");
     let stagedAt = Number(await this.ctx.storage.get("release:stagedAt") || 0);
     let previewToken = String(await this.ctx.storage.get("release:previewToken") || "");
-    if (stagedVersion !== version) {
+
+    if (stagedReleaseId !== releaseId) {
       stagedVersion = version;
+      stagedReleaseId = releaseId;
       stagedAt = Date.now();
       previewToken = randomToken(18);
-      await this.ctx.storage.put("release:stagedVersion", version);
+      await this.ctx.storage.put("release:stagedVersion", stagedVersion);
+      await this.ctx.storage.put("release:stagedReleaseId", stagedReleaseId);
       await this.ctx.storage.put("release:stagedAt", stagedAt);
       await this.ctx.storage.put("release:previewToken", previewToken);
       await this.ctx.storage.delete("release:ownerNotifiedVersion");
       await this.ctx.storage.delete("release:ownerLastPushResult");
-    } else if (!previewToken) {
-      previewToken = randomToken(18);
-      await this.ctx.storage.put("release:previewToken", previewToken);
+    } else {
+      if (stagedVersion !== version) {
+        stagedVersion = version;
+        await this.ctx.storage.put("release:stagedVersion", stagedVersion);
+      }
+      if (!previewToken) {
+        previewToken = randomToken(18);
+        await this.ctx.storage.put("release:previewToken", previewToken);
+      }
     }
-    const published = publishedVersion === stagedVersion;
+
+    const published = publishedReleaseId === stagedReleaseId;
     return {
       stagedVersion,
+      stagedReleaseId,
       publishedVersion,
+      publishedReleaseId,
       published,
       stagedAt: stagedAt || null,
       publishedAt: Number(await this.ctx.storage.get("release:publishedAt") || 0) || null,
@@ -844,7 +878,7 @@ export class SalaryStore extends DurableObject {
     }
 
     if (p === "/auth/system/release-state") {
-      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false);
+      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false, b.releaseId, b.previousReleaseId);
       return json({ ok: true, ...state });
     }
 
@@ -932,7 +966,7 @@ export class SalaryStore extends DurableObject {
     }
     if (p === "/auth/system/broadcast-update") {
       // Backward-compatible alias: new versions are staged for the owner first.
-      const state = await this.ensureReleaseState(b.version, b.previousVersion || PREVIOUS_PUBLISHED_VERSION, b.subject, false);
+      const state = await this.ensureReleaseState(b.version, b.previousVersion || PREVIOUS_PUBLISHED_VERSION, b.subject, false, b.releaseId || RELEASE_ID, b.previousReleaseId || PREVIOUS_RELEASE_ID);
       return json({ ok: true, staged: true, ...state });
     }
 
@@ -977,31 +1011,34 @@ export class SalaryStore extends DurableObject {
       return json({ ok: true });
     }
     if (p === "/auth/admin/release-status") {
-      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false);
+      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false, b.releaseId, b.previousReleaseId);
       const all = await this.ctx.storage.list({ prefix: "push:all:" });
       const owners = await this.ctx.storage.list({ prefix: "push:owner:" });
       return json({ ok: true, ...state, userPushSubscriptions: all.size, ownerPushSubscriptions: owners.size });
     }
     if (p === "/auth/admin/publish-update") {
-      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false);
+      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false, b.releaseId, b.previousReleaseId);
       const version = String(state.stagedVersion || b.version || VERSION).slice(0, 30);
-      if (!version) return json({ ok: false, error: "INVALID_VERSION" }, 400);
-      if (state.publishedVersion === version) return json({ ok: true, alreadyPublished: true, ...state });
+      const releaseId = String(state.stagedReleaseId || b.releaseId || RELEASE_ID).slice(0, 80);
+      if (!version || !releaseId) return json({ ok: false, error: "INVALID_VERSION" }, 400);
+      if (state.publishedReleaseId === releaseId) return json({ ok: true, alreadyPublished: true, ...state });
       const publishedAt = Date.now();
       await this.ctx.storage.put("release:publishedVersion", version);
+      await this.ctx.storage.put("release:publishedReleaseId", releaseId);
       await this.ctx.storage.put("release:publishedAt", publishedAt);
       await this.ctx.storage.put("push:lastUpdateVersion", version);
+      await this.ctx.storage.put("push:lastUpdateReleaseId", releaseId);
       const payload = {
         title: "تحديث جديد متوفر · مدير الراتب",
         body: `تم اعتماد الإصدار ${version}. افتح مدير الراتب ثم اختر وقت التحديث المناسب لك.`,
         icon: "./icons/choice/gold-192.png",
         badge: "./icons/choice/gold-192.png",
         url: "./?update=1",
-        tag: `salary-manager-update-${version}`
+        tag: `salary-manager-update-${releaseId}`
       };
       const result = await this.sendPushToPrefix("push:all:", payload, b.subject);
-      await this.audit("release-published-to-users", { version, adminId: admin.user.id, sent: result.sent, removed: result.removed, subscriptionCount: result.subscriptionCount });
-      return json({ ok: true, stagedVersion: version, publishedVersion: version, published: true, publishedAt, ...result });
+      await this.audit("release-published-to-users", { version, releaseId, adminId: admin.user.id, sent: result.sent, removed: result.removed, subscriptionCount: result.subscriptionCount });
+      return json({ ok: true, stagedVersion: version, stagedReleaseId: releaseId, publishedVersion: version, publishedReleaseId: releaseId, published: true, publishedAt, ...result });
     }
     if (p === "/auth/admin/test-update-push") {
       const result = await this.sendOwnerReleasePush({
@@ -1140,7 +1177,9 @@ export default {
     const url = new URL(request.url);
     const stageRelease = () => internal(env, "/auth/system/release-state", {
       version: VERSION,
+      releaseId: RELEASE_ID,
       previousVersion: PREVIOUS_PUBLISHED_VERSION,
+      previousReleaseId: PREVIOUS_RELEASE_ID,
       subject: url.origin
     }).catch(error => console.error("Release stage check failed", error));
 
@@ -1160,13 +1199,14 @@ export default {
         const ownerCookiePreview = await hasValidOwnerPreviewCookie(request, env);
         const preview = tokenPreview || ownerCookiePreview;
         const publishedVersion = String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
-        const latestPublished = publishedVersion === VERSION;
+        const publishedReleaseId = String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
+        const latestPublished = publishedReleaseId === RELEASE_ID;
         const useLatest = preview || latestPublished;
         let assetPath;
         if (isWorkerScript) {
-          assetPath = useLatest ? "/sw.js" : `/releases/${PREVIOUS_PUBLISHED_VERSION}/sw.js`;
+          assetPath = useLatest ? "/sw.js" : `/releases/${PREVIOUS_RELEASE_ID}/sw.js`;
         } else {
-          assetPath = useLatest ? "/index.html" : `/releases/${PREVIOUS_PUBLISHED_VERSION}/index.html`;
+          assetPath = useLatest ? "/index.html" : `/releases/${PREVIOUS_RELEASE_ID}/index.html`;
         }
         const assetUrl = new URL(assetPath, url.origin);
         if (tokenPreview) assetUrl.searchParams.set("owner_preview", requestedPreview);
@@ -1175,7 +1215,7 @@ export default {
         if (response && response.ok) {
           const headers = new Headers(response.headers);
           headers.set("cache-control", "no-store");
-          headers.set("x-salary-release", useLatest ? VERSION : publishedVersion);
+          headers.set("x-salary-release", useLatest ? RELEASE_ID : publishedReleaseId);
           return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
         }
         return new Response("Salary Manager app shell unavailable", { status: response ? response.status : 503 });
@@ -1198,8 +1238,10 @@ export default {
       try {
         const { body } = await internal(env, "/auth/system/release-state", {
           version: VERSION,
+          releaseId: RELEASE_ID,
           previousVersion: PREVIOUS_PUBLISHED_VERSION,
-          subject: "https://salary-manager.alromaithi-3bo0d.workers.dev"
+          previousReleaseId: PREVIOUS_RELEASE_ID,
+          subject: ""
         });
         console.log("Release stage check", body);
       } catch (error) {

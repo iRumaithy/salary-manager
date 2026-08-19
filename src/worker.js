@@ -1251,9 +1251,9 @@ export default {
         if (isWorkerScript) {
           assetPath = useLatest ? "/sw.js" : `/releases/${safePublishedReleaseId}/sw.js`;
         } else {
-          // Cloudflare Static Assets canonicalizes folder index HTML to a trailing-slash URL.
-          // Request the canonical path directly so env.ASSETS.fetch returns 200 instead of a 307 redirect.
-          assetPath = useLatest ? "/" : `/releases/${safePublishedReleaseId}/`;
+          // Use an exact non-index asset for archived public releases.
+          // Cloudflare may canonicalize nested index.html paths; app.html avoids that redirect entirely.
+          assetPath = useLatest ? "/" : `/releases/${safePublishedReleaseId}/app.html`;
         }
         const assetUrl = new URL(assetPath, url.origin);
         const assetRequest = new Request(assetUrl.toString(), { method: "GET", headers: request.headers, redirect: "manual" });

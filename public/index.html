@@ -3582,7 +3582,7 @@
 
 
       var APP_VERSION = "3.8.7";
-      var APP_BUILD = "3.8.7-r2";
+      var APP_BUILD = "3.8.7-r3";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -4858,9 +4858,13 @@
 
       function itemDueDatesInCycle(item, cycle, recurring) {
         if (!cycle || !item || (recurring && item.isPaused)) return [];
-        var startLimit = String(item.startDate || "").slice(0, 10);
-        var endLimit = String(item.endDate || "").slice(0, 10);
-        if (!startLimit) return [];
+        // توافق كامل مع طريقة إدخال السلف/الأقساط القديمة:
+        // startDate و endDate يحددان شهري البداية والنهاية، بينما dueDay هو يوم الخصم الفعلي.
+        // لذلك لا نستبعد قسطًا لأن يوم startDate نفسه جاء بعد dueDay داخل الشهر؛
+        // كان النظام قبل 3.8.7 يعتبر الالتزام فعالًا طوال شهر البداية/النهاية.
+        var startMonth = String(item.startDate || "").slice(0, 7);
+        var endMonth = String(item.endDate || "").slice(0, 7);
+        if (!startMonth) return [];
         var dates = [];
         var cursor = new Date(cycle.start.getFullYear(), cycle.start.getMonth(), 1);
         var lastMonth = new Date(cycle.end.getFullYear(), cycle.end.getMonth(), 1);
@@ -4868,8 +4872,9 @@
         while (cursor <= lastMonth && guard < 4) {
           var due = dueDateInCalendarMonth(cursor.getFullYear(), cursor.getMonth(), item.dueDay);
           var key = dateKey(due);
+          var dueMonth = toMonthKey(due);
           if (compareDateKeys(key, cycle.startKey) >= 0 && compareDateKeys(key, cycle.endKey) <= 0 &&
-              compareDateKeys(key, startLimit) >= 0 && (!endLimit || compareDateKeys(key, endLimit) <= 0)) {
+              dueMonth >= startMonth && (!endMonth || dueMonth <= endMonth)) {
             dates.push(due);
           }
           cursor.setMonth(cursor.getMonth() + 1);

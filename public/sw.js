@@ -1,4 +1,4 @@
-const CACHE = "salary-manager-v3.8.7-r2";
+const CACHE = "salary-manager-v3.8.7-r3";
 const OWNER_PREVIEW_TOKEN = new URL(self.location.href).searchParams.get("owner_preview") || "";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
@@ -129,7 +129,7 @@ self.addEventListener("install", event => {
     let cache = null;
     try { cache = await caches.open(CACHE); } catch (_) {}
     await Promise.allSettled([refreshShell(cache), cacheStatic(cache)]);
-    // Same-version 3.8.7 corrective hotfix: activate immediately once so devices leave the faulty cached build.
+    // Same-version 3.8.7 corrective hotfix r3: activate immediately so devices receive the installment compatibility fix.
     await self.skipWaiting();
   })());
 });

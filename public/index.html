@@ -20,7 +20,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.7-calendar-r10";
+      var v = "3.8.7-calendar-r11";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -3116,11 +3116,11 @@
             <time datetime="2026-08-19">19 أغسطس 2026</time>
           </div>
           <ul>
-            <li>إعادة بناء نظام الأشهر بالكامل مع إبقاء الشهر الميلادي هو المقياس الأساسي في مدير الراتب.</li>
-            <li>الأشهر القادمة تبقى بقيمة صفر حتى موعد نزول الراتب؛ عندها يتفعّل الشهر التالي ويُضاف إليه الراتب مع الرصيد المتبقي.</li>
-            <li>عند تفعيل الشهر التالي تُخصم جميع السلف والأقساط النشطة لذلك الشهر تلقائيًا وتظهر ضمن سجلاته، دون تغيير طريقة احتسابها الأصلية.</li>
-            <li>المدفوعات الثابتة لا تُخصم إلا بعد تأكيد المستخدم «تم الدفع هذا الشهر»، بينما تُسجل المصروفات على الشهر المفعّل بحسب تاريخ العملية.</li>
-            <li>إرسال إشعار مراجعة للمالك تلقائيًا عند دخوله إلى التطبيق لوجود هذا التحديث الجديد، مع بقاء رقم الإصدار الظاهر 3.8.7.</li>
+            <li>الشهر المعروض يلتزم بالشهر الميلادي الفعلي ولا ينتقل للشهر التالي لمجرد حلول موعد نزول الراتب.</li>
+            <li>موعد نزول الراتب يجهّز الشهر التالي ماليًا في الخلفية فقط، مع إضافة الراتب والرصيد المرحّل وخصم السلف والأقساط النشطة حسب النظام المعتمد.</li>
+            <li>المصروفات تُسجل في شهر تاريخ العملية الفعلي؛ مصروف بتاريخ 19 أغسطس يبقى في سجل أغسطس حتى لو كان الراتب قد نزل في اليوم نفسه.</li>
+            <li>رصيد الشهر الحالي يستمر في خصم جميع مصروفاته حتى نهاية آخر يوم من الشهر، ثم يُرحّل صافي المتبقي عند دخول اليوم الأول من الشهر التالي.</li>
+            <li>المدفوعات الثابتة لا تُخصم إلا بعد تأكيد المستخدم «تم الدفع هذا الشهر»، ويظل الإصدار 3.8.7 للمالك فقط إلى أن يعتمد نشره.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -3559,7 +3559,7 @@
 
 
       var APP_VERSION = "3.8.7";
-      var APP_RELEASE_ID = "3.8.7-calendar-r10";
+      var APP_RELEASE_ID = "3.8.7-calendar-r11";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -4801,7 +4801,7 @@
           state.monthOpenings = saved.monthOpenings && typeof saved.monthOpenings === "object" ? saved.monthOpenings : {};
           state.salaryCredits = saved.salaryCredits && typeof saved.salaryCredits === "object" ? saved.salaryCredits : {};
           state.commitmentCharges = saved.commitmentCharges && typeof saved.commitmentCharges === "object" ? saved.commitmentCharges : {};
-          state.selectedMonth = /^\d{4}-\d{2}$/.test(String(saved.selectedMonth || "")) ? String(saved.selectedMonth) : state.activeMonth;
+          state.selectedMonth = /^\d{4}-\d{2}$/.test(String(saved.selectedMonth || "")) ? String(saved.selectedMonth) : defaultMonth;
         } else {
           // بناء جديد كليًا لنظام الأشهر: نتجاهل فقط بيانات الترحيل التجريبية السابقة، ونحافظ على الراتب والالتزامات والمدفوعات والمصروفات نفسها.
           state.monthlyLedgerVersion = 2;
@@ -4819,12 +4819,16 @@
         if (state.managerStartMonth > defaultMonth) state.managerStartMonth = defaultMonth;
         if (state.activeMonth < state.managerStartMonth) state.activeMonth = state.managerStartMonth;
         if (state.selectedMonth < state.managerStartMonth) state.selectedMonth = state.managerStartMonth;
+        // عند فتح التطبيق نبدأ دائمًا من الشهر الميلادي الفعلي، حتى لو حفظ بناء تجريبي سابق شهرًا قادمًا كالشهر المعروض.
+        if (defaultMonth >= state.managerStartMonth) state.selectedMonth = defaultMonth;
 
-        // ثبّت الشهر المحاسبي للمصروفات القديمة مرة واحدة وفق تاريخها وموعد الراتب الحالي.
+        // المصروف يتبع شهر تاريخ العملية الفعلي حصراً، ولا يتغير بسبب موعد نزول الراتب.
         state.expenses = state.expenses.map(function (item) {
-          if (/^\d{4}-\d{2}$/.test(String(item.accountMonth || ""))) return item;
-          return Object.assign({}, item, { accountMonth: ledgerMonthForDate(item.date) });
+          var calendarMonth = calendarMonthForDate(item && item.date);
+          return Object.assign({}, item, { accountMonth: calendarMonth });
         });
+        // إذا كان الشهر التالي قد جُهز ماليًا مسبقًا، أعد احتساب الرصيد المرحّل بعد تصحيح مصروفات الشهر الحالي.
+        if (state.activeMonth > state.managerStartMonth) rebuildActivatedMonthOpenings();
 
         ensureMonthlyLedgerCurrent(false);
         return true;
@@ -4910,6 +4914,12 @@
         return new Date(d.getFullYear(), d.getMonth(), day);
       }
 
+      function calendarMonthForDate(value) {
+        var d = value instanceof Date ? new Date(value.getFullYear(), value.getMonth(), value.getDate()) : parseLocalDate(value);
+        if (!(d instanceof Date) || isNaN(d.getTime())) return defaultMonth;
+        return toMonthKey(d);
+      }
+
       function ledgerMonthForDate(value) {
         var d = value instanceof Date ? new Date(value.getFullYear(), value.getMonth(), value.getDate()) : parseLocalDate(value);
         if (!(d instanceof Date) || isNaN(d.getTime())) return defaultMonth;
@@ -4928,8 +4938,11 @@
       }
 
       function expenseMonth(item) {
+        // سجل المصروفات يعتمد على التاريخ الميلادي الحقيقي للعملية، لا على الشهر المالي الذي جهزه موعد الراتب.
+        var byDate = calendarMonthForDate(item && item.date);
+        if (/^\d{4}-\d{2}$/.test(byDate)) return byDate;
         var stored = String(item && item.accountMonth || "");
-        return /^\d{4}-\d{2}$/.test(stored) ? stored : ledgerMonthForDate(item && item.date);
+        return /^\d{4}-\d{2}$/.test(stored) ? stored : defaultMonth;
       }
 
       function isCommitmentActive(item, monthKey) {
@@ -5090,7 +5103,7 @@
       function ensureMonthlyLedgerCurrent(showRolloverToast) {
         var previousCalendarMonth = defaultMonth;
         var previousActiveMonth = state.activeMonth || defaultMonth;
-        var wasViewingActive = state.selectedMonth === previousActiveMonth;
+        var wasViewingCalendarMonth = state.selectedMonth === previousCalendarMonth;
         today = new Date();
         defaultMonth = toMonthKey(today);
 
@@ -5115,8 +5128,9 @@
         }
 
         if (state.selectedMonth < state.managerStartMonth) state.selectedMonth = state.managerStartMonth;
-        if (changed && wasViewingActive) state.selectedMonth = state.activeMonth;
-        if (changed && showRolloverToast) showToast("تم تفعيل الشهر الجديد: أضيف الراتب إلى المتبقي السابق وخُصمت السلف والأقساط النشطة تلقائيًا");
+        // نزول الراتب لا يغيّر الشهر الظاهر. الانتقال المرئي يحدث فقط عند دخول أول يوم من الشهر الميلادي التالي.
+        if (defaultMonth !== previousCalendarMonth && wasViewingCalendarMonth && defaultMonth >= state.managerStartMonth) state.selectedMonth = defaultMonth;
+        if (changed && showRolloverToast) showToast("تم تجهيز راتب الشهر التالي مع الرصيد المرحّل وخصم السلف والأقساط، وستبقى الشاشة على الشهر الحالي حتى بدايته الفعلية");
         return changed || previousCalendarMonth !== defaultMonth || previousActiveMonth !== state.activeMonth;
       }
 
@@ -5125,18 +5139,21 @@
         var ledger = computeMonthlyMonth(state.selectedMonth);
         var nextSalary = getNextSalaryInfo();
         var isActive = state.selectedMonth === state.activeMonth;
-        var isPast = state.selectedMonth < state.activeMonth;
-        var usingSalaryCountdown = isActive && nextSalary.days != null;
-        var daysLeft = ledger.future ? 0 : (isPast ? 0 : (usingSalaryCountdown ? nextSalary.days : getDaysRemaining(defaultMonth)));
+        var isCalendarCurrent = state.selectedMonth === defaultMonth;
+        var isPast = state.selectedMonth < defaultMonth;
+        var isCalendarFuture = state.selectedMonth > defaultMonth;
+        // بما أن الشاشة شهرية ميلادية، حد الصرف في الشهر الحالي يستمر حتى آخر يوم منه، وليس حتى يوم نزول الراتب.
+        var usingSalaryCountdown = false;
+        var daysLeft = ledger.future ? 0 : (isPast || isCalendarFuture ? 0 : getDaysRemaining(defaultMonth));
         var spendingDays = Math.max(1, daysLeft || 1);
-        var daily = ledger.future || isPast ? 0 : Math.max(0, ledger.balance) / spendingDays;
+        var daily = ledger.future || isPast || isCalendarFuture ? 0 : Math.max(0, ledger.balance) / spendingDays;
         return Object.assign({}, ledger, {
           daysLeft: daysLeft,
-          calendarDaysLeft: ledger.future || isPast ? 0 : getDaysRemaining(defaultMonth),
+          calendarDaysLeft: ledger.future || isPast || isCalendarFuture ? 0 : getDaysRemaining(defaultMonth),
           nextSalary: nextSalary,
           usingSalaryCountdown: usingSalaryCountdown,
           daily: daily,
-          carryover: (!ledger.future && isActive && state.activeMonth > state.managerStartMonth) ? ledger.opening : 0
+          carryover: (!ledger.future && isActive && isCalendarCurrent && state.activeMonth > state.managerStartMonth) ? ledger.opening : 0
         });
       }
 
@@ -5195,7 +5212,7 @@
         setText("#daysRemaining", metrics.daysLeft);
         if (metrics.future) {
           setText("#daysLabel", "غير مفعّل");
-        } else if (state.selectedMonth < state.activeMonth) {
+        } else if (state.selectedMonth < defaultMonth) {
           setText("#daysLabel", "الشهر مكتمل");
         } else if (metrics.usingSalaryCountdown) {
           if (metrics.daysLeft === 0) setText("#daysLabel", "الراتب اليوم");
@@ -5528,7 +5545,8 @@
       function normalizeExpenseDate(currentValue) {
         var selected = state.selectedMonth;
         if (currentValue && currentValue.slice(0, 7) === selected) return currentValue;
-        if (selected === state.activeMonth) return toDateInput(today);
+        // في الشهر الميلادي الحالي يكون التاريخ الافتراضي هو تاريخ اليوم حتى لو كان راتب الشهر التالي قد جُهز في الخلفية.
+        if (selected === defaultMonth) return toDateInput(today);
         return selected + "-01";
       }
 
@@ -5648,7 +5666,7 @@
           return;
         }
 
-        item.accountMonth = ledgerMonthForDate(item.date);
+        item.accountMonth = calendarMonthForDate(item.date);
         if (item.accountMonth > state.activeMonth) {
           showToast("لا يمكن تسجيل مصروف في شهر لم يتم تفعيله بعد.", true);
           return;
@@ -5679,8 +5697,8 @@
       }
 
       function toggleRecurringPaid(id) {
-        if (state.selectedMonth !== state.activeMonth) {
-          showToast("يمكن تأكيد الدفع في الشهر المفعّل حاليًا فقط.", true);
+        if (state.selectedMonth !== defaultMonth) {
+          showToast("يمكن تأكيد الدفع في الشهر الميلادي الحالي فقط.", true);
           return;
         }
         var wasPaid = false;

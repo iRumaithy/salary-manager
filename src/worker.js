@@ -2,10 +2,17 @@ import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
 const VERSION = "3.8.7";
-const RELEASE_ID = "3.8.7-calendar-r6";
+const RELEASE_ID = "3.8.7-calendar-r8";
 const UPDATE_SIGNAL_VERSION = "3.8.7\u200B";
-const PREVIOUS_PUBLISHED_VERSION = "3.8.7";
-const PREVIOUS_RELEASE_ID = "3.8.7-calendar-r5";
+const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
+const PREVIOUS_RELEASE_ID = "3.8.6";
+const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
+  "3.8.7",
+  "3.8.7-r3",
+  "3.8.7-calendar-r5",
+  "3.8.7-calendar-r6",
+  "3.8.7-calendar-r7"
+]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
 const AUTH_NAME = "__salary_manager_auth_v311__";
@@ -182,6 +189,9 @@ function sessionCookie(token) {
 function clearSessionCookie() {
   return `${SESSION_COOKIE_NAME}=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`;
 }
+function clearOwnerPreviewCookie() {
+  return `__sm_owner_preview=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax`;
+}
 async function internal(env, path, body = {}) {
   const r = await authStub(env).fetch(new Request("https://auth" + path, {
     method: "POST",
@@ -345,6 +355,7 @@ async function handleApi(request, env, url) {
     if (body?.token) cookies.push(sessionCookie(body.token));
     const ownerCookie = await ownerPreviewCookie(env, body?.user);
     if (ownerCookie) cookies.push(ownerCookie);
+    else cookies.push(clearOwnerPreviewCookie());
     return apiJsonWithCookies(request, env, body || { ok: false, error: "AUTH_FAILED" }, response.status || 400, cookies);
   }
 
@@ -354,12 +365,9 @@ async function handleApi(request, env, url) {
     const b = await request.json().catch(() => ({}));
     const { response, body } = await internal(env, "/auth/browser-handoff/create", { token: a.token, deviceLabel: b.deviceLabel });
     if (!response.ok) return apiJson(request, env, body || { ok: false }, response.status);
-    let ownerPreviewToken = "";
-    if (a.user?.role === "super_admin") {
-      const release = await getReleaseState(env, url.origin);
-      ownerPreviewToken = String(release?.previewToken || "");
-    }
-    return apiJson(request, env, { ...(body || { ok: true }), ownerPreviewToken }, response.status);
+    // Preview access is intentionally never exported as a bearer token.
+    // The staged build is available only while the current server-verified session belongs to the owner.
+    return apiJson(request, env, { ...(body || { ok: true }) }, response.status);
   }
   if (p === "/api/auth/browser-handoff/consume" && request.method === "POST") {
     const b = await request.json().catch(() => ({}));
@@ -368,6 +376,7 @@ async function handleApi(request, env, url) {
     if (body?.token) cookies.push(sessionCookie(body.token));
     const ownerCookie = await ownerPreviewCookie(env, body?.user);
     if (ownerCookie) cookies.push(ownerCookie);
+    else cookies.push(clearOwnerPreviewCookie());
     return apiJsonWithCookies(request, env, body || { ok: false }, response.status, cookies);
   }
 
@@ -431,6 +440,7 @@ async function handleApi(request, env, url) {
     const cookies = [sessionCookie(a.token)];
     const ownerCookie = await ownerPreviewCookie(env, a.user);
     if (ownerCookie) cookies.push(ownerCookie);
+    else cookies.push(clearOwnerPreviewCookie());
     return apiJsonWithCookies(request, env, { ok: true, token: a.token, user: a.user, session: a.session }, 200, cookies);
   }
   if (p === "/api/auth/logout" && request.method === "POST") {
@@ -438,7 +448,7 @@ async function handleApi(request, env, url) {
     if (token) await internal(env, "/auth/logout", { token });
     return apiJsonWithCookies(request, env, { ok: true }, 200, [
       clearSessionCookie(),
-      "__sm_owner_preview=; Path=/; Max-Age=0; Secure; HttpOnly; SameSite=Lax"
+      clearOwnerPreviewCookie()
     ]);
   }
   if (p === "/api/auth/change-password" && request.method === "POST") {
@@ -663,6 +673,19 @@ export class SalaryStore extends DurableObject {
     if (!publishedReleaseId) {
       publishedReleaseId = previousReleaseId;
       await this.ctx.storage.put("release:publishedReleaseId", publishedReleaseId);
+    }
+
+    // Repair the accidental 3.8.7 pre-publish state created by earlier staging builds.
+    // The owner has not published 3.8.7 yet, so all normal users must remain on 3.8.6.
+    if (publishedVersion === VERSION && ACCIDENTAL_PREPUBLISH_RELEASE_IDS.has(publishedReleaseId)) {
+      publishedVersion = PREVIOUS_PUBLISHED_VERSION;
+      publishedReleaseId = PREVIOUS_RELEASE_ID;
+      await this.ctx.storage.put("release:publishedVersion", publishedVersion);
+      await this.ctx.storage.put("release:publishedReleaseId", publishedReleaseId);
+      await this.ctx.storage.delete("release:publishedAt");
+      await this.ctx.storage.put("push:lastUpdateVersion", publishedVersion);
+      await this.ctx.storage.put("push:lastUpdateReleaseId", publishedReleaseId);
+      await this.audit("release-published-state-repaired", { fromVersion: VERSION, toVersion: publishedVersion, toReleaseId: publishedReleaseId });
     }
 
     let stagedVersion = String(await this.ctx.storage.get("release:stagedVersion") || "");
@@ -1212,11 +1235,11 @@ export default {
       const isAppShell = url.pathname === "/" || url.pathname === "" || url.pathname === "/index.html";
       const isWorkerScript = url.pathname === "/sw.js";
       if (isAppShell || isWorkerScript) {
-        const requestedPreview = String(url.searchParams.get("owner_preview") || "");
         const release = await getReleaseState(env, url.origin);
-        const tokenPreview = Boolean(requestedPreview && release.previewToken && safeEqual(requestedPreview, String(release.previewToken)));
-        const ownerCookiePreview = await hasValidOwnerPreviewCookie(request, env);
-        const preview = tokenPreview || ownerCookiePreview;
+        // Critical release gate: staged assets are served ONLY to a currently authenticated owner session.
+        // Query-string preview tokens and stale preview cookies can never grant a normal user access.
+        const shellAuth = await optionalAuth(request, env);
+        const preview = shellAuth?.user?.role === "super_admin";
         const publishedVersion = String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
         const publishedReleaseId = String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
         const latestPublished = publishedReleaseId === RELEASE_ID;
@@ -1229,7 +1252,6 @@ export default {
           assetPath = useLatest ? "/index.html" : `/releases/${safePublishedReleaseId}/index.html`;
         }
         const assetUrl = new URL(assetPath, url.origin);
-        if (tokenPreview) assetUrl.searchParams.set("owner_preview", requestedPreview);
         const assetRequest = new Request(assetUrl.toString(), { method: "GET", headers: request.headers, redirect: "follow" });
         const response = await env.ASSETS.fetch(assetRequest);
         if (response && response.ok) {

@@ -20,7 +20,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.7";
+      var v = "3.8.7-calendar-r5";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -2272,33 +2272,6 @@
       .icon-choice-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
     }
 
-    .available-title-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 7px;
-      min-width: 0;
-    }
-
-    .carryover-inline {
-      display: inline-flex;
-      width: fit-content;
-      align-items: center;
-      gap: 7px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: #f8efd9;
-      border: 1px solid rgba(208, 143, 39, .24);
-      color: #77571f;
-      font-size: 12px;
-      font-weight: 700;
-      line-height: 1.2;
-    }
-
-    .carryover-inline[hidden] { display: none !important; }
-    .carryover-inline strong { color: #5f4519; font-weight: 850; }
-    .carryover-inline .money-with-symbol { gap: 3px; }
-    .carryover-inline .aed-symbol { width: .78em; height: .78em; }
-
     .usage-badge {
       display: inline-flex;
       align-items: center;
@@ -2414,6 +2387,24 @@
       color: rgba(255,255,255,.92);
     }
 
+
+    .carryover-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0 2px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #fbf2dc;
+      border: 1px solid rgba(208, 143, 39, .28);
+      color: #7a5a1f;
+      font-size: .88rem;
+      font-weight: 700;
+    }
+    .carryover-note[hidden] { display: none !important; }
+    .carryover-note strong { color: #5f4517; }
+    .month-nav-btn:disabled, #previousMonth:disabled { opacity: .38; cursor: not-allowed; }
+
 </style>
 </head>
 <body>
@@ -2492,8 +2483,8 @@
               <strong id="allocationHeadline">ابدأ بإضافة راتبك</strong>
               <span id="allocationSubline">سيظهر هنا ملخص الأقساط والمدفوعات الثابتة ومصروفاتك</span>
             </div>
-            <div class="mini-progress" aria-label="نسبة الرصيد المستخدم">
-              <div class="mini-progress-head"><span id="usedBasisLabel">المستخدم من الراتب</span><b id="usedPercentText">0%</b></div>
+            <div class="mini-progress" aria-label="نسبة الراتب المستخدم">
+              <div class="mini-progress-head"><span>المستخدم من الرصيد المتاح</span><b id="usedPercentText">0%</b></div>
               <div class="mini-progress-track"><div class="mini-progress-fill" id="usedPercentBar"></div></div>
             </div>
           </div>
@@ -2501,14 +2492,12 @@
 
         <article class="available-card">
           <div class="available-head">
-            <div class="available-title-wrap">
-              <p class="available-label">الراتب المتبقي</p>
-              <span class="carryover-inline" id="salaryCarryoverInline" hidden><span>رصيد مرحّل</span><strong id="salaryCarryoverText"><span class="money-with-symbol"><span class="aed-symbol" aria-hidden="true"></span><span>0.00</span></span></strong></span>
-            </div>
+            <p class="available-label">الرصيد المتبقي</p>
             <span class="status-chip" id="balanceStatus">وضع مريح</span>
           </div>
           <div class="available-value" id="availableHero"><span class="money-with-symbol"><span class="aed-symbol" aria-hidden="true"></span><span>0.00</span></span></div>
-          <p class="available-caption" id="availableCaption">بعد خصم الأقساط والمدفوعات الثابتة والمصروفات</p>
+          <div class="carryover-note" id="carryoverNote" hidden>رصيد مرحّل من الشهر السابق: <strong id="carryoverAmount">0.00</strong></div>
+          <p class="available-caption" id="availableCaption">بعد خصم الأقساط المستحقة والمدفوعات الثابتة المؤكدة والمصروفات</p>
           <div class="daily-box">
             <div>
               <span>حد الصرف اليومي المقترح</span>
@@ -2579,7 +2568,7 @@
                 <div class="donut-center">
                   <div>
                     <strong id="remainingPercent">100%</strong>
-                    <span>متبقٍ من الراتب</span>
+                    <span>متبقٍ من الرصيد المتاح</span>
                   </div>
                 </div>
               </div>
@@ -2650,7 +2639,7 @@
           <div class="payment-note-symbol" aria-hidden="true">✓</div>
           <div>
             <strong>ما وظيفة «تم الدفع هذا الشهر»؟</strong>
-            <p>الدفعة محسوبة ومحجوزة من الراتب تلقائيًا سواء ضغطت الزر أم لا. الزر للمتابعة فقط: يوضح أنك سددت الفاتورة أو حولت الادخار في الشهر المختار، ثم تبدأ حالة جديدة تلقائيًا عند الانتقال للشهر التالي.</p>
+            <p>الدفعة الثابتة لا تُخصم من الرصيد تلقائيًا. اضغط «تم الدفع هذا الشهر» فقط بعد السداد أو التحويل، وعندها تُخصم قيمتها من رصيد الشهر مرة واحدة. يمكنك إلغاء العلامة إذا سجّلتها بالخطأ.</p>
           </div>
         </div>
         <article class="panel panel-pad">
@@ -2741,7 +2730,7 @@
             <article class="guide-step">
               <div class="guide-step-number">4</div>
               <h3>أضف المدفوعات الثابتة</h3>
-              <p>أضف الفواتير والاشتراكات والادخار والمخصصات الشهرية الثابتة مثل الهاتف والإنترنت والتحويلات المتكررة.</p>
+              <p>أضف الفواتير والاشتراكات والادخار والمخصصات الشهرية الثابتة مثل الهاتف والإنترنت والتحويلات المتكررة، ثم أكّد الدفع عند تنفيذها فعليًا ليتم خصمها من الرصيد.</p>
             </article>
             <article class="guide-step">
               <div class="guide-step-number">5</div>
@@ -2756,7 +2745,7 @@
             <article class="guide-step">
               <div class="guide-step-number">7</div>
               <h3>تنقّل بين الأشهر</h3>
-              <p>استخدم الأسهم بجانب اسم الشهر للرجوع إلى أي شهر سابق أو الانتقال بين الشهور ومراجعة جميع البيانات بسهولة.</p>
+              <p>استخدم الأسهم بجانب اسم الشهر للتنقل بين شهر البداية والشهور التالية. لا يعرض مدير الراتب أي شهر أقدم من الشهر الذي بدأ فيه هذا النظام.</p>
             </article>
             <article class="guide-step">
               <div class="guide-step-number">8</div>
@@ -2777,7 +2766,7 @@
 
           <article class="guide-summary">
             <h3>الخلاصة</h3>
-            <p>سجّل راتبك والتزاماتك ومصروفاتك، ودع مدير الراتب يحسب لك تلقائيًا كم استخدمت، وكم تبقى، وكم يمكنك صرفه يوميًا حتى موعد الراتب القادم. بهذه الطريقة تصبح إدارة راتبك أوضح وأسهل وأكثر تنظيمًا طوال الشهر.</p>
+            <p>سجّل راتبك والتزاماتك ومصروفاتك، وسيستمر الرصيد معك من شهر إلى آخر دون تصفير. عند موعد نزول الراتب يُضاف الراتب إلى المتبقي، وتُخصم الأقساط تلقائيًا عند موعدها، بينما تُخصم المدفوعات الثابتة بعد تأكيدك للدفع.</p>
           </article>
         </div>
       </section>
@@ -3127,23 +3116,11 @@
             <time datetime="2026-08-19">19 أغسطس 2026</time>
           </div>
           <ul>
-            <li>إعادة بناء ترحيل الرصيد من الصفر مع الحفاظ على طريقة احتساب السلف والأقساط والمدفوعات الثابتة كما كانت قبل إضافة ميزة الترحيل.</li>
-            <li>الرصيد المرحّل يساوي فقط المبلغ المتبقي فعليًا عند حلول موعد الراتب الجديد، ثم يُضاف إليه الراتب الجديد قبل خصم التزامات الشهر الجديد.</li>
-            <li>يبدأ كل مستخدم أول دورة برصيد مرحّل قدره صفر، ولا يتم إنشاء أو افتراض أي رصيد سابق.</li>
-            <li>إظهار الرصيد المرحّل وتطبيقه على الدورة الحالية الفعلية فقط؛ عند استعراض شهر قادم يظهر الراتب المتوقع دون أي ترحيل حتى يحين موعده فعليًا.</li>
-            <li>ربط المصروفات بتاريخ العملية داخل دورة الراتب، مع إبقاء جميع السلف والأقساط النشطة محسوبة مرة واحدة بالطريقة الأصلية.</li>
-          </ul>
-        </section>
-        <section class="changelog-entry">
-          <div class="changelog-version">
-            <strong>الإصدار 3.8.6</strong>
-            <time datetime="2026-08-18">18 أغسطس 2026</time>
-          </div>
-          <ul>
-            <li>إضافة صفحة جديدة باسم «دليل الاستخدام» داخل مدير الراتب لشرح الفكرة وطريقة الاستفادة من الصفحة خطوة بخطوة.</li>
-            <li>إضافة علامة تعريفية واضحة داخل «دليل الاستخدام» حتى يتمكن المستخدم من ملاحظتها والوصول إلى الشرح بسرعة.</li>
-            <li>تنظيم محتوى الدليل ليشرح تسجيل الدخول، تحديد الراتب، السلف والأقساط، المدفوعات الثابتة، المصروفات، النسخة الاحتياطية، التحديثات والإعدادات.</li>
-            <li>الحفاظ على جميع وظائف الصفحة الحالية دون تغيير أثناء إضافة صفحة الدليل الجديدة.</li>
+            <li>إعادة بناء حساب الرصيد على أساس الشهر الميلادي فقط.</li>
+            <li>عند موعد نزول الراتب يضاف الراتب إلى الرصيد الموجود دون تصفيره، ويستمر الرصيد بين الشهور تلقائيًا.</li>
+            <li>السلف والأقساط تُخصم تلقائيًا عند موعدها المسجل، بينما المدفوعات الثابتة لا تُخصم إلا بعد تأكيد المستخدم أنها دُفعت.</li>
+            <li>يبدأ مدير الراتب من شهر التحديث الحالي، ولا توجد شهور أقدم من شهر البداية لتجنب أي خلط في الأرصدة.</li>
+            <li>إضافة بناء داخلي جديد يسمح بإرسال إشعار تحديث جديد بنفس رقم الإصدار 3.8.7.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -3346,7 +3323,7 @@
       var initialIconChoice = window.__salaryInitialIconChoice || "gold";
       var selectedIconChoice = ICON_CHOICES.indexOf(initialIconChoice) !== -1 ? initialIconChoice : (ICON_CHOICES.indexOf(localStorage.getItem(APP_ICON_KEY)) !== -1 ? localStorage.getItem(APP_ICON_KEY) : "gold");
       var pendingIconChoice = selectedIconChoice;
-      var EN_TRANSLATIONS = {"مدير الراتب الشهري":"Monthly Salary Manager","تحديث جديد متوفر":"New update available","لن يتم تحديث الصفحة تلقائيًا. يمكنك أخذ نسخة احتياطية أولًا، ثم الضغط على «تحديث الآن» عندما تكون جاهزًا.":"The app will not update automatically. You can save a backup first, then tap “Update now” when you are ready.","نسخة احتياطية":"Backup","تحديث الآن":"Update now","مدير الراتب":"Salary Manager","خطّط لشهرك بثقة ووضوح":"Plan your month with confidence and clarity","الشهر المعروض":"Displayed month","تثبيت":"Install","تسجيل الدخول":"Sign in","البيانات":"Data","تنزيل نسخة احتياطية":"Download backup","استيراد نسخة احتياطية":"Import backup","مسح جميع البيانات":"Clear all data","ملخص الشهر الحالي":"Current month summary","الراتب الشهري":"Monthly salary","تحديد الراتب":"Set salary","موعد نزول الراتب:":"Salary date:","غير محدد":"Not set","ابدأ بإضافة راتبك":"Start by adding your salary","سيظهر هنا ملخص الأقساط والمدفوعات الثابتة ومصروفاتك":"A summary of installments, fixed payments and expenses will appear here","المستخدم من الراتب":"Used from salary","المستخدم من الرصيد المتاح":"Used from available balance","المتاح لباقي الشهر":"Available for the rest of the month","المتاح حتى الراتب القادم":"Available until next salary","الراتب المتبقي":"Remaining salary","رصيد مرحّل":"Carried balance","وضع مريح":"Comfortable","بعد خصم الأقساط والمدفوعات الثابتة والمصروفات":"After installments, fixed payments and expenses","حد الصرف اليومي المقترح":"Suggested daily spending limit","حدد يوم نزول الراتب لعرض موعد الراتب القادم":"Set your salary day to show the next salary date","يوم متبقٍ":"day remaining","نظرة الشهر":"Month overview","السلف والأقساط":"Loans & installments","المدفوعات الثابتة":"Fixed payments","المصروفات":"Expenses","دليل الاستخدام":"Usage guide","إدارة المستخدمين":"User management","كيف تستخدم مدير الراتب؟":"How do you use Salary Manager?","اقرأ هذا الدليل المختصر للتعرّف على ماهية مدير الراتب وكيفية الاستفادة منه بشكل واضح وسريع.":"Read this quick guide to understand what Salary Manager is and how to benefit from it clearly and quickly.","سجّل الدخول":"Sign in","حدد راتبك":"Set your salary","أضف السلف والأقساط":"Add loans and installments","أضف المدفوعات الثابتة":"Add fixed payments","سجّل مصروفاتك":"Record your expenses","تابع وضعك المالي":"Track your financial position","تنقّل بين الأشهر":"Navigate between months","احفظ نسخة احتياطية":"Save a backup","تابع التحديثات":"Follow updates","استخدم الإعدادات":"Use settings","الخلاصة":"Summary","راتب الشهر":"Monthly salary","الدخل الأساسي المسجل":"Recorded base income","الأقساط والسلف":"Installments & loans","لا توجد التزامات نشطة":"No active commitments","لا توجد دفعات ثابتة":"No fixed payments","مصروفات الشهر":"Monthly expenses","لا توجد مصروفات مسجلة":"No recorded expenses","الرصيد المتبقي":"Remaining balance","متاح لإدارة بقية الشهر":"Available for the rest of the month","توزيع الراتب":"Salary allocation","صورة فورية لما تم تخصيصه وما بقي من راتبك":"A quick view of what is allocated and what remains","متبقٍ من الراتب":"Salary remaining","المدفوعات الثابتة والادخار":"Fixed payments & savings","المصروفات اليومية":"Daily expenses","أدخل راتبك أولًا لتحصل على قراءة واضحة لميزانية الشهر.":"Enter your salary first to get a clear view of your monthly budget.","استحقاقات هذا الشهر":"This month’s due payments","الأقساط والمدفوعات الثابتة مرتبة حسب يوم الاستحقاق":"Installments and fixed payments sorted by due day","+ قسط":"+ Installment","+ دفعة ثابتة":"+ Fixed payment","أضف التزامك الشهري وحدد بداية الخصم ونهايته لتظهر ميزانيتك بدقة.":"Add your monthly commitment and set its start and end dates for an accurate budget.","+ إضافة سلفة أو قسط":"+ Add loan or installment","للفواتير المتكررة، مخصصات المحافظ، الادخار والاشتراكات الشهرية.":"For recurring bills, wallet allocations, savings and subscriptions.","+ إضافة دفعة ثابتة":"+ Add fixed payment","ما وظيفة «تم الدفع هذا الشهر»؟":"What does “Paid this month” do?","الدفعة محسوبة ومحجوزة من الراتب تلقائيًا سواء ضغطت الزر أم لا. الزر للمتابعة فقط: يوضح أنك سددت الفاتورة أو حولت الادخار في الشهر المختار، ثم تبدأ حالة جديدة تلقائيًا عند الانتقال للشهر التالي.":"The payment is automatically reserved from your salary whether you tap the button or not. The button is only for tracking: it marks the bill or savings transfer as completed for the selected month, then resets for the next month.","سجل مشترياتك أولًا بأول لتعرف المبلغ الآمن لبقية الأيام.":"Record expenses as they happen to know your safe spending amount for the remaining days.","وصف المصروف":"Expense description","التصنيف":"Category","مشتريات":"Shopping","طعام ومقاهي":"Food & cafés","طعام":"Food","مواصلات":"Transport","فواتير":"Bills","ترفيه":"Entertainment","أخرى":"Other","المبلغ (":"Amount (","درهم إماراتي":"UAE dirham","التاريخ":"Date","حفظ المصروف":"Save expense","دُفع من محفظة أو مخصص سبق حجزه":"Paid from a wallet or previously reserved allocation","فعّل هذا الخيار عند تسجيل مشتريات من محفظة أدنوك مثلًا؛ سيظهر المصروف في السجل للمتابعة، لكنه لن يُخصم من الراتب مرة ثانية.":"Enable this when recording purchases from a pre-funded wallet, such as ADNOC Wallet. The expense will remain in the log but will not be deducted from salary twice.","سجل المصروفات":"Expense log","المصروفات المسجلة للشهر المختار":"Expenses recorded for the selected month","هذا القسم يظهر لحساب المالك فقط، وجميع الصلاحيات يتم التحقق منها على الخادم.":"This section is visible only to the owner account, and all permissions are verified by the server.","إشعارات طلبات إعادة تعيين كلمة المرور":"Password reset request notifications","فعّل الإشعارات لتصلك رسالة خارج التطبيق فور طلب أي مستخدم رمز إعادة تعيين.":"Enable notifications to receive an alert outside the app whenever a user requests a reset code.","تفعيل الإشعارات":"Enable notifications","الحسابات المسجلة":"Registered accounts","جاري تحميل المستخدمين…":"Loading users…","تحديث":"Refresh","الإصدار":"Version","سجل التحديثات":"Update log","حفظ محلي":"Saved locally","سجّل الدخول لمزامنة بياناتك بين أجهزتك":"Sign in to sync your data across devices","تحديد الراتب الشهري":"Set monthly salary","اكتب صافي الراتب الذي تستلمه شهريًا. سيُستخدم لحساب المتبقي بعد الأقساط والمدفوعات الثابتة والمصروفات.":"Enter your net monthly salary. It will be used to calculate what remains after installments, fixed payments and expenses.","صافي الراتب (بالدرهم الإماراتي)":"Net salary (UAE dirham)","يوم نزول الراتب من كل شهر":"Salary day of each month","اكتب رقم اليوم فقط من 1 إلى 31. إذا كان الشهر أقصر يُعتبر آخر يوم في الشهر هو موعد النزول.":"Enter a day from 1 to 31. If the month is shorter, the last day of that month will be used.","إلغاء":"Cancel","حفظ الراتب":"Save salary","إضافة سلفة أو قسط":"Add loan or installment","اسم السلفة أو القسط":"Loan or installment name","نوع الالتزام":"Commitment type","سلفة شخصية":"Personal loan","قسط سيارة":"Car installment","تمويل عقاري":"Mortgage","بطاقة ائتمانية":"Credit card","القسط الشهري (":"Monthly installment (","تاريخ بداية الخصم":"Deduction start date","تاريخ نهاية السلفة":"Loan end date","يوم الخصم من الشهر":"Deduction day of month","إذا كان الشهر أقصر، يُحتسب آخر يوم منه تلقائيًا.":"If the month is shorter, its last day is used automatically.","الرصيد المتبقي للسلفة (اختياري)":"Remaining loan balance (optional)","ملاحظات (اختياري)":"Notes (optional)","حفظ الالتزام":"Save commitment","إضافة دفعة ثابتة":"Add fixed payment","اسم الدفعة":"Payment name","نوع الدفعة":"Payment type","فاتورة شهرية":"Monthly bill","مخصص محفظة":"Wallet allocation","تحويل ادخار":"Savings transfer","اشتراك شهري":"Monthly subscription","المبلغ الشهري (":"Monthly amount (","يوم الدفع أو التحويل":"Payment or transfer day","تاريخ بداية التكرار":"Recurring start date","تاريخ النهاية (اختياري)":"End date (optional)","اتركه فارغًا للفواتير أو الادخار المستمر، ويمكنك إيقاف الدفعة أو حذفها لاحقًا.":"Leave blank for ongoing bills or savings. You can pause or delete the payment later.","حفظ الدفعة الثابتة":"Save fixed payment","الحساب والمزامنة":"Account & sync","إنشاء حساب":"Create account","نسيت الباسوورد":"Forgot password","إعداد المالك":"Owner setup","سجّل الدخول باسم المستخدم أو البريد الإلكتروني. سيبقى الحساب مسجلًا على هذا الجهاز حتى تختار تسجيل الخروج.":"Sign in with your username or email. You will remain signed in on this device until you choose to sign out.","اسم المستخدم أو البريد الإلكتروني":"Username or email","كلمة المرور":"Password","أنشئ حسابًا واحدًا واستخدمه على الهاتف والكمبيوتر. اسم المستخدم يكون بالإنجليزية والأرقام والرموز . _ -":"Create one account and use it on your phone and computer. Usernames may contain English letters, numbers and . _ -","اسم المستخدم":"Username","البريد الإلكتروني":"Email","10 أحرف على الأقل وتحتوي حرفًا ورقمًا.":"At least 10 characters with a letter and a number.","إنشاء الحساب":"Create account","إذا نسيت كلمة المرور، أرسل طلبًا للمالك. بعد أن يعطيك رمز إعادة التعيين، أدخله هنا مع كلمة المرور الجديدة.":"If you forget your password, send a request to the owner. When you receive the reset code, enter it here with your new password.","رمز إعادة التعيين":"Reset code","كلمة المرور الجديدة":"New password","إرسال طلب للمالك":"Send request to owner","تعيين كلمة المرور الجديدة":"Set new password","يظهر هذا الخيار قبل إنشاء أول حساب مالك فقط. أدخل رمز التهيئة السري الذي تم ضبطه في Cloudflare ثم أنشئ حسابك.":"This option appears only before the first owner account is created. Enter the secret bootstrap token configured in Cloudflare, then create your account.","رمز تهيئة المالك":"Owner bootstrap token","إنشاء حساب المالك":"Create owner account","حساب مستخدم":"User account","مزامنة الآن":"Sync now","تغيير كلمة المرور":"Change password","كلمة المرور الحالية":"Current password","تسجيل الخروج":"Sign out","إضافة التطبيق إلى الشاشة الرئيسية":"Add app to Home Screen","على iPhone: افتح الصفحة في Safari، اضغط زر المشاركة، ثم اختر «إضافة إلى الشاشة الرئيسية». إذا كانت لديك نسخة قديمة مثبتة ولم تتغير أيقونتها، احذف اختصار التطبيق القديم من الشاشة الرئيسية ثم أضفه مرة واحدة من جديد لاعتماد الأيقونة الجديدة.":"On iPhone: open the page in Safari, tap Share, then choose “Add to Home Screen”. If an older installed icon has not changed, remove the old Home Screen app and add it again once to use the new icon.","حسنًا":"OK","رمز إعادة تعيين كلمة المرور":"Password reset code","أرسل هذا الرمز للمستخدم المطلوب فقط. الرمز مؤقت ويُستخدم مرة واحدة.":"Send this code only to the intended user. It is temporary and can be used once.","رمز المستخدم":"User code","صالح لمدة 20 دقيقة":"Valid for 20 minutes","نسخ الرمز":"Copy code","إغلاق":"Close","المالك":"Owner","نشط":"Active","موقوف":"Suspended","جلسة نشطة":"active session","طلب إعادة تعيين كلمة المرور":"Password reset requested","رمز إعادة تعيين":"Reset code","إيقاف الحساب":"Suspend account","تفعيل الحساب":"Activate account","تسجيل خروج من كل الأجهزة":"Sign out on all devices","لا توجد حسابات بعد":"No accounts yet","تعذر تحميل المستخدمين":"Could not load users","فاتورة":"Bill","محفظة":"Wallet","ادخار":"Savings","اشتراك":"Subscription","سلفة":"Loan","سيارة":"Car","عقار":"Property","بطاقة":"Card","دفعة ثابتة":"Fixed payment","مدفوع":"Paid","استحقاق":"Due","مدفوع هذا الشهر":"Paid this month","نشط هذا الشهر":"Active this month","منتهٍ":"Ended","يبدأ لاحقًا":"Starts later","الخصم يوم":"Deduction day","ينتهي":"Ends","شهر متبقٍ":"month remaining","إجمالي متوقع متبقٍ:":"Estimated remaining total:","إلغاء علامة الدفع":"Undo paid mark","تم دفع هذا الشهر":"Paid this month","تعديل":"Edit","حذف":"Delete","متوقفة مؤقتًا":"Paused","مكتملة هذا الشهر":"Completed this month","بانتظار التنفيذ":"Pending","منتهية":"Ended","تبدأ لاحقًا":"Starts later","غير نشطة":"Inactive","مستمرة دون تاريخ نهاية":"Ongoing with no end date","موعدها يوم":"Due on day","يُحجز كادخار ولا يُعرض كمصروف":"Reserved as savings and not shown as an expense","مخصص محجوز مسبقًا للمحفظة":"Pre-reserved wallet allocation","محسوبة ضمن المدفوعات الثابتة":"Included in fixed payments","إعادة التفعيل":"Reactivate","إيقاف مؤقت":"Pause","من مخصص محجوز · لم يُخصم مرة ثانية":"From a reserved allocation · not deducted twice","حذف المصروف":"Delete expense","بانتظار الراتب":"Waiting for salary","تجاوز الميزانية":"Over budget","المبالغ المخصصة تتجاوز الراتب":"Allocated amounts exceed salary","راجع الأقساط والمدفوعات الثابتة والمصروفات لهذا الشهر":"Review installments, fixed payments and expenses for this month","هامش محدود":"Limited margin","لا توجد استحقاقات هذا الشهر":"No due payments this month","أضف قسطًا أو دفعة ثابتة لتظهر مواعيدها هنا تلقائيًا.":"Add an installment or fixed payment and its due date will appear here automatically.","لم تضف أي سلفة أو قسط بعد":"No loans or installments added yet","ابدأ بإضافة الالتزامات الشهرية، وسيحسب المدير أثرها على الراتب حتى تاريخ الانتهاء.":"Start adding monthly commitments and the manager will calculate their impact until the end date.","لم تضف أي دفعة ثابتة بعد":"No fixed payments added yet","أضف فاتورة اتصالات أو مخصص محفظة أو تحويل ادخار، وسيُحجز المبلغ تلقائيًا من راتب كل شهر.":"Add a telecom bill, wallet allocation or savings transfer and the amount will be reserved automatically each month.","لا توجد مصروفات في هذا الشهر":"No expenses this month","سجّل أول مصروف، وسيتم تحديث الرصيد والحد اليومي مباشرة.":"Record your first expense and the balance and daily limit will update immediately.","الشهر مكتمل":"Month complete","الإشعارات مفعلة ✓":"Notifications enabled ✓","هذا الجهاز مسجل لاستقبال إشعار فوري خارج التطبيق عند طلب إعادة تعيين كلمة مرور.":"This device is registered to receive an external alert when a password reset is requested.","يوجد جهاز آخر للمالك يستقبل الإشعارات. يمكنك تفعيل هذا الجهاز أيضًا.":"Another owner device already receives notifications. You can enable this device as well.","هذا المتصفح لا يدعم إشعارات Web Push. على iPhone يجب استخدام التطبيق بعد إضافته إلى الشاشة الرئيسية.":"This browser does not support Web Push. On iPhone, use the app after adding it to the Home Screen.","على iPhone يجب فتح مدير الراتب من الأيقونة المضافة إلى الشاشة الرئيسية لتفعيل الإشعارات.":"On iPhone, open Salary Manager from the Home Screen icon to enable notifications.","لم يتم السماح بالإشعارات من إعدادات الجهاز.":"Notifications were not allowed in device settings.","توحيد عرض جميع التواريخ بالعربية بصيغة يوم شهر سنة، مثل 17 أغسطس 2026.":"Standardized all Arabic dates to day–month–year format, such as 17 August 2026.","إضافة زر لغة أعلى الصفحة للتبديل الفوري بين العربية والإنجليزية مع حفظ اختيار المستخدم على الجهاز.":"Added a language button at the top for instant Arabic/English switching, with the choice saved on the device.","عند اختيار الإنجليزية تتحول الواجهة إلى اتجاه من اليسار إلى اليمين وتظهر التواريخ مثل 17 August 2026.":"When English is selected, the interface switches to left-to-right and dates appear like 17 August 2026.","تطبيق اللغة المختارة على العناوين والأزرار والنوافذ والتنبيهات والقوائم الديناميكية دون تغيير بيانات المستخدم.":"Applied the selected language to headings, buttons, dialogs, alerts and dynamic lists without changing user data.","اعتماد أيقونة الدرهم الجديدة وقص الحواف المسبقة لتظهر بشكل ممتلئ وأفضل عند تثبيتها على iPhone.":"Adopted the new dirham icon and trimmed its pre-rendered edges for a fuller iPhone Home Screen appearance.","إضافة تاريخ اليوم إلى شريط الشهر الحالي ليظهر مثل 17 August 2026 مع استمرار إمكانية تغيير الشهر.":"Added today’s date to the current-month bar while keeping month navigation available.","تحسين تنسيق مبلغ حد الصرف اليومي بحيث يبقى رقم المبلغ ورمز الدرهم في سطر واحد وبمحاذاة بصرية متناسقة.":"Improved daily spending limit formatting so the amount and dirham symbol stay aligned on one line.","إضافة عدّاد تلقائي يوضح عدد الأيام المتبقية حتى موعد الراتب القادم اعتمادًا على يوم نزول الراتب المحدد.":"Added an automatic countdown to the next salary date based on the selected salary day.","الحفاظ على المزامنة الفورية، إشعارات المالك، ونظام التحديث الاختياري دون فرض النسخ الجديدة تلقائيًا.":"Kept real-time sync, owner notifications and optional updates without forcing new versions automatically.","الإصدار السابق":"Previous version","الإصدار 3.5.0":"Version 3.5.0","الإصدار 3.4.0":"Version 3.4.0","الإصدار 3.3.0":"Version 3.3.0","الإصدار 3.2.2":"Version 3.2.2","الإصدار 3.1.1":"Version 3.1.1","الإصدار 3.0.0":"Version 3.0.0","الإصدار 2.1.0":"Version 2.1.0","الإصدار 2.0.0":"Version 2.0.0","إضافة رقم الإصدار أسفل الصفحة وزر «سجل التحديثات».":"Added the version number and Update Log button to the footer.","تعزيز الحفظ المحلي بنسخة احتياطية داخلية تلقائية للبيانات.":"Enhanced local storage with an automatic internal backup.","استرجاع النسخة المحلية الاحتياطية تلقائيًا إذا تعذرت قراءة النسخة الأساسية.":"Automatically restores the local backup if the primary copy cannot be read.","تأكيد أن بيانات كل جهاز/متصفح مستقلة ولا تتم مزامنتها أو إرسالها خارجيًا.":"Confirmed that each device/browser keeps its own independent local data.","إدارة الراتب والأقساط والسلف والمدفوعات الثابتة والادخار والمصروفات الشهرية.":"Salary, installment, loan, fixed-payment, savings and monthly-expense management.","إضافة النسخ الاحتياطي والاستيراد والطباعة والمتابعة الشهرية للمدفوعات.":"Added backup, import, printing and monthly payment tracking.","اعتماد أيقونة الدرهم الإماراتي المختارة للتطبيق.":"Adopted the selected UAE dirham app icon.","استبدال كتابة د.إ في مبالغ الواجهة برمز الدرهم الإماراتي.":"Replaced the written currency abbreviation with the UAE dirham symbol in amounts.","الحفاظ على المزامنة الفورية ونظام التحديث الاختياري.":"Kept real-time sync and optional updates.","إعادة تهيئة مخزن المصادقة الخاص بإنشاء المالك لتجنب أي حالة جزئية من المحاولات السابقة.":"Reset the owner bootstrap authentication store to avoid partial state from previous attempts.","اعتماد إعداد PBKDF2 المجرب في نظام قارئ الفواتير وإضافة تشخيص مباشر لأي خطأ داخل خدمة الحسابات.":"Adopted the tested PBKDF2 setup and added direct diagnostics for account-service errors.","إصلاح إعداد حساب المالك لأول مرة وإظهار حالة إعداد Cloudflare بوضوح بدل رسالة الخطأ العامة.":"Fixed first-time owner setup and made Cloudflare configuration status explicit.","إعلان أسرار المصادقة كمتطلبات للنشر حتى يفشل النشر بوضوح إذا كانت غير مفعلة بدل نشر نسخة لا يستطيع المستخدم تسجيل الدخول إليها.":"Declared authentication secrets as deployment requirements so missing secrets fail deployment clearly.","إضافة نظام تحديث اختياري: يظهر إشعار عند توفر إصدار جديد ولا يتم تطبيقه إلا بعد ضغط المستخدم «تحديث الآن».":"Added optional updates: users are notified of a new version and update only when they choose Update now.","إضافة زر «نسخة احتياطية» داخل إشعار التحديث لإتاحة حفظ البيانات قبل تثبيت الإصدار الجديد.":"Added a Backup button in the update notice so users can save data before installing a new version.","تعديل Service Worker ليُبقي الإصدار الحالي فعالًا إلى أن يوافق المستخدم صراحة على التحديث.":"Updated the Service Worker so the current version stays active until the user explicitly accepts the update.","إضافة نظام حسابات وتسجيل دخول دائم حتى يختار المستخدم تسجيل الخروج.":"Added accounts with persistent sign-in until the user signs out.","مزامنة بيانات الراتب والأقساط والمدفوعات والمصروفات مع الحساب للوصول إليها من أي جهاز.":"Synced salary, installments, payments and expenses to the account for access from any device.","إضافة تبويب «إدارة المستخدمين» للمالك فقط مع إنشاء رموز مؤقتة لإعادة تعيين كلمات المرور.":"Added owner-only User Management with temporary password reset codes.","إضافة دعم PWA لإضافة مدير الراتب إلى الشاشة الرئيسية على iPhone وAndroid.":"Added PWA support for installing Salary Manager on iPhone and Android Home Screens.","الإبقاء على التخزين المحلي كنسخة عمل احتياطية عند انقطاع الإنترنت.":"Kept local storage as an offline working backup.","تنسيق رمز الدرهم ليظهر على يسار الرقم وبنفس خط الأساس بصريًا.":"Aligned the dirham symbol to the left of amounts on the same visual baseline.","إضافة يوم نزول الراتب من كل شهر وحفظه ومزامنته مع الحساب.":"Added monthly salary day and synced it with the account.","إضافة إشعارات Web Push اختيارية للمالك عند طلب أي مستخدم إعادة تعيين كلمة المرور.":"Added optional Web Push alerts for the owner when a user requests a password reset.","إزالة خيار الطباعة والاكتفاء بسجل الأشهر داخل التطبيق.":"Removed printing in favor of the in-app month history.","استخدام أسماء أيقونات إصدار جديدة لتقليل مشاكل التخزين المؤقت عند التثبيت.":"Used versioned icon filenames to reduce installation caching issues.","تم تسجيل الدخول وتفعيل المزامنة الفورية":"Signed in and real-time sync enabled","تم إنشاء الحساب وتفعيل المزامنة الفورية":"Account created and real-time sync enabled","تم إنشاء حساب المالك بنجاح":"Owner account created successfully","تم تسجيل طلب إعادة التعيين لدى المالك":"Reset request sent to the owner","تم تسجيل الطلب إن كان الحساب موجودًا":"The request was recorded if the account exists","تم تعيين كلمة المرور الجديدة. سجّل الدخول الآن.":"New password set. Sign in now.","تم تغيير كلمة المرور":"Password changed","تم تسجيل الخروج":"Signed out","تم تحديث حالة الحساب":"Account status updated","تم تسجيل خروج المستخدم من جميع الأجهزة":"User signed out on all devices","تم نسخ الرمز":"Code copied","تم حفظ الراتب وتحديث ميزانية الشهر":"Salary saved and monthly budget updated","تم تحديث بيانات الالتزام":"Commitment updated","تمت إضافة الالتزام بنجاح":"Commitment added successfully","تم تحديث الدفعة الثابتة":"Fixed payment updated","تمت إضافة الدفعة الثابتة وحجزها من الراتب":"Fixed payment added and reserved from salary","تم تسجيل المصروف وتحديث الرصيد":"Expense recorded and balance updated","تم تحديث حالة القسط لهذا الشهر":"Installment status updated for this month","تم تحديث حالة الدفعة للشهر المختار دون تغيير قيمة الميزانية":"Payment status updated for the selected month without changing the budget","تم تحديث حالة الدفعة الثابتة":"Fixed payment status updated","تم حذف الالتزام":"Commitment deleted","تم حذف الدفعة الثابتة وتحديث الرصيد":"Fixed payment deleted and balance updated","تم حذف المصروف وتحديث الرصيد":"Expense deleted and balance updated","تم تنزيل النسخة الاحتياطية":"Backup downloaded","تم استيراد النسخة الاحتياطية بنجاح":"Backup imported successfully","الملف المختار ليس نسخة احتياطية صالحة":"The selected file is not a valid backup","تم مسح جميع البيانات":"All data cleared","تم حفظ بياناتك ومزامنتها مع أجهزتك":"Your data was saved and synced across devices","تعذرت المزامنة الآن، وتم الاحتفاظ بالتغييرات محليًا.":"Sync is unavailable right now. Changes are safely stored locally.","انتهت جلسة الحساب. بياناتك المحلية ما زالت محفوظة.":"Your session expired. Your local data is still saved.","تم تحديث بيانات حسابك من السحابة":"Account data updated from the cloud","تم نقل بيانات هذا الجهاز إلى حسابك تلقائيًا":"This device’s data was automatically moved to your account","تمت المزامنة":"Synced","جارٍ الحفظ الفوري…":"Saving instantly…","جارٍ مزامنة الحساب…":"Syncing account…","غير متصل · محفوظ محليًا":"Offline · saved locally","مزامنة فورية مفعّلة":"Real-time sync enabled","مزامنة تلقائية":"Automatic sync","مزامنة تلقائية · إعادة اتصال":"Automatic sync · reconnecting","إعادة اتصال المزامنة…":"Reconnecting sync…","البيانات تُحفظ وتُزامن تلقائيًا مع الحساب مع نسخة محلية على هذا الجهاز":"Data is saved and synced automatically with your account, with a local copy on this device","البيانات تُزامن تلقائيًا وفوريًا مع الحساب مع نسخة محلية على هذا الجهاز":"Data syncs instantly with your account, with a local copy on this device","البيانات محفوظة محليًا على هذا الجهاز":"Data is stored locally on this device","الحساب جاهز للمزامنة":"Account ready to sync","الخادم غير متاح · حفظ محلي":"Server unavailable · saved locally","تعذر الاتصال بالخادم الآن. تحقق من الإنترنت ثم حاول مرة أخرى.":"Could not reach the server. Check your internet connection and try again.","تعذر إتمام العملية. حاول مرة أخرى.":"Could not complete the operation. Try again.","اسم المستخدم/البريد الإلكتروني أو كلمة المرور غير صحيحة.":"Incorrect username/email or password.","هذا الحساب موقوف حاليًا. راجع مالك الصفحة.":"This account is currently suspended. Contact the owner.","تم إيقاف محاولات الدخول مؤقتًا بسبب تكرار كلمة مرور خاطئة.":"Sign-in attempts are temporarily blocked after repeated incorrect passwords.","اسم المستخدم غير صالح. استخدم 3–32 من الأحرف الإنجليزية أو الأرقام و . _ -":"Invalid username. Use 3–32 English letters, numbers or . _ -","البريد الإلكتروني غير صالح.":"Invalid email address.","كلمة المرور يجب أن تكون 10 أحرف على الأقل وتحتوي حرفًا ورقمًا.":"Password must be at least 10 characters and include a letter and a number.","اسم المستخدم مستخدم بالفعل.":"Username is already in use.","البريد الإلكتروني مستخدم بالفعل.":"Email is already in use.","يجب إعداد حساب المالك أولًا.":"The owner account must be set up first.","رمز تهيئة المالك غير صحيح.":"Invalid owner bootstrap token.","رمز إعادة التعيين غير صحيح أو انتهت صلاحيته.":"The reset code is invalid or has expired.","انتهت جلسة الحساب. سجّل الدخول مرة أخرى.":"Your session expired. Sign in again.","ليس لديك صلاحية لتنفيذ هذا الإجراء.":"You do not have permission to perform this action.","عنوان الصفحة غير مسموح به في إعدادات الخادم.":"This page origin is not allowed by the server configuration.","حدث خطأ داخلي في الخادم. تحقق من إعدادات Variables and Secrets في Cloudflare ثم حاول مرة أخرى.":"An internal server error occurred. Check Cloudflare Variables and Secrets, then try again.","سيتم تحديث التطبيق الآن. إن كنت تريد نسخة احتياطية فتأكد من حفظها أولًا. هل تريد المتابعة؟":"The app will update now. If you want a backup, make sure you have saved it first. Continue?","سيتم استبدال البيانات الحالية بمحتوى النسخة الاحتياطية. هل تريد المتابعة؟":"Current data will be replaced by the backup. Continue?","هل أنت متأكد؟ سيتم مسح بيانات الراتب من حسابك ومزامنة الحذف مع أجهزتك الأخرى.":"Are you sure? Salary data will be deleted from your account and the deletion will sync to your other devices.","هل أنت متأكد؟ سيتم حذف الراتب والأقساط والمدفوعات الثابتة والمصروفات المحفوظة على هذا الجهاز.":"Are you sure? Salary, installments, fixed payments and expenses saved on this device will be deleted.","تاريخ النهاية يجب أن يكون بعد تاريخ بداية الخصم":"The end date must be after the deduction start date","تاريخ النهاية يجب أن يكون بعد تاريخ بداية التكرار":"The end date must be after the recurring start date","أكمل اسم الدفعة والمبلغ وتاريخ البداية":"Complete the payment name, amount and start date","أكمل وصف المصروف والمبلغ والتاريخ":"Complete the expense description, amount and date","اكتب اسم المستخدم أو البريد الإلكتروني أولًا":"Enter the username or email first","جارٍ التحديث…":"Updating…","تم حفظ النسخة ✓":"Backup saved ✓","تعذر تطبيق التحديث الآن. تحقق من الاتصال وحاول مرة أخرى.":"Could not apply the update. Check your connection and try again.","الإعدادات":"Settings","أيقونة التطبيق":"App icon","اختر الشكل الذي تفضله لهذا الجهاز، ثم اضغط «اعتماد الأيقونة».":"Choose the icon you prefer for this device, then tap “Apply icon”.","اعتماد الأيقونة":"Apply icon","تطبيقها على شاشة الهاتف":"Apply to Home Screen","سيتم اعتماد الأيقونة المختارة كتفضيل لتثبيت التطبيق على هذا الجهاز.":"The selected icon will be saved as this device’s preferred installation icon.","إشعارات التحديثات":"Update notifications","استقبل إشعارًا خارجيًا واحدًا بعد اعتماد المالك للإصدار ونشره للمستخدمين، مع بقاء إشعار التحديث داخل التطبيق.":"Receive an external alert when a new version is released while keeping the in-app update notice.","جارٍ التحقق من حالة الإشعارات…":"Checking notification status…","تفعيل إشعارات التحديث":"Enable update notifications","إيقاف إشعارات التحديث":"Disable update notifications","تم":"Done","هل تريد أن يصلك تنبيه عند صدور تحديث جديد؟":"Would you like an alert when a new update is released?","سيصلك إشعار خارج التطبيق بعد اعتماد المالك للإصدار ونشره للمستخدمين. التحديث نفسه يبقى اختياريًا ولن يُثبت إلا عندما تضغط «تحديث الآن» داخل مدير الراتب.":"You will receive an external notification when a new version is available. The update remains optional and is installed only when you tap “Update now” inside Salary Manager.","لاحقًا":"Later","الإشعارات مفعلة لهذا الجهاز ✓":"Notifications enabled on this device ✓","إشعارات التحديث متوقفة على هذا الجهاز.":"Update notifications are disabled on this device.","هذا المتصفح لا يدعم إشعارات Web Push.":"This browser does not support Web Push notifications.","على iPhone يجب إضافة مدير الراتب إلى الشاشة الرئيسية أولًا، ثم فتحه من الأيقونة لتفعيل الإشعارات.":"On iPhone, add Salary Manager to the Home Screen first, then open it from the icon to enable notifications.","تم تفعيل إشعارات التحديثات على هذا الجهاز":"Update notifications enabled on this device","تم إيقاف إشعارات التحديثات على هذا الجهاز":"Update notifications disabled on this device","تم اعتماد أيقونة التطبيق على هذا الجهاز":"App icon selected for this device","مدير الراتب صفحة تفاعلية تساعدك على تنظيم راتبك الشهري من مكان واحد. الفكرة ببساطة أنك تسجل راتبك، ثم تضيف السلف والأقساط والمدفوعات الثابتة والمصروفات اليومية، وبعدها يعرض لك التطبيق المتبقي من الراتب، ونسبة الاستخدام، وحد الصرف اليومي المقترح، وعدد الأيام المتبقية حتى الراتب القادم.":"Salary Manager is an interactive page that helps you organize your monthly salary in one place. Simply record your salary, then add loans, installments, fixed payments, and daily expenses. The app then shows your remaining salary, usage rate, suggested daily spending limit, and the days left until the next salary.","سجّل الدخول بحسابك حتى تُحفظ بياناتك وتتم مزامنتها، ويمكنك فتح نفس الحساب من أكثر من جهاز بسهولة.":"Sign in with your account so your data is saved and synced, and you can open the same account from more than one device easily.","اضغط «تحديد الراتب» أو «تعديل الراتب» وأدخل صافي الراتب الشهري ويوم نزول الراتب من كل شهر.":"Tap ‘Set salary’ or ‘Edit salary’ and enter your monthly net salary and your salary day each month.","سجّل أي سلفة أو قسط شهري، وحدد قيمة القسط وتاريخ بدايته ونهايته ليحسب التطبيق أثره على الميزانية تلقائيًا.":"Record any loan or monthly installment, and set its amount, start, and end dates so the app calculates its impact automatically.","أضف الفواتير والاشتراكات والادخار والمخصصات الشهرية الثابتة مثل الهاتف والإنترنت والتحويلات المتكررة.":"Add bills, subscriptions, savings, and fixed monthly allocations such as phone, internet, and recurring transfers.","أدخل المصروفات اليومية أو الشهرية أولًا بأول حتى يتم تحديث الرصيد المتبقي بشكل فوري ودقيق.":"Enter daily or monthly expenses as they happen so the remaining balance updates instantly and accurately.","من «نظرة الشهر» ستعرف الراتب، والالتزامات، والمصروفات، والمتبقي، ونسبة استخدام الراتب، وحد الصرف اليومي المقترح.":"From ‘Month overview’ you can see the salary, commitments, expenses, remaining balance, salary usage percentage, and suggested daily spending limit.","استخدم الأسهم بجانب اسم الشهر للرجوع إلى أي شهر سابق أو الانتقال بين الشهور ومراجعة جميع البيانات بسهولة.":"Use the arrows next to the month name to go back to any previous month or move between months and review your data easily.","يمكنك تنزيل نسخة احتياطية من بياناتك للاحتفاظ بها، ويُفضّل حفظ نسخة قبل أي تحديث جديد أو قبل نقل البيانات.":"You can download a backup of your data, and it is recommended to save one before any new update or before moving data.","عند توفر إصدار جديد سيظهر إشعار داخل التطبيق، ويمكنك مراجعة سجل التحديثات ثم الضغط على «تحديث الآن» عندما تكون جاهزًا.":"When a new version is available, an in-app notice will appear. You can review the update log and tap ‘Update now’ when ready.","من الإعدادات يمكنك تغيير أيقونة التطبيق، وإدارة إشعارات التحديث، وتغيير كلمة المرور، والوصول إلى خيارات التثبيت المناسبة.":"From Settings, you can change the app icon, manage update notifications, change your password, and access installation options.","سجّل راتبك والتزاماتك ومصروفاتك، ودع مدير الراتب يحسب لك تلقائيًا كم استخدمت، وكم تبقى، وكم يمكنك صرفه يوميًا حتى موعد الراتب القادم. بهذه الطريقة تصبح إدارة راتبك أوضح وأسهل وأكثر تنظيمًا طوال الشهر.":"Record your salary, commitments, and expenses, and let Salary Manager automatically calculate how much you used, how much remains, and how much you can safely spend each day until the next salary. This makes salary management clearer, easier, and more organized throughout the month.","على iPhone يتم فتح رابط مدير الراتب مباشرة دون المرور عبر Google. يحافظ الرابط على تسجيل الدخول، ويمكنك إضافة النسخة الجديدة إلى الشاشة الرئيسية من صفحة مدير الراتب المفتوحة. قد يعرض iOS الصفحة داخل عارض النظام بدل فتح Safari كاملًا؛ هذا قرار من النظام وليس للموقع صلاحية لإجبار Safari على الفتح.":"On iPhone, the icon changes inside the app immediately, but iOS does not instantly replace the icon of an already installed web app. To use the new Home Screen icon, remove Salary Manager from the Home Screen and add it again once from Safari; your account data is unaffected.","جارٍ إنهاء التحديث…":"Finishing update…","تم تثبيت التحديث، جارٍ إعادة فتح التطبيق…":"Update installed. Reopening the app…","إصلاح عدم ظهور معرض أيقونات التطبيق عبر تضمين ملفات PNG حقيقية داخل المشروع بدل التحويل الديناميكي.":"Fixed missing app icon previews by shipping real PNG files instead of runtime conversion.","إعادة رمز الدرهم الأصلي إلى أعلى الصفحة بدل ربطه بصورة أيقونة التطبيق المختارة.":"Restored the original dirham symbol in the page header instead of linking it to the selected app icon.","إضافة أحجام 180 و192 و512 بكسل لكل تصميم لتحسين التثبيت على iPhone وPWA.":"Added 180, 192 and 512 pixel variants for every icon for better iPhone and PWA installation.","إضافة حماية تمنع ظهور مربع الصورة المفقودة في حال تعذر تحميل معاينة أيقونة.":"Added a fallback that prevents broken-image placeholders if an icon preview fails to load.","الرصيد المرحّل من الدورة السابقة:":"Carryover from previous cycle:","دورة الراتب · ":"Salary cycle · ","بدأت دورة راتب جديدة: تمت إضافة الراتب وترحيل الرصيد المتبقي من الدورة السابقة تلقائيًا":"A new salary cycle has started: the salary was added and the previous remaining balance was carried over automatically","تم حفظ الراتب وتحديث دورة الراتب والرصيد المرحّل":"Salary saved and the salary cycle and carryover were updated","تم تحديث حالة القسط لهذه الدورة":"Installment status updated for this cycle","تم تحديث حالة الدفعة لهذه الدورة دون تغيير قيمة الميزانية":"Payment status updated for this cycle without changing the budget","الراتب القادم غدًا · ":"Next salary is tomorrow · ","أيام في الدورة":"days in cycle","يوم في الدورة":"day in cycle","الدورة مكتملة":"Cycle complete","لا توجد استحقاقات في هذه الدورة":"No dues in this cycle","لا توجد مصروفات في هذه الدورة":"No expenses in this cycle","تم الدفع في هذه الدورة":"Paid in this cycle","تم تحويل الادخار في هذه الدورة":"Savings transferred in this cycle","تم شحن المحفظة في هذه الدورة":"Wallet funded in this cycle","مدفوع في هذه الدورة":"Paid in this cycle","نشط في هذه الدورة":"Active in this cycle","مكتملة في هذه الدورة":"Completed in this cycle","المبالغ المخصصة تتجاوز الرصيد المتاح":"Allocated amounts exceed the available balance","راجع الأقساط والمدفوعات الثابتة والمصروفات لهذه الدورة":"Review installments, fixed payments, and expenses for this cycle","الرصيد المتبقي يُرحّل تلقائيًا إلى راتب الدورة القادمة. حد الصرف اليومي المقترح ":"The remaining balance is automatically carried over to the next salary cycle. Suggested daily spending limit ","انتهت دورة الراتب برصيد ":"The salary cycle ended with a balance of ","، ويُرحّل هذا الرصيد تلقائيًا إلى الدورة التالية.":", and this balance is automatically carried over to the next cycle.","تم تخصيص ":"Allocated ","% من الرصيد المتاح":"% of the available balance"," · الرصيد المرحّل ":" · carryover "," التزام مستحق في هذه الدورة":" commitment due in this cycle"," دفعة في هذه الدورة · منها ":" payment in this cycle · including ","المصروفات المسجلة من ":"Expenses recorded from "," إلى ":" to "};
+      var EN_TRANSLATIONS = {"مدير الراتب الشهري":"Monthly Salary Manager","تحديث جديد متوفر":"New update available","لن يتم تحديث الصفحة تلقائيًا. يمكنك أخذ نسخة احتياطية أولًا، ثم الضغط على «تحديث الآن» عندما تكون جاهزًا.":"The app will not update automatically. You can save a backup first, then tap “Update now” when you are ready.","نسخة احتياطية":"Backup","تحديث الآن":"Update now","مدير الراتب":"Salary Manager","خطّط لشهرك بثقة ووضوح":"Plan your month with confidence and clarity","الشهر المعروض":"Displayed month","تثبيت":"Install","تسجيل الدخول":"Sign in","البيانات":"Data","تنزيل نسخة احتياطية":"Download backup","استيراد نسخة احتياطية":"Import backup","مسح جميع البيانات":"Clear all data","ملخص الشهر الحالي":"Current month summary","الراتب الشهري":"Monthly salary","تحديد الراتب":"Set salary","موعد نزول الراتب:":"Salary date:","غير محدد":"Not set","ابدأ بإضافة راتبك":"Start by adding your salary","سيظهر هنا ملخص الأقساط والمدفوعات الثابتة ومصروفاتك":"A summary of installments, fixed payments and expenses will appear here","المستخدم من الراتب":"Used from salary","المستخدم من الرصيد المتاح":"Used from available balance","المتاح لباقي الشهر":"Available for the rest of the month","الرصيد المتبقي":"Remaining balance","رصيد مرحّل من الشهر السابق:":"Carried from previous month:","وضع مريح":"Comfortable","بعد خصم الأقساط والمدفوعات الثابتة والمصروفات":"After installments, fixed payments and expenses","بعد خصم الأقساط المستحقة والمدفوعات الثابتة المؤكدة والمصروفات":"After due installments, confirmed fixed payments and expenses","تقدير للشهر بدون ترحيل رصيد من شهر سابق":"Month estimate without carried balance","حد الصرف اليومي المقترح":"Suggested daily spending limit","حدد يوم نزول الراتب لعرض موعد الراتب القادم":"Set your salary day to show the next salary date","يوم متبقٍ":"day remaining","نظرة الشهر":"Month overview","السلف والأقساط":"Loans & installments","المدفوعات الثابتة":"Fixed payments","المصروفات":"Expenses","دليل الاستخدام":"Usage guide","إدارة المستخدمين":"User management","كيف تستخدم مدير الراتب؟":"How do you use Salary Manager?","اقرأ هذا الدليل المختصر للتعرّف على ماهية مدير الراتب وكيفية الاستفادة منه بشكل واضح وسريع.":"Read this quick guide to understand what Salary Manager is and how to benefit from it clearly and quickly.","سجّل الدخول":"Sign in","حدد راتبك":"Set your salary","أضف السلف والأقساط":"Add loans and installments","أضف المدفوعات الثابتة":"Add fixed payments","سجّل مصروفاتك":"Record your expenses","تابع وضعك المالي":"Track your financial position","تنقّل بين الأشهر":"Navigate between months","احفظ نسخة احتياطية":"Save a backup","تابع التحديثات":"Follow updates","استخدم الإعدادات":"Use settings","الخلاصة":"Summary","راتب الشهر":"Monthly salary","الدخل الأساسي المسجل":"Recorded base income","الأقساط والسلف":"Installments & loans","لا توجد التزامات نشطة":"No active commitments","لا توجد دفعات ثابتة":"No fixed payments","مصروفات الشهر":"Monthly expenses","لا توجد مصروفات مسجلة":"No recorded expenses","الرصيد المتبقي":"Remaining balance","متاح لإدارة بقية الشهر":"Available for the rest of the month","توزيع الراتب":"Salary allocation","صورة فورية لما تم تخصيصه وما بقي من راتبك":"A quick view of what is allocated and what remains","متبقٍ من الراتب":"Salary remaining","متبقٍ من الرصيد المتاح":"Remaining available balance","المدفوعات الثابتة والادخار":"Fixed payments & savings","المصروفات اليومية":"Daily expenses","أدخل راتبك أولًا لتحصل على قراءة واضحة لميزانية الشهر.":"Enter your salary first to get a clear view of your monthly budget.","استحقاقات هذا الشهر":"This month’s due payments","الأقساط والمدفوعات الثابتة مرتبة حسب يوم الاستحقاق":"Installments and fixed payments sorted by due day","+ قسط":"+ Installment","+ دفعة ثابتة":"+ Fixed payment","أضف التزامك الشهري وحدد بداية الخصم ونهايته لتظهر ميزانيتك بدقة.":"Add your monthly commitment and set its start and end dates for an accurate budget.","+ إضافة سلفة أو قسط":"+ Add loan or installment","للفواتير المتكررة، مخصصات المحافظ، الادخار والاشتراكات الشهرية.":"For recurring bills, wallet allocations, savings and subscriptions.","+ إضافة دفعة ثابتة":"+ Add fixed payment","ما وظيفة «تم الدفع هذا الشهر»؟":"What does “Paid this month” do?","الدفعة الثابتة لا تُخصم من الرصيد تلقائيًا. اضغط «تم الدفع هذا الشهر» فقط بعد السداد أو التحويل، وعندها تُخصم قيمتها من رصيد الشهر مرة واحدة. يمكنك إلغاء العلامة إذا سجّلتها بالخطأ.":"A fixed payment is not deducted automatically. Confirm it only after payment or transfer, and it will be deducted once from that month’s balance.","سجل مشترياتك أولًا بأول لتعرف المبلغ الآمن لبقية الأيام.":"Record expenses as they happen to know your safe spending amount for the remaining days.","وصف المصروف":"Expense description","التصنيف":"Category","مشتريات":"Shopping","طعام ومقاهي":"Food & cafés","طعام":"Food","مواصلات":"Transport","فواتير":"Bills","ترفيه":"Entertainment","أخرى":"Other","المبلغ (":"Amount (","درهم إماراتي":"UAE dirham","التاريخ":"Date","حفظ المصروف":"Save expense","دُفع من محفظة أو مخصص سبق حجزه":"Paid from a wallet or previously reserved allocation","فعّل هذا الخيار عند تسجيل مشتريات من محفظة أدنوك مثلًا؛ سيظهر المصروف في السجل للمتابعة، لكنه لن يُخصم من الراتب مرة ثانية.":"Enable this when recording purchases from a pre-funded wallet, such as ADNOC Wallet. The expense will remain in the log but will not be deducted from salary twice.","سجل المصروفات":"Expense log","المصروفات المسجلة للشهر المختار":"Expenses recorded for the selected month","هذا القسم يظهر لحساب المالك فقط، وجميع الصلاحيات يتم التحقق منها على الخادم.":"This section is visible only to the owner account, and all permissions are verified by the server.","إشعارات طلبات إعادة تعيين كلمة المرور":"Password reset request notifications","فعّل الإشعارات لتصلك رسالة خارج التطبيق فور طلب أي مستخدم رمز إعادة تعيين.":"Enable notifications to receive an alert outside the app whenever a user requests a reset code.","تفعيل الإشعارات":"Enable notifications","الحسابات المسجلة":"Registered accounts","جاري تحميل المستخدمين…":"Loading users…","تحديث":"Refresh","الإصدار":"Version","سجل التحديثات":"Update log","حفظ محلي":"Saved locally","سجّل الدخول لمزامنة بياناتك بين أجهزتك":"Sign in to sync your data across devices","تحديد الراتب الشهري":"Set monthly salary","اكتب صافي الراتب الذي تستلمه شهريًا. سيُستخدم لحساب المتبقي بعد الأقساط والمدفوعات الثابتة والمصروفات.":"Enter your net monthly salary. It will be used to calculate what remains after installments, fixed payments and expenses.","صافي الراتب (بالدرهم الإماراتي)":"Net salary (UAE dirham)","يوم نزول الراتب من كل شهر":"Salary day of each month","اكتب رقم اليوم فقط من 1 إلى 31. إذا كان الشهر أقصر يُعتبر آخر يوم في الشهر هو موعد النزول.":"Enter a day from 1 to 31. If the month is shorter, the last day of that month will be used.","إلغاء":"Cancel","حفظ الراتب":"Save salary","إضافة سلفة أو قسط":"Add loan or installment","اسم السلفة أو القسط":"Loan or installment name","نوع الالتزام":"Commitment type","سلفة شخصية":"Personal loan","قسط سيارة":"Car installment","تمويل عقاري":"Mortgage","بطاقة ائتمانية":"Credit card","القسط الشهري (":"Monthly installment (","تاريخ بداية الخصم":"Deduction start date","تاريخ نهاية السلفة":"Loan end date","يوم الخصم من الشهر":"Deduction day of month","إذا كان الشهر أقصر، يُحتسب آخر يوم منه تلقائيًا.":"If the month is shorter, its last day is used automatically.","الرصيد المتبقي للسلفة (اختياري)":"Remaining loan balance (optional)","ملاحظات (اختياري)":"Notes (optional)","حفظ الالتزام":"Save commitment","إضافة دفعة ثابتة":"Add fixed payment","اسم الدفعة":"Payment name","نوع الدفعة":"Payment type","فاتورة شهرية":"Monthly bill","مخصص محفظة":"Wallet allocation","تحويل ادخار":"Savings transfer","اشتراك شهري":"Monthly subscription","المبلغ الشهري (":"Monthly amount (","يوم الدفع أو التحويل":"Payment or transfer day","تاريخ بداية التكرار":"Recurring start date","تاريخ النهاية (اختياري)":"End date (optional)","اتركه فارغًا للفواتير أو الادخار المستمر، ويمكنك إيقاف الدفعة أو حذفها لاحقًا.":"Leave blank for ongoing bills or savings. You can pause or delete the payment later.","حفظ الدفعة الثابتة":"Save fixed payment","الحساب والمزامنة":"Account & sync","إنشاء حساب":"Create account","نسيت الباسوورد":"Forgot password","إعداد المالك":"Owner setup","سجّل الدخول باسم المستخدم أو البريد الإلكتروني. سيبقى الحساب مسجلًا على هذا الجهاز حتى تختار تسجيل الخروج.":"Sign in with your username or email. You will remain signed in on this device until you choose to sign out.","اسم المستخدم أو البريد الإلكتروني":"Username or email","كلمة المرور":"Password","أنشئ حسابًا واحدًا واستخدمه على الهاتف والكمبيوتر. اسم المستخدم يكون بالإنجليزية والأرقام والرموز . _ -":"Create one account and use it on your phone and computer. Usernames may contain English letters, numbers and . _ -","اسم المستخدم":"Username","البريد الإلكتروني":"Email","10 أحرف على الأقل وتحتوي حرفًا ورقمًا.":"At least 10 characters with a letter and a number.","إنشاء الحساب":"Create account","إذا نسيت كلمة المرور، أرسل طلبًا للمالك. بعد أن يعطيك رمز إعادة التعيين، أدخله هنا مع كلمة المرور الجديدة.":"If you forget your password, send a request to the owner. When you receive the reset code, enter it here with your new password.","رمز إعادة التعيين":"Reset code","كلمة المرور الجديدة":"New password","إرسال طلب للمالك":"Send request to owner","تعيين كلمة المرور الجديدة":"Set new password","يظهر هذا الخيار قبل إنشاء أول حساب مالك فقط. أدخل رمز التهيئة السري الذي تم ضبطه في Cloudflare ثم أنشئ حسابك.":"This option appears only before the first owner account is created. Enter the secret bootstrap token configured in Cloudflare, then create your account.","رمز تهيئة المالك":"Owner bootstrap token","إنشاء حساب المالك":"Create owner account","حساب مستخدم":"User account","مزامنة الآن":"Sync now","تغيير كلمة المرور":"Change password","كلمة المرور الحالية":"Current password","تسجيل الخروج":"Sign out","إضافة التطبيق إلى الشاشة الرئيسية":"Add app to Home Screen","على iPhone: افتح الصفحة في Safari، اضغط زر المشاركة، ثم اختر «إضافة إلى الشاشة الرئيسية». إذا كانت لديك نسخة قديمة مثبتة ولم تتغير أيقونتها، احذف اختصار التطبيق القديم من الشاشة الرئيسية ثم أضفه مرة واحدة من جديد لاعتماد الأيقونة الجديدة.":"On iPhone: open the page in Safari, tap Share, then choose “Add to Home Screen”. If an older installed icon has not changed, remove the old Home Screen app and add it again once to use the new icon.","حسنًا":"OK","رمز إعادة تعيين كلمة المرور":"Password reset code","أرسل هذا الرمز للمستخدم المطلوب فقط. الرمز مؤقت ويُستخدم مرة واحدة.":"Send this code only to the intended user. It is temporary and can be used once.","رمز المستخدم":"User code","صالح لمدة 20 دقيقة":"Valid for 20 minutes","نسخ الرمز":"Copy code","إغلاق":"Close","المالك":"Owner","نشط":"Active","موقوف":"Suspended","جلسة نشطة":"active session","طلب إعادة تعيين كلمة المرور":"Password reset requested","رمز إعادة تعيين":"Reset code","إيقاف الحساب":"Suspend account","تفعيل الحساب":"Activate account","تسجيل خروج من كل الأجهزة":"Sign out on all devices","لا توجد حسابات بعد":"No accounts yet","تعذر تحميل المستخدمين":"Could not load users","فاتورة":"Bill","محفظة":"Wallet","ادخار":"Savings","اشتراك":"Subscription","سلفة":"Loan","سيارة":"Car","عقار":"Property","بطاقة":"Card","دفعة ثابتة":"Fixed payment","مدفوع":"Paid","استحقاق":"Due","مدفوع هذا الشهر":"Paid this month","نشط هذا الشهر":"Active this month","منتهٍ":"Ended","يبدأ لاحقًا":"Starts later","الخصم يوم":"Deduction day","ينتهي":"Ends","شهر متبقٍ":"month remaining","إجمالي متوقع متبقٍ:":"Estimated remaining total:","إلغاء علامة الدفع":"Undo paid mark","تم دفع هذا الشهر":"Paid this month","تعديل":"Edit","حذف":"Delete","متوقفة مؤقتًا":"Paused","مكتملة هذا الشهر":"Completed this month","بانتظار التنفيذ":"Pending","منتهية":"Ended","تبدأ لاحقًا":"Starts later","غير نشطة":"Inactive","مستمرة دون تاريخ نهاية":"Ongoing with no end date","موعدها يوم":"Due on day","يُحجز كادخار ولا يُعرض كمصروف":"Reserved as savings and not shown as an expense","مخصص محجوز مسبقًا للمحفظة":"Pre-reserved wallet allocation","محسوبة ضمن المدفوعات الثابتة":"Included in fixed payments","إعادة التفعيل":"Reactivate","إيقاف مؤقت":"Pause","من مخصص محجوز · لم يُخصم مرة ثانية":"From a reserved allocation · not deducted twice","حذف المصروف":"Delete expense","بانتظار الراتب":"Waiting for salary","تجاوز الميزانية":"Over budget","المبالغ المخصصة تتجاوز الراتب":"Allocated amounts exceed salary","راجع الأقساط والمدفوعات الثابتة والمصروفات لهذا الشهر":"Review installments, fixed payments and expenses for this month","هامش محدود":"Limited margin","لا توجد استحقاقات هذا الشهر":"No due payments this month","أضف قسطًا أو دفعة ثابتة لتظهر مواعيدها هنا تلقائيًا.":"Add an installment or fixed payment and its due date will appear here automatically.","لم تضف أي سلفة أو قسط بعد":"No loans or installments added yet","ابدأ بإضافة الالتزامات الشهرية، وسيحسب المدير أثرها على الراتب حتى تاريخ الانتهاء.":"Start adding monthly commitments and the manager will calculate their impact until the end date.","لم تضف أي دفعة ثابتة بعد":"No fixed payments added yet","أضف فاتورة اتصالات أو مخصص محفظة أو تحويل ادخار. لن تُخصم أي دفعة حتى تؤكد تنفيذها لهذا الشهر.":"Add a telecom bill, wallet allocation or savings transfer and the amount will be reserved automatically each month.","لا توجد مصروفات في هذا الشهر":"No expenses this month","سجّل أول مصروف، وسيتم تحديث الرصيد والحد اليومي مباشرة.":"Record your first expense and the balance and daily limit will update immediately.","الشهر مكتمل":"Month complete","الإشعارات مفعلة ✓":"Notifications enabled ✓","هذا الجهاز مسجل لاستقبال إشعار فوري خارج التطبيق عند طلب إعادة تعيين كلمة مرور.":"This device is registered to receive an external alert when a password reset is requested.","يوجد جهاز آخر للمالك يستقبل الإشعارات. يمكنك تفعيل هذا الجهاز أيضًا.":"Another owner device already receives notifications. You can enable this device as well.","هذا المتصفح لا يدعم إشعارات Web Push. على iPhone يجب استخدام التطبيق بعد إضافته إلى الشاشة الرئيسية.":"This browser does not support Web Push. On iPhone, use the app after adding it to the Home Screen.","على iPhone يجب فتح مدير الراتب من الأيقونة المضافة إلى الشاشة الرئيسية لتفعيل الإشعارات.":"On iPhone, open Salary Manager from the Home Screen icon to enable notifications.","لم يتم السماح بالإشعارات من إعدادات الجهاز.":"Notifications were not allowed in device settings.","توحيد عرض جميع التواريخ بالعربية بصيغة يوم شهر سنة، مثل 17 أغسطس 2026.":"Standardized all Arabic dates to day–month–year format, such as 17 August 2026.","إضافة زر لغة أعلى الصفحة للتبديل الفوري بين العربية والإنجليزية مع حفظ اختيار المستخدم على الجهاز.":"Added a language button at the top for instant Arabic/English switching, with the choice saved on the device.","عند اختيار الإنجليزية تتحول الواجهة إلى اتجاه من اليسار إلى اليمين وتظهر التواريخ مثل 17 August 2026.":"When English is selected, the interface switches to left-to-right and dates appear like 17 August 2026.","تطبيق اللغة المختارة على العناوين والأزرار والنوافذ والتنبيهات والقوائم الديناميكية دون تغيير بيانات المستخدم.":"Applied the selected language to headings, buttons, dialogs, alerts and dynamic lists without changing user data.","اعتماد أيقونة الدرهم الجديدة وقص الحواف المسبقة لتظهر بشكل ممتلئ وأفضل عند تثبيتها على iPhone.":"Adopted the new dirham icon and trimmed its pre-rendered edges for a fuller iPhone Home Screen appearance.","إضافة تاريخ اليوم إلى شريط الشهر الحالي ليظهر مثل 17 August 2026 مع استمرار إمكانية تغيير الشهر.":"Added today’s date to the current-month bar while keeping month navigation available.","تحسين تنسيق مبلغ حد الصرف اليومي بحيث يبقى رقم المبلغ ورمز الدرهم في سطر واحد وبمحاذاة بصرية متناسقة.":"Improved daily spending limit formatting so the amount and dirham symbol stay aligned on one line.","إضافة عدّاد تلقائي يوضح عدد الأيام المتبقية حتى موعد الراتب القادم اعتمادًا على يوم نزول الراتب المحدد.":"Added an automatic countdown to the next salary date based on the selected salary day.","الحفاظ على المزامنة الفورية، إشعارات المالك، ونظام التحديث الاختياري دون فرض النسخ الجديدة تلقائيًا.":"Kept real-time sync, owner notifications and optional updates without forcing new versions automatically.","الإصدار السابق":"Previous version","الإصدار 3.5.0":"Version 3.5.0","الإصدار 3.4.0":"Version 3.4.0","الإصدار 3.3.0":"Version 3.3.0","الإصدار 3.2.2":"Version 3.2.2","الإصدار 3.1.1":"Version 3.1.1","الإصدار 3.0.0":"Version 3.0.0","الإصدار 2.1.0":"Version 2.1.0","الإصدار 2.0.0":"Version 2.0.0","إضافة رقم الإصدار أسفل الصفحة وزر «سجل التحديثات».":"Added the version number and Update Log button to the footer.","تعزيز الحفظ المحلي بنسخة احتياطية داخلية تلقائية للبيانات.":"Enhanced local storage with an automatic internal backup.","استرجاع النسخة المحلية الاحتياطية تلقائيًا إذا تعذرت قراءة النسخة الأساسية.":"Automatically restores the local backup if the primary copy cannot be read.","تأكيد أن بيانات كل جهاز/متصفح مستقلة ولا تتم مزامنتها أو إرسالها خارجيًا.":"Confirmed that each device/browser keeps its own independent local data.","إدارة الراتب والأقساط والسلف والمدفوعات الثابتة والادخار والمصروفات الشهرية.":"Salary, installment, loan, fixed-payment, savings and monthly-expense management.","إضافة النسخ الاحتياطي والاستيراد والطباعة والمتابعة الشهرية للمدفوعات.":"Added backup, import, printing and monthly payment tracking.","اعتماد أيقونة الدرهم الإماراتي المختارة للتطبيق.":"Adopted the selected UAE dirham app icon.","استبدال كتابة د.إ في مبالغ الواجهة برمز الدرهم الإماراتي.":"Replaced the written currency abbreviation with the UAE dirham symbol in amounts.","الحفاظ على المزامنة الفورية ونظام التحديث الاختياري.":"Kept real-time sync and optional updates.","إعادة تهيئة مخزن المصادقة الخاص بإنشاء المالك لتجنب أي حالة جزئية من المحاولات السابقة.":"Reset the owner bootstrap authentication store to avoid partial state from previous attempts.","اعتماد إعداد PBKDF2 المجرب في نظام قارئ الفواتير وإضافة تشخيص مباشر لأي خطأ داخل خدمة الحسابات.":"Adopted the tested PBKDF2 setup and added direct diagnostics for account-service errors.","إصلاح إعداد حساب المالك لأول مرة وإظهار حالة إعداد Cloudflare بوضوح بدل رسالة الخطأ العامة.":"Fixed first-time owner setup and made Cloudflare configuration status explicit.","إعلان أسرار المصادقة كمتطلبات للنشر حتى يفشل النشر بوضوح إذا كانت غير مفعلة بدل نشر نسخة لا يستطيع المستخدم تسجيل الدخول إليها.":"Declared authentication secrets as deployment requirements so missing secrets fail deployment clearly.","إضافة نظام تحديث اختياري: يظهر إشعار عند توفر إصدار جديد ولا يتم تطبيقه إلا بعد ضغط المستخدم «تحديث الآن».":"Added optional updates: users are notified of a new version and update only when they choose Update now.","إضافة زر «نسخة احتياطية» داخل إشعار التحديث لإتاحة حفظ البيانات قبل تثبيت الإصدار الجديد.":"Added a Backup button in the update notice so users can save data before installing a new version.","تعديل Service Worker ليُبقي الإصدار الحالي فعالًا إلى أن يوافق المستخدم صراحة على التحديث.":"Updated the Service Worker so the current version stays active until the user explicitly accepts the update.","إضافة نظام حسابات وتسجيل دخول دائم حتى يختار المستخدم تسجيل الخروج.":"Added accounts with persistent sign-in until the user signs out.","مزامنة بيانات الراتب والأقساط والمدفوعات والمصروفات مع الحساب للوصول إليها من أي جهاز.":"Synced salary, installments, payments and expenses to the account for access from any device.","إضافة تبويب «إدارة المستخدمين» للمالك فقط مع إنشاء رموز مؤقتة لإعادة تعيين كلمات المرور.":"Added owner-only User Management with temporary password reset codes.","إضافة دعم PWA لإضافة مدير الراتب إلى الشاشة الرئيسية على iPhone وAndroid.":"Added PWA support for installing Salary Manager on iPhone and Android Home Screens.","الإبقاء على التخزين المحلي كنسخة عمل احتياطية عند انقطاع الإنترنت.":"Kept local storage as an offline working backup.","تنسيق رمز الدرهم ليظهر على يسار الرقم وبنفس خط الأساس بصريًا.":"Aligned the dirham symbol to the left of amounts on the same visual baseline.","إضافة يوم نزول الراتب من كل شهر وحفظه ومزامنته مع الحساب.":"Added monthly salary day and synced it with the account.","إضافة إشعارات Web Push اختيارية للمالك عند طلب أي مستخدم إعادة تعيين كلمة المرور.":"Added optional Web Push alerts for the owner when a user requests a password reset.","إزالة خيار الطباعة والاكتفاء بسجل الأشهر داخل التطبيق.":"Removed printing in favor of the in-app month history.","استخدام أسماء أيقونات إصدار جديدة لتقليل مشاكل التخزين المؤقت عند التثبيت.":"Used versioned icon filenames to reduce installation caching issues.","تم تسجيل الدخول وتفعيل المزامنة الفورية":"Signed in and real-time sync enabled","تم إنشاء الحساب وتفعيل المزامنة الفورية":"Account created and real-time sync enabled","تم إنشاء حساب المالك بنجاح":"Owner account created successfully","تم تسجيل طلب إعادة التعيين لدى المالك":"Reset request sent to the owner","تم تسجيل الطلب إن كان الحساب موجودًا":"The request was recorded if the account exists","تم تعيين كلمة المرور الجديدة. سجّل الدخول الآن.":"New password set. Sign in now.","تم تغيير كلمة المرور":"Password changed","تم تسجيل الخروج":"Signed out","تم تحديث حالة الحساب":"Account status updated","تم تسجيل خروج المستخدم من جميع الأجهزة":"User signed out on all devices","تم نسخ الرمز":"Code copied","تم حفظ الراتب وتحديث ميزانية الشهر":"Salary saved and monthly budget updated","تم تحديث بيانات الالتزام":"Commitment updated","تمت إضافة الالتزام بنجاح":"Commitment added successfully","تم تحديث الدفعة الثابتة":"Fixed payment updated","تمت إضافة الدفعة الثابتة وحجزها من الراتب":"Fixed payment added and reserved from salary","تم تسجيل المصروف وتحديث الرصيد":"Expense recorded and balance updated","تم تحديث حالة القسط لهذا الشهر":"Installment status updated for this month","تم تحديث حالة الدفعة للشهر المختار دون تغيير قيمة الميزانية":"Payment status updated for the selected month without changing the budget","تم تحديث حالة الدفعة الثابتة":"Fixed payment status updated","تم حذف الالتزام":"Commitment deleted","تم حذف الدفعة الثابتة وتحديث الرصيد":"Fixed payment deleted and balance updated","تم حذف المصروف وتحديث الرصيد":"Expense deleted and balance updated","تم تنزيل النسخة الاحتياطية":"Backup downloaded","تم استيراد النسخة الاحتياطية بنجاح":"Backup imported successfully","الملف المختار ليس نسخة احتياطية صالحة":"The selected file is not a valid backup","تم مسح جميع البيانات":"All data cleared","تم حفظ بياناتك ومزامنتها مع أجهزتك":"Your data was saved and synced across devices","تعذرت المزامنة الآن، وتم الاحتفاظ بالتغييرات محليًا.":"Sync is unavailable right now. Changes are safely stored locally.","انتهت جلسة الحساب. بياناتك المحلية ما زالت محفوظة.":"Your session expired. Your local data is still saved.","تم تحديث بيانات حسابك من السحابة":"Account data updated from the cloud","تم نقل بيانات هذا الجهاز إلى حسابك تلقائيًا":"This device’s data was automatically moved to your account","تمت المزامنة":"Synced","جارٍ الحفظ الفوري…":"Saving instantly…","جارٍ مزامنة الحساب…":"Syncing account…","غير متصل · محفوظ محليًا":"Offline · saved locally","مزامنة فورية مفعّلة":"Real-time sync enabled","مزامنة تلقائية":"Automatic sync","مزامنة تلقائية · إعادة اتصال":"Automatic sync · reconnecting","إعادة اتصال المزامنة…":"Reconnecting sync…","البيانات تُحفظ وتُزامن تلقائيًا مع الحساب مع نسخة محلية على هذا الجهاز":"Data is saved and synced automatically with your account, with a local copy on this device","البيانات تُزامن تلقائيًا وفوريًا مع الحساب مع نسخة محلية على هذا الجهاز":"Data syncs instantly with your account, with a local copy on this device","البيانات محفوظة محليًا على هذا الجهاز":"Data is stored locally on this device","الحساب جاهز للمزامنة":"Account ready to sync","الخادم غير متاح · حفظ محلي":"Server unavailable · saved locally","تعذر الاتصال بالخادم الآن. تحقق من الإنترنت ثم حاول مرة أخرى.":"Could not reach the server. Check your internet connection and try again.","تعذر إتمام العملية. حاول مرة أخرى.":"Could not complete the operation. Try again.","اسم المستخدم/البريد الإلكتروني أو كلمة المرور غير صحيحة.":"Incorrect username/email or password.","هذا الحساب موقوف حاليًا. راجع مالك الصفحة.":"This account is currently suspended. Contact the owner.","تم إيقاف محاولات الدخول مؤقتًا بسبب تكرار كلمة مرور خاطئة.":"Sign-in attempts are temporarily blocked after repeated incorrect passwords.","اسم المستخدم غير صالح. استخدم 3–32 من الأحرف الإنجليزية أو الأرقام و . _ -":"Invalid username. Use 3–32 English letters, numbers or . _ -","البريد الإلكتروني غير صالح.":"Invalid email address.","كلمة المرور يجب أن تكون 10 أحرف على الأقل وتحتوي حرفًا ورقمًا.":"Password must be at least 10 characters and include a letter and a number.","اسم المستخدم مستخدم بالفعل.":"Username is already in use.","البريد الإلكتروني مستخدم بالفعل.":"Email is already in use.","يجب إعداد حساب المالك أولًا.":"The owner account must be set up first.","رمز تهيئة المالك غير صحيح.":"Invalid owner bootstrap token.","رمز إعادة التعيين غير صحيح أو انتهت صلاحيته.":"The reset code is invalid or has expired.","انتهت جلسة الحساب. سجّل الدخول مرة أخرى.":"Your session expired. Sign in again.","ليس لديك صلاحية لتنفيذ هذا الإجراء.":"You do not have permission to perform this action.","عنوان الصفحة غير مسموح به في إعدادات الخادم.":"This page origin is not allowed by the server configuration.","حدث خطأ داخلي في الخادم. تحقق من إعدادات Variables and Secrets في Cloudflare ثم حاول مرة أخرى.":"An internal server error occurred. Check Cloudflare Variables and Secrets, then try again.","سيتم تحديث التطبيق الآن. إن كنت تريد نسخة احتياطية فتأكد من حفظها أولًا. هل تريد المتابعة؟":"The app will update now. If you want a backup, make sure you have saved it first. Continue?","سيتم استبدال البيانات الحالية بمحتوى النسخة الاحتياطية. هل تريد المتابعة؟":"Current data will be replaced by the backup. Continue?","هل أنت متأكد؟ سيتم مسح بيانات الراتب من حسابك ومزامنة الحذف مع أجهزتك الأخرى.":"Are you sure? Salary data will be deleted from your account and the deletion will sync to your other devices.","هل أنت متأكد؟ سيتم حذف الراتب والأقساط والمدفوعات الثابتة والمصروفات المحفوظة على هذا الجهاز.":"Are you sure? Salary, installments, fixed payments and expenses saved on this device will be deleted.","تاريخ النهاية يجب أن يكون بعد تاريخ بداية الخصم":"The end date must be after the deduction start date","تاريخ النهاية يجب أن يكون بعد تاريخ بداية التكرار":"The end date must be after the recurring start date","أكمل اسم الدفعة والمبلغ وتاريخ البداية":"Complete the payment name, amount and start date","أكمل وصف المصروف والمبلغ والتاريخ":"Complete the expense description, amount and date","اكتب اسم المستخدم أو البريد الإلكتروني أولًا":"Enter the username or email first","جارٍ التحديث…":"Updating…","تم حفظ النسخة ✓":"Backup saved ✓","تعذر تطبيق التحديث الآن. تحقق من الاتصال وحاول مرة أخرى.":"Could not apply the update. Check your connection and try again.","الإعدادات":"Settings","أيقونة التطبيق":"App icon","اختر الشكل الذي تفضله لهذا الجهاز، ثم اضغط «اعتماد الأيقونة».":"Choose the icon you prefer for this device, then tap “Apply icon”.","اعتماد الأيقونة":"Apply icon","تطبيقها على شاشة الهاتف":"Apply to Home Screen","سيتم اعتماد الأيقونة المختارة كتفضيل لتثبيت التطبيق على هذا الجهاز.":"The selected icon will be saved as this device’s preferred installation icon.","إشعارات التحديثات":"Update notifications","استقبل إشعارًا خارجيًا واحدًا بعد اعتماد المالك للإصدار ونشره للمستخدمين، مع بقاء إشعار التحديث داخل التطبيق.":"Receive an external alert when a new version is released while keeping the in-app update notice.","جارٍ التحقق من حالة الإشعارات…":"Checking notification status…","تفعيل إشعارات التحديث":"Enable update notifications","إيقاف إشعارات التحديث":"Disable update notifications","تم":"Done","هل تريد أن يصلك تنبيه عند صدور تحديث جديد؟":"Would you like an alert when a new update is released?","سيصلك إشعار خارج التطبيق بعد اعتماد المالك للإصدار ونشره للمستخدمين. التحديث نفسه يبقى اختياريًا ولن يُثبت إلا عندما تضغط «تحديث الآن» داخل مدير الراتب.":"You will receive an external notification when a new version is available. The update remains optional and is installed only when you tap “Update now” inside Salary Manager.","لاحقًا":"Later","الإشعارات مفعلة لهذا الجهاز ✓":"Notifications enabled on this device ✓","إشعارات التحديث متوقفة على هذا الجهاز.":"Update notifications are disabled on this device.","هذا المتصفح لا يدعم إشعارات Web Push.":"This browser does not support Web Push notifications.","على iPhone يجب إضافة مدير الراتب إلى الشاشة الرئيسية أولًا، ثم فتحه من الأيقونة لتفعيل الإشعارات.":"On iPhone, add Salary Manager to the Home Screen first, then open it from the icon to enable notifications.","تم تفعيل إشعارات التحديثات على هذا الجهاز":"Update notifications enabled on this device","تم إيقاف إشعارات التحديثات على هذا الجهاز":"Update notifications disabled on this device","تم اعتماد أيقونة التطبيق على هذا الجهاز":"App icon selected for this device","مدير الراتب صفحة تفاعلية تساعدك على تنظيم راتبك الشهري من مكان واحد. الفكرة ببساطة أنك تسجل راتبك، ثم تضيف السلف والأقساط والمدفوعات الثابتة والمصروفات اليومية، وبعدها يعرض لك التطبيق المتبقي من الراتب، ونسبة الاستخدام، وحد الصرف اليومي المقترح، وعدد الأيام المتبقية حتى الراتب القادم.":"Salary Manager is an interactive page that helps you organize your monthly salary in one place. Simply record your salary, then add loans, installments, fixed payments, and daily expenses. The app then shows your remaining salary, usage rate, suggested daily spending limit, and the days left until the next salary.","سجّل الدخول بحسابك حتى تُحفظ بياناتك وتتم مزامنتها، ويمكنك فتح نفس الحساب من أكثر من جهاز بسهولة.":"Sign in with your account so your data is saved and synced, and you can open the same account from more than one device easily.","اضغط «تحديد الراتب» أو «تعديل الراتب» وأدخل صافي الراتب الشهري ويوم نزول الراتب من كل شهر.":"Tap ‘Set salary’ or ‘Edit salary’ and enter your monthly net salary and your salary day each month.","سجّل أي سلفة أو قسط شهري، وحدد قيمة القسط وتاريخ بدايته ونهايته ليحسب التطبيق أثره على الميزانية تلقائيًا.":"Record any loan or monthly installment, and set its amount, start, and end dates so the app calculates its impact automatically.","أضف الفواتير والاشتراكات والادخار والمخصصات الشهرية الثابتة مثل الهاتف والإنترنت والتحويلات المتكررة.":"Add bills, subscriptions, savings, and fixed monthly allocations such as phone, internet, and recurring transfers.","أدخل المصروفات اليومية أو الشهرية أولًا بأول حتى يتم تحديث الرصيد المتبقي بشكل فوري ودقيق.":"Enter daily or monthly expenses as they happen so the remaining balance updates instantly and accurately.","من «نظرة الشهر» ستعرف الراتب، والالتزامات، والمصروفات، والمتبقي، ونسبة استخدام الراتب، وحد الصرف اليومي المقترح.":"From ‘Month overview’ you can see the salary, commitments, expenses, remaining balance, salary usage percentage, and suggested daily spending limit.","استخدم الأسهم بجانب اسم الشهر للرجوع إلى أي شهر سابق أو الانتقال بين الشهور ومراجعة جميع البيانات بسهولة.":"Use the arrows next to the month name to go back to any previous month or move between months and review your data easily.","يمكنك تنزيل نسخة احتياطية من بياناتك للاحتفاظ بها، ويُفضّل حفظ نسخة قبل أي تحديث جديد أو قبل نقل البيانات.":"You can download a backup of your data, and it is recommended to save one before any new update or before moving data.","عند توفر إصدار جديد سيظهر إشعار داخل التطبيق، ويمكنك مراجعة سجل التحديثات ثم الضغط على «تحديث الآن» عندما تكون جاهزًا.":"When a new version is available, an in-app notice will appear. You can review the update log and tap ‘Update now’ when ready.","من الإعدادات يمكنك تغيير أيقونة التطبيق، وإدارة إشعارات التحديث، وتغيير كلمة المرور، والوصول إلى خيارات التثبيت المناسبة.":"From Settings, you can change the app icon, manage update notifications, change your password, and access installation options.","سجّل راتبك والتزاماتك ومصروفاتك، ودع مدير الراتب يحسب لك تلقائيًا كم استخدمت، وكم تبقى، وكم يمكنك صرفه يوميًا حتى موعد الراتب القادم. بهذه الطريقة تصبح إدارة راتبك أوضح وأسهل وأكثر تنظيمًا طوال الشهر.":"Record your salary, commitments, and expenses, and let Salary Manager automatically calculate how much you used, how much remains, and how much you can safely spend each day until the next salary. This makes salary management clearer, easier, and more organized throughout the month.","على iPhone يتم فتح رابط مدير الراتب مباشرة دون المرور عبر Google. يحافظ الرابط على تسجيل الدخول، ويمكنك إضافة النسخة الجديدة إلى الشاشة الرئيسية من صفحة مدير الراتب المفتوحة. قد يعرض iOS الصفحة داخل عارض النظام بدل فتح Safari كاملًا؛ هذا قرار من النظام وليس للموقع صلاحية لإجبار Safari على الفتح.":"On iPhone, the icon changes inside the app immediately, but iOS does not instantly replace the icon of an already installed web app. To use the new Home Screen icon, remove Salary Manager from the Home Screen and add it again once from Safari; your account data is unaffected.","جارٍ إنهاء التحديث…":"Finishing update…","تم تثبيت التحديث، جارٍ إعادة فتح التطبيق…":"Update installed. Reopening the app…","إصلاح عدم ظهور معرض أيقونات التطبيق عبر تضمين ملفات PNG حقيقية داخل المشروع بدل التحويل الديناميكي.":"Fixed missing app icon previews by shipping real PNG files instead of runtime conversion.","إعادة رمز الدرهم الأصلي إلى أعلى الصفحة بدل ربطه بصورة أيقونة التطبيق المختارة.":"Restored the original dirham symbol in the page header instead of linking it to the selected app icon.","إضافة أحجام 180 و192 و512 بكسل لكل تصميم لتحسين التثبيت على iPhone وPWA.":"Added 180, 192 and 512 pixel variants for every icon for better iPhone and PWA installation.","إضافة حماية تمنع ظهور مربع الصورة المفقودة في حال تعذر تحميل معاينة أيقونة.":"Added a fallback that prevents broken-image placeholders if an icon preview fails to load.","أضف الفواتير والاشتراكات والادخار والمخصصات الشهرية الثابتة مثل الهاتف والإنترنت والتحويلات المتكررة، ثم أكّد الدفع عند تنفيذها فعليًا ليتم خصمها من الرصيد.":"Add bills, subscriptions, savings, and fixed monthly allocations, then confirm payment when it actually happens so it is deducted from the balance.","استخدم الأسهم بجانب اسم الشهر للتنقل بين شهر البداية والشهور التالية. لا يعرض مدير الراتب أي شهر أقدم من الشهر الذي بدأ فيه هذا النظام.":"Use the arrows beside the month name to navigate from the starting month onward. Salary Manager does not show months older than its starting month.","سجّل راتبك والتزاماتك ومصروفاتك، وسيستمر الرصيد معك من شهر إلى آخر دون تصفير. عند موعد نزول الراتب يُضاف الراتب إلى المتبقي، وتُخصم الأقساط تلقائيًا عند موعدها، بينما تُخصم المدفوعات الثابتة بعد تأكيدك للدفع.":"Record your salary, commitments, and expenses, and your balance will continue from month to month without resetting. On payday the salary is added to the remaining balance, installments are deducted automatically when due, and fixed payments are deducted after you confirm payment.","بانتظار تأكيد الدفع":"Waiting for payment confirmation","تم الدفع والخصم":"Paid and deducted","لن تُخصم من الرصيد حتى تؤكد الدفع":"Not deducted until you confirm payment","تم خصم هذه الدفعة من رصيد الشهر":"This payment was deducted from the month balance","مخصوم تلقائيًا":"Deducted automatically","موعد الخصم لاحقًا":"Deduction due later","مجدول للشهر":"Scheduled for the month","لا يمكن تأكيد دفع لشهر لم يبدأ بعد.":"You cannot confirm a payment for a month that has not started yet.","لا توجد شهور أقدم من شهر بداية مدير الراتب.":"There are no months older than the Salary Manager starting month.","هذا هو أول شهر في مدير الراتب.":"This is the first month in Salary Manager.","هذه معاينة للشهر القادم دون احتساب أي رصيد مرحّل حتى يصبح الشهر فعليًا.":"This is a preview of a future month without any carried balance until that month actually begins."};
       EN_TRANSLATIONS['على iPhone يتم فتح رابط مدير الراتب مباشرة دون المرور عبر Google. يحافظ الرابط على تسجيل الدخول، ويمكنك إضافة النسخة الجديدة إلى الشاشة الرئيسية من صفحة مدير الراتب المفتوحة. قد يعرض iOS الصفحة داخل عارض النظام بدل فتح Safari كاملًا؛ هذا قرار من النظام وليس للموقع صلاحية لإجبار Safari على الفتح.'] = 'On iPhone, Salary Manager opens directly without a Google redirect. The signed-in session is transferred to the opened page, and you can add the new copy to the Home Screen from there. iOS may use a system web view instead of full Safari; websites do not have permission to force Safari to launch.';
       EN_TRANSLATIONS["فتح مدير الراتب في Safari ↗"] = "Open Salary Manager in Safari ↗";
       EN_TRANSLATIONS["فتح مدير الراتب في المتصفح ↗"] = "Open Salary Manager in browser ↗";
@@ -3582,8 +3559,7 @@
 
 
       var APP_VERSION = "3.8.7";
-      var APP_BUILD = "3.8.7-r4";
-      var APP_RELEASE_ID = "3.8.7\u200B";
+      var APP_RELEASE_ID = "3.8.7-calendar-r5";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -3610,18 +3586,25 @@
       var storageWarningShown = false;
       var today = new Date();
       var defaultMonth = toMonthKey(today);
-      var state = {
-        salary: 0,
-        salaryPayDay: 0,
-        salaryCycleVersion: 0,
-        salaryCycleAnchorDate: "",
-        salaryCycleAnchorCarryover: 0,
-        salaryCycleAnchorHasPrevious: false,
-        selectedMonth: defaultMonth,
-        commitments: [],
-        recurringPayments: [],
-        expenses: []
-      };
+      function makeFreshState() {
+        return {
+          salary: 0,
+          salaryPayDay: 0,
+          calendarLedgerVersion: 1,
+          managerStartMonth: defaultMonth,
+          managerStartDate: toDateInput(today),
+          managerStartingSalary: 0,
+          lastActualMonth: defaultMonth,
+          monthOpenings: {},
+          salaryCredits: {},
+          commitmentCharges: {},
+          selectedMonth: defaultMonth,
+          commitments: [],
+          recurringPayments: [],
+          expenses: []
+        };
+      }
+      var state = makeFreshState();
       var activeView = "overviewView";
       var toastTimer;
 
@@ -3731,7 +3714,6 @@
         var now = new Date();
         now.setHours(0, 0, 0, 0);
         var target = salaryDateFor(now.getFullYear(), now.getMonth(), payDay);
-        // في يوم نزول الراتب تكون الدورة الجديدة قد بدأت بالفعل، لذلك نعرض الموعد التالي.
         if (target <= now) target = salaryDateFor(now.getFullYear(), now.getMonth() + 1, payDay);
         target.setHours(0, 0, 0, 0);
         var days = Math.max(0, Math.round((target.getTime() - now.getTime()) / 86400000));
@@ -3763,11 +3745,6 @@
       function safeNumber(value) {
         var number = Number(value);
         return Number.isFinite(number) && number >= 0 ? number : 0;
-      }
-
-      function signedNumber(value) {
-        var number = Number(value);
-        return Number.isFinite(number) ? number : 0;
       }
 
       function accountStorageKey() {
@@ -4212,7 +4189,7 @@
           var data = await apiFetch("/api/admin/release-status?check=" + Date.now());
           var staged = String(data.stagedVersion || APP_VERSION);
           var published = String(data.publishedVersion || "—");
-          var pending = staged !== published;
+          var pending = String(data.stagedReleaseId || APP_RELEASE_ID) !== String(data.publishedReleaseId || "");
           if ($("#stagedVersionChip")) { $("#stagedVersionChip").textContent = "قيد المراجعة: " + staged; $("#stagedVersionChip").classList.toggle("ready", pending); }
           if ($("#publishedVersionChip")) { $("#publishedVersionChip").textContent = "المتاح للمستخدمين: " + published; $("#publishedVersionChip").classList.toggle("published", !pending); }
           if ($("#releasePushCountChip")) $("#releasePushCountChip").textContent = "إشعارات المستخدمين: " + Number(data.userPushSubscriptions || 0) + " · المالك: " + Number(data.ownerPushSubscriptions || 0);
@@ -4223,7 +4200,9 @@
             testStatus.textContent = sent > 0 ? "آخر اختبار إشعار يدوي تم إرساله إلى " + sent + " جهاز." : "لا يوجد إشعار مراجعة تلقائي. الأجهزة المسجلة للمالك: " + subs + ". يمكنك استخدام زر الاختبار يدويًا عند الحاجة.";
           }
           if (status) status.textContent = pending
-            ? "الإصدار " + staged + " وصل لك للمراجعة فقط. المستخدمون ما زالوا على " + published + " ولن يصلهم إشعار التحديث حتى تضغط «نشر التحديث للمستخدمين»."
+            ? (staged === published
+                ? "تحديث جديد لنفس الإصدار " + staged + " وصل لك للمراجعة فقط. لن يصل للمستخدمين حتى تضغط «نشر التحديث للمستخدمين»."
+                : "الإصدار " + staged + " وصل لك للمراجعة فقط. المستخدمون ما زالوا على " + published + " ولن يصلهم إشعار التحديث حتى تضغط «نشر التحديث للمستخدمين».")
             : "الإصدار " + published + " منشور للمستخدمين حاليًا ولا يوجد إصدار بانتظار المراجعة.";
           if (button) { button.disabled = !pending; button.textContent = pending ? "نشر التحديث للمستخدمين" : "تم نشر الإصدار " + published + " ✓"; }
           translateDom($("#releaseControlBox") || document.body);
@@ -4645,21 +4624,26 @@
         var waitingWorker = null;
         var registration = null;
         var remoteVersion = "";
+        var remoteReleaseId = "";
         var banner = $("#appUpdateBanner");
         var note = $("#appUpdateNote");
         var applyButton = $("#applyUpdateButton");
         var backupButton = $("#updateBackupButton");
         var updateInProgress = false;
 
-        function showUpdate(worker, version) {
+        function showUpdate(worker, version, releaseId) {
           if (worker) waitingWorker = worker;
           if (version) remoteVersion = version;
-          if (remoteVersion && (String(remoteVersion) === String(APP_RELEASE_ID) || String(remoteVersion) === String(APP_VERSION))) {
+          if (releaseId) remoteReleaseId = releaseId;
+          if (remoteReleaseId && String(remoteReleaseId) === String(APP_RELEASE_ID)) {
             if (banner) banner.classList.remove("show");
             return;
           }
           if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
-          if (note) note.textContent = "يتوفر إصدار أحدث" + (remoteVersion ? " (" + remoteVersion + ")" : "") + ". لن يتم تحديث الصفحة تلقائيًا. احفظ نسخة احتياطية إن رغبت، ثم اضغط «تحديث الآن».";
+          if (note) {
+            var sameVisibleVersion = String(remoteVersion || "").replace(/\u200B/g, "") === String(APP_VERSION);
+            note.textContent = (sameVisibleVersion ? "يتوفر تحديث جديد للإصدار " + APP_VERSION : "يتوفر إصدار أحدث" + (remoteVersion ? " (" + remoteVersion + ")" : "")) + ". لن يتم تحديث الصفحة تلقائيًا. احفظ نسخة احتياطية إن رغبت، ثم اضغط «تحديث الآن».";
+          }
           if (banner) banner.classList.add("show");
           translateDom(banner || document.body);
         }
@@ -4668,7 +4652,8 @@
           try {
             var release = await apiFetch("/api/update/status?check=" + Date.now());
             var version = String(release.targetVersion || "").trim();
-            if (version && version !== APP_RELEASE_ID && version !== APP_VERSION) showUpdate(null, version);
+            var releaseId = String(release.targetReleaseId || version || "").trim();
+            if (releaseId && releaseId !== APP_RELEASE_ID) showUpdate(null, version || APP_VERSION, releaseId);
             else if (banner) banner.classList.remove("show");
           } catch (e) {}
         }
@@ -4799,266 +4784,44 @@
         });
       }
 
-      function dateKey(date) {
-        return toDateInput(date);
-      }
-
-      function compareDateKeys(a, b) {
-        return String(a || "").localeCompare(String(b || ""));
-      }
-
-      function salaryCycleForDate(value, payDayOverride) {
-        var payDay = Math.min(31, Math.max(1, Math.round(Number(payDayOverride || state.salaryPayDay) || 1)));
-        var date = value instanceof Date ? new Date(value.getFullYear(), value.getMonth(), value.getDate()) : parseLocalDate(value);
-        var thisMonthSalary = salaryDateFor(date.getFullYear(), date.getMonth(), payDay);
-        var start = date >= thisMonthSalary ? thisMonthSalary : salaryDateFor(date.getFullYear(), date.getMonth() - 1, payDay);
-        var nextStart = salaryDateFor(start.getFullYear(), start.getMonth() + 1, payDay);
-        var end = new Date(nextStart.getFullYear(), nextStart.getMonth(), nextStart.getDate() - 1);
-        return {
-          start: start,
-          end: end,
-          nextStart: nextStart,
-          startKey: dateKey(start),
-          endKey: dateKey(end),
-          nextStartKey: dateKey(nextStart),
-          monthKey: toMonthKey(start)
-        };
-      }
-
-      function salaryCycleForMonth(monthKey) {
-        var parts = String(monthKey || "").split("-").map(Number);
-        if (!parts[0] || !parts[1] || !state.salaryPayDay) return null;
-        var start = salaryDateFor(parts[0], parts[1] - 1, state.salaryPayDay);
-        return salaryCycleForDate(start, state.salaryPayDay);
-      }
-
-      function nextSalaryCycle(cycle) {
-        return salaryCycleForDate(cycle.nextStart, state.salaryPayDay);
-      }
-
-      function currentSalaryCycle() {
-        if (!state.salaryPayDay) return null;
-        return salaryCycleForDate(today, state.salaryPayDay);
-      }
-
-      function selectedSalaryCycle() {
-        if (!state.salaryPayDay) return null;
-        return salaryCycleForMonth(state.selectedMonth);
-      }
-
-      function isDateInsideCycle(value, cycle) {
-        if (!cycle || !value) return false;
-        var key = String(value).slice(0, 10);
-        return compareDateKeys(key, cycle.startKey) >= 0 && compareDateKeys(key, cycle.endKey) <= 0;
-      }
-
-      function dueDateInCalendarMonth(year, monthIndex, dueDay) {
-        var lastDay = new Date(year, monthIndex + 1, 0).getDate();
-        return new Date(year, monthIndex, Math.min(Math.max(1, Math.round(Number(dueDay) || 1)), lastDay));
-      }
-
-      function itemDueDatesInCycle(item, cycle, recurring) {
-        if (!cycle || !item || (recurring && item.isPaused)) return [];
-        // يوم الاستحقاق يستخدم للعرض والمتابعة فقط. احتساب قيمة الالتزام نفسها
-        // يبقى بالطريقة الأصلية: التزام نشط في شهر الدورة = يُحجز مرة واحدة من الراتب.
-        var dates = [];
-        var cursor = new Date(cycle.start.getFullYear(), cycle.start.getMonth(), 1);
-        var lastMonth = new Date(cycle.end.getFullYear(), cycle.end.getMonth(), 1);
-        var guard = 0;
-        while (cursor <= lastMonth && guard < 4) {
-          var due = dueDateInCalendarMonth(cursor.getFullYear(), cursor.getMonth(), item.dueDay);
-          var key = dateKey(due);
-          if (compareDateKeys(key, cycle.startKey) >= 0 && compareDateKeys(key, cycle.endKey) <= 0) dates.push(due);
-          cursor.setMonth(cursor.getMonth() + 1);
-          guard += 1;
-        }
-        return dates.slice(0, 1);
-      }
-
-      function cycleStatusKey(cycle) {
-        return cycle ? "cycle:" + cycle.startKey : state.selectedMonth;
-      }
-
-      function isItemPaidForCycle(item, cycle, recurring) {
-        var paid = Array.isArray(item && item.paidMonths) ? item.paidMonths : [];
-        if (!cycle) return paid.indexOf(state.selectedMonth) !== -1;
-        var key = cycleStatusKey(cycle);
-        if (paid.indexOf(key) !== -1) return true;
-        // احترام علامات الدفع القديمة المخزنة حسب الشهر الميلادي.
-        return itemDueDatesInCycle(item, cycle, recurring).some(function (date) {
-          return paid.indexOf(toMonthKey(date)) !== -1;
-        });
-      }
-
-      function legacyCommitmentActive(item, monthKey) {
-        var startMonth = String(item.startDate || "").slice(0, 7);
-        var endMonth = String(item.endDate || "").slice(0, 7);
-        return Boolean(startMonth && endMonth && startMonth <= monthKey && endMonth >= monthKey);
-      }
-
-      function legacyRecurringActive(item, monthKey) {
-        if (item.isPaused) return false;
-        var startMonth = String(item.startDate || "").slice(0, 7);
-        var endMonth = String(item.endDate || "").slice(0, 7);
-        return Boolean(startMonth && startMonth <= monthKey && (!endMonth || endMonth >= monthKey));
-      }
-
-      function legacyMetricsForMonth(monthKey) {
-        var commitments = state.commitments.filter(function (item) { return legacyCommitmentActive(item, monthKey); });
-        var recurring = state.recurringPayments.filter(function (item) { return legacyRecurringActive(item, monthKey); });
-        var expenses = state.expenses.filter(function (item) { return String(item.date || "").slice(0, 7) === monthKey; });
-        var commitmentsTotal = commitments.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
-        var recurringTotal = recurring.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
-        var expensesTotal = expenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0);
-        return { balance: state.salary - commitmentsTotal - recurringTotal - expensesTotal };
-      }
-
-      function rawCycleTotals(cycle) {
-        var monthKey = cycle ? cycle.monthKey : state.selectedMonth;
-        // IMPORTANT: preserve the original pre-3.8.7 budget logic for commitments.
-        // Every active monthly commitment/fixed payment is reserved exactly once.
-        var activeCommitments = state.commitments.filter(function (item) { return legacyCommitmentActive(item, monthKey); });
-        var activeRecurring = state.recurringPayments.filter(function (item) { return legacyRecurringActive(item, monthKey); });
-        var commitmentsTotal = activeCommitments.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
-        var recurringTotal = activeRecurring.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
-        var savingsTotal = activeRecurring.reduce(function (sum, item) { return sum + (item.type === "ادخار" ? safeNumber(item.amount) : 0); }, 0);
-        var monthExpenses = state.expenses.filter(function (item) { return cycle ? isDateInsideCycle(item.date, cycle) : String(item.date || "").slice(0, 7) === monthKey; });
-        var expensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0);
-        var excludedExpensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? safeNumber(item.amount) : 0); }, 0);
-        return {
-          activeCommitments: activeCommitments,
-          activeRecurring: activeRecurring,
-          monthExpenses: monthExpenses,
-          commitmentsTotal: commitmentsTotal,
-          recurringTotal: recurringTotal,
-          savingsTotal: savingsTotal,
-          expensesTotal: expensesTotal,
-          excludedExpensesTotal: excludedExpensesTotal
-        };
-      }
-
-      function cycleAccountingEnabledFor(cycle) {
-        return Boolean(state.salary > 0 && state.salaryPayDay && state.salaryCycleVersion >= 3 && /^\d{4}-\d{2}-\d{2}$/.test(state.salaryCycleAnchorDate || "") && cycle && compareDateKeys(cycle.startKey, state.salaryCycleAnchorDate) >= 0);
-      }
-
-      function setSalaryCycleAnchorCarryover(carryover, hasPreviousCycle, cycleOverride) {
-        if (!state.salaryPayDay || state.salary <= 0) return;
-        var cycle = cycleOverride || salaryCycleForDate(today, state.salaryPayDay);
-        state.salaryCycleVersion = 3;
-        state.salaryCycleAnchorDate = cycle.startKey;
-        state.salaryCycleAnchorCarryover = signedNumber(carryover);
-        state.salaryCycleAnchorHasPrevious = Boolean(hasPreviousCycle);
-      }
-
-      function initializeSalaryCycleFromLegacy() {
-        if (!state.salaryPayDay || state.salary <= 0 || state.salaryCycleVersion >= 3) return;
-        var previousDefault = defaultMonth;
-        var calendarMonth = toMonthKey(today);
-        // إلغاء أي ترحيل تم إنشاؤه بواسطة النسخ السابقة من 3.8.7.
-        // أول دورة بعد التحديث تبدأ دائمًا من صفر ترحيل، ثم يبدأ الترحيل الحقيقي عند الراتب التالي.
-        var cycle = salaryCycleForDate(today, state.salaryPayDay);
-        setSalaryCycleAnchorCarryover(0, false, cycle);
-        defaultMonth = cycle.monthKey;
-        if (state.selectedMonth === previousDefault || state.selectedMonth === calendarMonth) state.selectedMonth = defaultMonth;
-      }
-
-      function rollSalaryCycleToToday(showRolloverToast) {
-        if (!state.salaryPayDay || state.salary <= 0) return false;
-        if (state.salaryCycleVersion < 3 || !state.salaryCycleAnchorDate) initializeSalaryCycleFromLegacy();
-        var current = salaryCycleForDate(today, state.salaryPayDay);
-        var anchor = salaryCycleForDate(state.salaryCycleAnchorDate, state.salaryPayDay);
-        var changed = false;
-        var guard = 0;
-        while (anchor && compareDateKeys(anchor.startKey, current.startKey) < 0 && guard < 120) {
-          var totals = rawCycleTotals(anchor);
-          // الرصيد المرحّل = المتبقي الفعلي عند نهاية الدورة السابقة فقط.
-          var previousBalance = signedNumber(state.salaryCycleAnchorCarryover) + state.salary - totals.commitmentsTotal - totals.recurringTotal - totals.expensesTotal;
-          var next = nextSalaryCycle(anchor);
-          setSalaryCycleAnchorCarryover(previousBalance, true, next);
-          anchor = next;
-          changed = true;
-          guard += 1;
-        }
-        if (changed && showRolloverToast) showToast("بدأت دورة راتب جديدة: تم ترحيل المتبقي الفعلي وإضافة الراتب الجديد ثم خصم التزامات الدورة الجديدة");
-        return changed;
-      }
-
-      function updateCurrentCycleContext(showRolloverToast) {
-        var previousDefault = defaultMonth;
-        var wasViewingCurrent = state.selectedMonth === previousDefault;
-        today = new Date();
-        var changed = rollSalaryCycleToToday(showRolloverToast);
-        var cycle = currentSalaryCycle();
-        defaultMonth = cycle && state.salaryCycleVersion >= 3 ? cycle.monthKey : toMonthKey(today);
-        if (wasViewingCurrent) state.selectedMonth = defaultMonth;
-        return changed || previousDefault !== defaultMonth;
-      }
-
-      function currentCycleDaysRemaining(cycle) {
-        if (!cycle) return 0;
-        var now = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        if (now < cycle.start) return Math.round((cycle.end.getTime() - cycle.start.getTime()) / 86400000) + 1;
-        if (now > cycle.end) return 0;
-        return Math.max(1, Math.round((cycle.end.getTime() - now.getTime()) / 86400000) + 1);
-      }
-
-      function calculateSalaryCycleMetrics(targetCycle) {
-        if (!targetCycle) return null;
-        var totals = rawCycleTotals(targetCycle);
-        var current = currentSalaryCycle();
-        var isCurrent = Boolean(current && current.startKey === targetCycle.startKey);
-        var isFuture = Boolean(current && compareDateKeys(targetCycle.startKey, current.startKey) > 0);
-        var carryover = 0;
-        var hasPreviousCycle = false;
-        // الترحيل يطبق فعليًا ومرئيًا على الدورة الحالية فقط.
-        if (isCurrent && state.salaryCycleAnchorDate === targetCycle.startKey) {
-          carryover = signedNumber(state.salaryCycleAnchorCarryover);
-          hasPreviousCycle = Boolean(state.salaryCycleAnchorHasPrevious);
-        }
-        var openingFunds = state.salary + carryover;
-        var balance = openingFunds - totals.commitmentsTotal - totals.recurringTotal - totals.expensesTotal;
-        var fullCycleDays = Math.round((targetCycle.end.getTime() - targetCycle.start.getTime()) / 86400000) + 1;
-        var daysLeft = isCurrent ? currentCycleDaysRemaining(targetCycle) : (isFuture ? fullCycleDays : 0);
-        var daily = daysLeft > 0 ? Math.max(0, balance) / Math.max(1, daysLeft) : 0;
-        var used = totals.commitmentsTotal + totals.recurringTotal + totals.expensesTotal;
-        return Object.assign({}, totals, {
-          balance: balance,
-          carryover: carryover,
-          openingFunds: openingFunds,
-          cycle: targetCycle,
-          cycleMode: true,
-          isCurrentCycle: isCurrent,
-          isFutureCycle: isFuture,
-          hasPreviousCycle: hasPreviousCycle,
-          daysLeft: daysLeft,
-          calendarDaysLeft: daysLeft,
-          nextSalary: { days: daysLeft, date: targetCycle.nextStart },
-          usingSalaryCountdown: isCurrent,
-          daily: daily,
-          used: used,
-          usedPercent: openingFunds > 0 ? (used / openingFunds) * 100 : 0
-        });
-      }
-
       function normalizeSavedState(saved) {
         if (!saved || typeof saved !== "object") return false;
         state.salary = safeNumber(saved.salary);
         state.salaryPayDay = Math.min(31, Math.max(0, Math.round(Number(saved.salaryPayDay) || 0)));
-        state.salaryCycleVersion = Math.max(0, Math.round(Number(saved.salaryCycleVersion) || 0));
-        state.salaryCycleAnchorDate = /^\d{4}-\d{2}-\d{2}$/.test(saved.salaryCycleAnchorDate || "") ? saved.salaryCycleAnchorDate : "";
-        state.salaryCycleAnchorCarryover = signedNumber(saved.salaryCycleAnchorCarryover);
-        state.salaryCycleAnchorHasPrevious = Boolean(saved.salaryCycleAnchorHasPrevious);
-        state.selectedMonth = /^\d{4}-\d{2}$/.test(saved.selectedMonth || "") ? saved.selectedMonth : defaultMonth;
         state.commitments = Array.isArray(saved.commitments) ? saved.commitments : [];
         state.recurringPayments = Array.isArray(saved.recurringPayments) ? saved.recurringPayments : [];
         state.expenses = Array.isArray(saved.expenses) ? saved.expenses : [];
-        today = new Date();
-        if (state.salary > 0 && state.salaryPayDay > 0) {
-          if (state.salaryCycleVersion < 3 || !state.salaryCycleAnchorDate) initializeSalaryCycleFromLegacy();
-          else updateCurrentCycleContext(false);
+
+        var ledgerReady = Number(saved.calendarLedgerVersion || 0) === 1
+          && /^\d{4}-\d{2}$/.test(String(saved.managerStartMonth || ""))
+          && /^\d{4}-\d{2}-\d{2}$/.test(String(saved.managerStartDate || ""));
+
+        if (ledgerReady) {
+          state.calendarLedgerVersion = 1;
+          state.managerStartMonth = String(saved.managerStartMonth);
+          state.managerStartDate = String(saved.managerStartDate);
+          state.managerStartingSalary = saved.managerStartingSalary != null ? safeNumber(saved.managerStartingSalary) : safeNumber(saved.salary);
+          state.lastActualMonth = /^\d{4}-\d{2}$/.test(String(saved.lastActualMonth || "")) ? String(saved.lastActualMonth) : state.managerStartMonth;
+          state.monthOpenings = saved.monthOpenings && typeof saved.monthOpenings === "object" ? saved.monthOpenings : {};
+          state.salaryCredits = saved.salaryCredits && typeof saved.salaryCredits === "object" ? saved.salaryCredits : {};
+          state.commitmentCharges = saved.commitmentCharges && typeof saved.commitmentCharges === "object" ? saved.commitmentCharges : {};
+          state.selectedMonth = /^\d{4}-\d{2}$/.test(String(saved.selectedMonth || "")) ? String(saved.selectedMonth) : defaultMonth;
         } else {
-          defaultMonth = toMonthKey(today);
+          // إعادة بناء 3.8.7: يبدأ السجل من الشهر الحالي فقط، مع تجاهل أي بيانات ترحيل تجريبية من البنايات السابقة.
+          state.calendarLedgerVersion = 1;
+          state.managerStartMonth = defaultMonth;
+          state.managerStartDate = toDateInput(today);
+          state.managerStartingSalary = safeNumber(state.salary);
+          state.lastActualMonth = defaultMonth;
+          state.monthOpenings = {};
+          state.salaryCredits = {};
+          state.commitmentCharges = {};
+          state.selectedMonth = defaultMonth;
+          initializeFirstMonthCommitmentCharges();
         }
+
+        if (state.managerStartMonth > defaultMonth) state.managerStartMonth = defaultMonth;
+        if (state.selectedMonth < state.managerStartMonth) state.selectedMonth = state.managerStartMonth;
         return true;
       }
 
@@ -5125,8 +4888,193 @@
         } catch (error) {}
       }
 
+      function currentDateAtMidnight() {
+        var d = new Date();
+        d.setHours(0, 0, 0, 0);
+        return d;
+      }
+
+      function monthEndDate(monthKey) {
+        var d = monthDate(monthKey);
+        return new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      }
+
+      function dueDateForMonthKey(item, monthKey) {
+        var d = monthDate(monthKey);
+        var day = Math.min(Math.max(1, Number(item.dueDay) || 1), daysInMonth(monthKey));
+        return new Date(d.getFullYear(), d.getMonth(), day);
+      }
+
+      function monthCutoffDate(monthKey) {
+        if (monthKey < defaultMonth) return monthEndDate(monthKey);
+        if (monthKey === defaultMonth) return currentDateAtMidnight();
+        return monthEndDate(monthKey);
+      }
+
+      function isRecurringPaidForMonth(item, monthKey) {
+        return Array.isArray(item.paidMonths) && item.paidMonths.indexOf(monthKey) !== -1;
+      }
+
+      function salaryCreditAmount(monthKey) {
+        return safeNumber(state.salaryCredits && state.salaryCredits[monthKey]);
+      }
+
+      function getCommitmentChargeMap(monthKey) {
+        if (!state.commitmentCharges || typeof state.commitmentCharges !== "object") state.commitmentCharges = {};
+        if (!state.commitmentCharges[monthKey] || typeof state.commitmentCharges[monthKey] !== "object") state.commitmentCharges[monthKey] = {};
+        return state.commitmentCharges[monthKey];
+      }
+
+      function initializeFirstMonthCommitmentCharges() {
+        if (!state || !Array.isArray(state.commitments)) return;
+        var charges = getCommitmentChargeMap(defaultMonth);
+        state.commitments.forEach(function (item) {
+          if (isCommitmentActive(item, defaultMonth) && charges[item.id] == null) charges[item.id] = safeNumber(item.amount);
+        });
+      }
+
+      function shouldPostSalaryForMonth(monthKey, cutoff) {
+        if (!state.salaryPayDay || safeNumber(state.salary) <= 0) return false;
+        var d = monthDate(monthKey);
+        var payDate = salaryDateFor(d.getFullYear(), d.getMonth(), state.salaryPayDay);
+        payDate.setHours(0, 0, 0, 0);
+        cutoff = new Date(cutoff); cutoff.setHours(0, 0, 0, 0);
+        if (payDate > cutoff) return false;
+        if (monthKey === state.managerStartMonth) {
+          var started = parseLocalDate(state.managerStartDate); started.setHours(0, 0, 0, 0);
+          // راتب شهر البداية موجود أصلًا كرأس مال البداية. لا نضيف راتبًا آخر إلا إذا كان موعد النزول بعد تاريخ بدء هذا النظام.
+          return payDate > started;
+        }
+        return monthKey > state.managerStartMonth;
+      }
+
+      function ensureSalaryCreditForMonth(monthKey, cutoff) {
+        if (!state.salaryCredits || typeof state.salaryCredits !== "object") state.salaryCredits = {};
+        if (state.salaryCredits[monthKey] != null) return false;
+        if (!shouldPostSalaryForMonth(monthKey, cutoff)) return false;
+        state.salaryCredits[monthKey] = safeNumber(state.salary);
+        return true;
+      }
+
+      function ensureCommitmentChargesForMonth(monthKey, cutoff) {
+        var charges = getCommitmentChargeMap(monthKey);
+        var changed = false;
+        state.commitments.forEach(function (item) {
+          if (!isCommitmentActive(item, monthKey) || charges[item.id] != null) return;
+          var due = dueDateForMonthKey(item, monthKey); due.setHours(0, 0, 0, 0);
+          var limit = new Date(cutoff); limit.setHours(0, 0, 0, 0);
+          if (due <= limit) { charges[item.id] = safeNumber(item.amount); changed = true; }
+        });
+        return changed;
+      }
+
+      function sumCommitmentCharges(monthKey) {
+        var charges = getCommitmentChargeMap(monthKey);
+        return Object.keys(charges).reduce(function (sum, id) { return sum + safeNumber(charges[id]); }, 0);
+      }
+
+      function monthOpeningBalance(monthKey) {
+        if (monthKey === state.managerStartMonth) return 0;
+        return Number(state.monthOpenings && state.monthOpenings[monthKey]) || 0;
+      }
+
+      function confirmedRecurringForMonth(monthKey) {
+        return state.recurringPayments.filter(function (item) {
+          return isRecurringActive(item, monthKey) && isRecurringPaidForMonth(item, monthKey);
+        });
+      }
+
+      function expensesForMonthToDate(monthKey, cutoff, forecast) {
+        return state.expenses.filter(function (item) {
+          if (String(item.date || "").slice(0, 7) !== monthKey) return false;
+          if (forecast) return true;
+          var d = parseLocalDate(item.date); d.setHours(0, 0, 0, 0);
+          var limit = new Date(cutoff); limit.setHours(0, 0, 0, 0);
+          return d <= limit;
+        });
+      }
+
+      function computeCalendarMonth(monthKey, options) {
+        options = options || {};
+        var forecast = Boolean(options.forecast || monthKey > defaultMonth);
+        var cutoff = options.cutoff || monthCutoffDate(monthKey);
+        var activeCommitments = state.commitments.filter(function (item) { return isCommitmentActive(item, monthKey); });
+        var activeRecurring = state.recurringPayments.filter(function (item) { return isRecurringActive(item, monthKey); });
+        var paidRecurring = forecast ? [] : confirmedRecurringForMonth(monthKey);
+        var monthExpenses = expensesForMonthToDate(monthKey, cutoff, forecast);
+
+        var opening = forecast ? 0 : monthOpeningBalance(monthKey);
+        var startingSalary = monthKey === state.managerStartMonth ? safeNumber(state.managerStartingSalary) : 0;
+        var salaryCredit = forecast ? safeNumber(state.salary) : salaryCreditAmount(monthKey);
+        var commitmentsTotal = forecast
+          ? activeCommitments.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0)
+          : sumCommitmentCharges(monthKey);
+        var recurringTotal = paidRecurring.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
+        var savingsTotal = paidRecurring.reduce(function (sum, item) { return sum + (item.type === "ادخار" ? safeNumber(item.amount) : 0); }, 0);
+        var expensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0);
+        var excludedExpensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? safeNumber(item.amount) : 0); }, 0);
+        var availableBase = opening + startingSalary + salaryCredit;
+        var used = commitmentsTotal + recurringTotal + expensesTotal;
+        var balance = availableBase - used;
+        return {
+          forecast: forecast, opening: opening, startingSalary: startingSalary, salaryCredit: salaryCredit, availableBase: availableBase,
+          activeCommitments: activeCommitments, activeRecurring: activeRecurring, paidRecurring: paidRecurring, monthExpenses: monthExpenses,
+          commitmentsTotal: commitmentsTotal, recurringTotal: recurringTotal, savingsTotal: savingsTotal, expensesTotal: expensesTotal, excludedExpensesTotal: excludedExpensesTotal,
+          used: used, balance: balance, usedPercent: availableBase > 0 ? (used / availableBase) * 100 : 0
+        };
+      }
+
+      function rebuildActualMonthOpenings() {
+        if (!state.managerStartMonth || state.managerStartMonth >= defaultMonth) return;
+        state.monthOpenings = {};
+        var monthKey = state.managerStartMonth;
+        while (monthKey < defaultMonth) {
+          var end = monthEndDate(monthKey);
+          ensureSalaryCreditForMonth(monthKey, end);
+          ensureCommitmentChargesForMonth(monthKey, end);
+          var closing = computeCalendarMonth(monthKey, { cutoff: end, forecast: false }).balance;
+          var nextMonth = shiftMonth(monthKey, 1);
+          state.monthOpenings[nextMonth] = closing;
+          monthKey = nextMonth;
+        }
+        state.lastActualMonth = defaultMonth;
+      }
+
+      function ensureCalendarLedgerCurrent() {
+        var now = new Date();
+        var previousCurrentMonth = defaultMonth;
+        today = now;
+        defaultMonth = toMonthKey(now);
+        if (!state.managerStartMonth) state.managerStartMonth = defaultMonth;
+        if (!state.managerStartDate) state.managerStartDate = toDateInput(now);
+        if (state.managerStartingSalary == null) state.managerStartingSalary = safeNumber(state.salary);
+        if (!state.lastActualMonth) state.lastActualMonth = state.managerStartMonth;
+        if (!state.monthOpenings || typeof state.monthOpenings !== "object") state.monthOpenings = {};
+        if (!state.salaryCredits || typeof state.salaryCredits !== "object") state.salaryCredits = {};
+        if (!state.commitmentCharges || typeof state.commitmentCharges !== "object") state.commitmentCharges = {};
+
+        while (state.lastActualMonth < defaultMonth) {
+          var closingMonth = state.lastActualMonth;
+          var end = monthEndDate(closingMonth);
+          ensureSalaryCreditForMonth(closingMonth, end);
+          ensureCommitmentChargesForMonth(closingMonth, end);
+          var closing = computeCalendarMonth(closingMonth, { cutoff: end, forecast: false }).balance;
+          var next = shiftMonth(closingMonth, 1);
+          state.monthOpenings[next] = closing;
+          state.lastActualMonth = next;
+        }
+
+        ensureSalaryCreditForMonth(defaultMonth, currentDateAtMidnight());
+        ensureCommitmentChargesForMonth(defaultMonth, currentDateAtMidnight());
+
+        if (state.selectedMonth < state.managerStartMonth) state.selectedMonth = state.managerStartMonth;
+        return previousCurrentMonth !== defaultMonth;
+      }
+
       function isCommitmentActive(item, monthKey) {
-        return legacyCommitmentActive(item, monthKey);
+        var startMonth = String(item.startDate || "").slice(0, 7);
+        var endMonth = String(item.endDate || "").slice(0, 7);
+        return Boolean(startMonth && endMonth && startMonth <= monthKey && endMonth >= monthKey);
       }
 
       function getActiveCommitments() {
@@ -5136,7 +5084,10 @@
       }
 
       function isRecurringActive(item, monthKey) {
-        return legacyRecurringActive(item, monthKey);
+        if (item.isPaused) return false;
+        var startMonth = String(item.startDate || "").slice(0, 7);
+        var endMonth = String(item.endDate || "").slice(0, 7);
+        return Boolean(startMonth && startMonth <= monthKey && (!endMonth || endMonth >= monthKey));
       }
 
       function getActiveRecurring() {
@@ -5146,10 +5097,6 @@
       }
 
       function getMonthExpenses() {
-        var cycle = selectedSalaryCycle();
-        if (cycleAccountingEnabledFor(cycle)) {
-          return state.expenses.filter(function (item) { return isDateInsideCycle(item.date, cycle); });
-        }
         return state.expenses.filter(function (item) {
           return String(item.date || "").slice(0, 7) === state.selectedMonth;
         });
@@ -5161,56 +5108,24 @@
         return Math.max(0, (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth() + 1);
       }
 
-      function getLegacyDisplayMetrics() {
-        var activeCommitments = getActiveCommitments();
-        var activeRecurring = getActiveRecurring();
-        var monthExpenses = getMonthExpenses();
-        var commitmentsTotal = activeCommitments.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
-        var recurringTotal = activeRecurring.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
-        var savingsTotal = activeRecurring.reduce(function (sum, item) { return sum + (item.type === "ادخار" ? safeNumber(item.amount) : 0); }, 0);
-        var expensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0);
-        var excludedExpensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? safeNumber(item.amount) : 0); }, 0);
-        var balance = state.salary - commitmentsTotal - recurringTotal - expensesTotal;
+      function getMetrics() {
+        ensureCalendarLedgerCurrent();
+        var forecast = state.selectedMonth > defaultMonth;
+        var ledger = computeCalendarMonth(state.selectedMonth, { forecast: forecast, cutoff: monthCutoffDate(state.selectedMonth) });
         var calendarDaysLeft = getDaysRemaining(state.selectedMonth);
         var nextSalary = getNextSalaryInfo();
         var usingSalaryCountdown = state.selectedMonth === defaultMonth && nextSalary.days != null;
-        var daysLeft = usingSalaryCountdown ? Math.max(1, nextSalary.days) : calendarDaysLeft;
-        var spendingDays = Math.max(1, daysLeft || 1);
-        var daily = daysLeft > 0 ? Math.max(0, balance) / spendingDays : 0;
-        var used = commitmentsTotal + recurringTotal + expensesTotal;
-        var usedPercent = state.salary > 0 ? (used / state.salary) * 100 : 0;
-        return {
-          activeCommitments: activeCommitments,
-          activeRecurring: activeRecurring,
-          monthExpenses: monthExpenses,
-          commitmentsTotal: commitmentsTotal,
-          recurringTotal: recurringTotal,
-          savingsTotal: savingsTotal,
-          expensesTotal: expensesTotal,
-          excludedExpensesTotal: excludedExpensesTotal,
-          balance: balance,
-          carryover: 0,
-          openingFunds: state.salary,
-          cycle: null,
-          cycleMode: false,
-          hasPreviousCycle: false,
+        var daysLeft = usingSalaryCountdown ? nextSalary.days : calendarDaysLeft;
+        var spendingDays = usingSalaryCountdown ? Math.max(1, nextSalary.days) : Math.max(1, daysLeft);
+        var daily = spendingDays > 0 ? Math.max(0, ledger.balance) / spendingDays : 0;
+        return Object.assign({}, ledger, {
           daysLeft: daysLeft,
           calendarDaysLeft: calendarDaysLeft,
           nextSalary: nextSalary,
           usingSalaryCountdown: usingSalaryCountdown,
           daily: daily,
-          used: used,
-          usedPercent: usedPercent
-        };
-      }
-
-      function getMetrics() {
-        var cycle = selectedSalaryCycle();
-        if (cycleAccountingEnabledFor(cycle)) {
-          var cycleMetrics = calculateSalaryCycleMetrics(cycle);
-          if (cycleMetrics) return cycleMetrics;
-        }
-        return getLegacyDisplayMetrics();
+          carryover: (!forecast && state.selectedMonth === defaultMonth && state.selectedMonth > state.managerStartMonth) ? ledger.opening : 0
+        });
       }
 
       function setText(selector, value) {
@@ -5228,15 +5143,13 @@
 
       function render() {
         var metrics = getMetrics();
+        $("#monthPicker").min = state.managerStartMonth;
         $("#monthPicker").value = state.selectedMonth;
+        $("#previousMonth").disabled = state.selectedMonth <= state.managerStartMonth;
         setText("#monthDisplayText", formatMonthControl(state.selectedMonth));
         setText("#todayDateText", (currentLanguage === "en" ? "Today · " : "اليوم · ") + formatDisplayDateObject(new Date(), true));
         $("#expenseDate").value = normalizeExpenseDate($("#expenseDate").value);
-        if (metrics.cycleMode && metrics.cycle) {
-          setText("#monthSummaryTitle", "دورة الراتب · " + formatShortArabicDate(metrics.cycle.start) + " – " + formatShortArabicDate(metrics.cycle.end));
-        } else {
-          setText("#monthSummaryTitle", "ملخص " + formatMonth(state.selectedMonth));
-        }
+        setText("#monthSummaryTitle", "ملخص " + formatMonth(state.selectedMonth));
 
         setMoney("#salaryHero", state.salary);
         setMoney("#salarySummary", state.salary);
@@ -5250,47 +5163,45 @@
         setMoney("#legendRecurring", metrics.recurringTotal);
         setMoney("#legendExpenses", metrics.expensesTotal);
         setMoney("#legendRemaining", metrics.balance);
-        setText("#salaryPaydayText", state.salaryPayDay ? "يوم " + state.salaryPayDay + " من كل شهر" : "غير محدد");
-        var carryInline = $("#salaryCarryoverInline");
-        if (carryInline) {
-          var showCarryover = Boolean(metrics.cycleMode && metrics.isCurrentCycle && metrics.hasPreviousCycle);
-          carryInline.hidden = !showCarryover;
-          if (showCarryover) setMoney("#salaryCarryoverText", metrics.carryover);
+        var carryoverNote = $("#carryoverNote");
+        if (carryoverNote) {
+          var showCarryover = state.selectedMonth === defaultMonth && state.selectedMonth > state.managerStartMonth;
+          carryoverNote.hidden = !showCarryover;
+          if (showCarryover) setMoney("#carryoverAmount", metrics.carryover);
         }
-        var nextSalary = metrics.cycleMode && metrics.cycle ? { days: metrics.daysLeft, date: metrics.cycle.nextStart } : getNextSalaryInfo();
+        setText("#availableCaption", metrics.forecast ? "تقدير للشهر بدون ترحيل رصيد من شهر سابق" : "بعد خصم الأقساط المستحقة والمدفوعات الثابتة المؤكدة والمصروفات");
+        setText("#salaryPaydayText", state.salaryPayDay ? "يوم " + state.salaryPayDay + " من كل شهر" : "غير محدد");
+        var nextSalary = getNextSalaryInfo();
         if (nextSalary.days == null) {
           setText("#nextSalaryCountdown", "حدد يوم نزول الراتب لعرض موعد الراتب القادم");
         } else if (nextSalary.days === 0) {
           setText("#nextSalaryCountdown", "موعد الراتب اليوم · " + formatShortArabicDate(nextSalary.date));
-        } else if (nextSalary.days === 1) {
-          setText("#nextSalaryCountdown", "الراتب القادم غدًا · " + formatShortArabicDate(nextSalary.date));
         } else {
           setText("#nextSalaryCountdown", "الراتب القادم بعد " + nextSalary.days + " يوم · " + formatShortArabicDate(nextSalary.date));
         }
 
         setText("#daysRemaining", metrics.daysLeft);
         if (metrics.usingSalaryCountdown) {
-          if (metrics.daysLeft === 1) setText("#daysLabel", "يوم في الدورة");
-          else setText("#daysLabel", "أيام في الدورة");
+          if (metrics.daysLeft === 0) setText("#daysLabel", "الراتب اليوم");
+          else if (metrics.daysLeft === 1) setText("#daysLabel", "يوم حتى الراتب");
+          else setText("#daysLabel", "أيام حتى الراتب");
         } else {
-          setText("#daysLabel", metrics.cycleMode && metrics.cycle && compareDateKeys(metrics.cycle.endKey, dateKey(today)) < 0 ? "الدورة مكتملة" : (state.selectedMonth < defaultMonth ? "الشهر مكتمل" : "يوم متبقٍ"));
+          setText("#daysLabel", state.selectedMonth < defaultMonth ? "الشهر مكتمل" : "يوم متبقٍ");
         }
-        setText("#commitmentCountNote", metrics.activeCommitments.length ? metrics.activeCommitments.length + (metrics.cycleMode ? " التزام مستحق في هذه الدورة" : " التزام نشط هذا الشهر") : "لا توجد التزامات نشطة");
-        setText("#recurringCountNote", metrics.activeRecurring.length ? metrics.activeRecurring.length + (metrics.cycleMode ? " دفعة في هذه الدورة · منها " : " دفعة · منها ") + formatMoney(metrics.savingsTotal) + " ادخار" : "لا توجد دفعات ثابتة");
+        setText("#commitmentCountNote", metrics.activeCommitments.length ? metrics.activeCommitments.length + " التزام نشط هذا الشهر" : "لا توجد التزامات نشطة");
+        setText("#recurringCountNote", metrics.activeRecurring.length ? metrics.activeRecurring.length + " دفعة ثابتة · المخصوم بعد التأكيد " + formatMoney(metrics.recurringTotal) : "لا توجد دفعات ثابتة");
         setText("#expenseCountNote", metrics.monthExpenses.length ? metrics.monthExpenses.length + " عملية · المحتسب " + formatMoney(metrics.expensesTotal) : "لا توجد مصروفات مسجلة");
-        setText("#expenseListSubtitle", metrics.cycleMode && metrics.cycle ? "المصروفات المسجلة من " + formatShortArabicDate(metrics.cycle.start) + " إلى " + formatShortArabicDate(metrics.cycle.end) : "المصروفات المسجلة في " + formatMonth(state.selectedMonth));
+        setText("#expenseListSubtitle", "المصروفات المسجلة في " + formatMonth(state.selectedMonth));
 
         var clampedUsed = Math.min(100, Math.max(0, metrics.usedPercent));
         $("#usedPercentBar").style.width = clampedUsed + "%";
-        setText("#usedBasisLabel", metrics.cycleMode && metrics.isCurrentCycle && metrics.hasPreviousCycle ? "المستخدم من الرصيد المتاح" : "المستخدم من الراتب");
         setText("#usedPercentText", Math.round(metrics.usedPercent) + "%");
-        var distributionBasis = metrics.cycleMode ? Math.max(0, metrics.openingFunds) : state.salary;
-        setText("#remainingPercent", distributionBasis > 0 ? Math.max(0, Math.round((metrics.balance / distributionBasis) * 100)) + "%" : "100%");
+        setText("#remainingPercent", metrics.availableBase > 0 ? Math.max(0, Math.round((metrics.balance / metrics.availableBase) * 100)) + "%" : "100%");
 
-        var commitmentsPercent = distributionBasis > 0 ? Math.min(100, (metrics.commitmentsTotal / distributionBasis) * 100) : 0;
-        var recurringPercent = distributionBasis > 0 ? Math.min(100 - commitmentsPercent, (metrics.recurringTotal / distributionBasis) * 100) : 0;
+        var commitmentsPercent = metrics.availableBase > 0 ? Math.min(100, (metrics.commitmentsTotal / metrics.availableBase) * 100) : 0;
+        var recurringPercent = metrics.availableBase > 0 ? Math.min(100 - commitmentsPercent, (metrics.recurringTotal / metrics.availableBase) * 100) : 0;
         var recurringStop = Math.min(100, commitmentsPercent + recurringPercent);
-        var expensesPercent = distributionBasis > 0 ? Math.min(100 - recurringStop, (metrics.expensesTotal / distributionBasis) * 100) : 0;
+        var expensesPercent = metrics.availableBase > 0 ? Math.min(100 - recurringStop, (metrics.expensesTotal / metrics.availableBase) * 100) : 0;
         var expensesStop = Math.min(100, recurringStop + expensesPercent);
         $("#salaryDonut").style.background = "conic-gradient(#14756c 0 " + commitmentsPercent + "%, #705a9b " + commitmentsPercent + "% " + recurringStop + "%, #ef7e5b " + recurringStop + "% " + expensesStop + "%, #e6e5df " + expensesStop + "% 100%)";
 
@@ -5319,14 +5230,13 @@
         if (metrics.balance < 0) {
           status.textContent = "تجاوز الميزانية";
           status.classList.add("danger");
-          setText("#allocationHeadline", "المبالغ المخصصة تتجاوز الرصيد المتاح");
-          setText("#allocationSubline", "راجع الأقساط والمدفوعات الثابتة والمصروفات لهذه الدورة");
+          setText("#allocationHeadline", "المبالغ المخصصة تتجاوز الراتب");
+          setText("#allocationSubline", "راجع الأقساط والمدفوعات الثابتة والمصروفات لهذا الشهر");
           setText("#monthlyInsight", "تنبيه: تجاوزت ميزانيتك بمقدار " + formatMoney(Math.abs(metrics.balance)) + ". راجع المصروفات غير الضرورية.");
           return;
         }
 
-        var basis = metrics.cycleMode ? Math.max(1, metrics.openingFunds) : Math.max(1, state.salary);
-        var remainingRatio = metrics.balance / basis;
+        var remainingRatio = metrics.availableBase > 0 ? metrics.balance / metrics.availableBase : 0;
         if (remainingRatio < .2) {
           status.textContent = "هامش محدود";
           status.classList.add("warning");
@@ -5334,61 +5244,45 @@
           status.textContent = "وضع مريح";
         }
 
-        setText("#allocationHeadline", "تم تخصيص " + Math.round(metrics.usedPercent) + (metrics.cycleMode && metrics.isCurrentCycle && metrics.hasPreviousCycle ? "% من الرصيد المتاح" : "% من الراتب"));
-        if (metrics.cycleMode) {
-          setText("#allocationSubline", "متبقٍ " + formatMoney(metrics.balance) + " لإدارة بقية دورة الراتب");
-        } else {
-          setText("#allocationSubline", "متبقٍ " + formatMoney(metrics.balance) + " لإدارة بقية الشهر");
-        }
-        if (metrics.cycleMode && metrics.cycle) {
-          if (compareDateKeys(metrics.cycle.endKey, dateKey(today)) < 0) {
-            setText("#monthlyInsight", "انتهت دورة الراتب برصيد " + formatMoney(metrics.balance) + "، ويُرحّل هذا الرصيد تلقائيًا إلى الدورة التالية.");
-          } else {
-            setText("#monthlyInsight", metrics.isCurrentCycle ? "عند موعد الراتب القادم فقط، يُرحّل المتبقي الفعلي ويُضاف إلى الراتب الجديد. حد الصرف اليومي المقترح " + formatMoney(metrics.daily) + "." : "هذه معاينة للدورة المختارة بدون احتساب أي رصيد مرحّل مستقبلي.");
-          }
+        setText("#allocationHeadline", "تم تخصيص " + Math.round(metrics.usedPercent) + "% من الرصيد المتاح");
+        setText("#allocationSubline", "متبقٍ " + formatMoney(metrics.balance) + " لإدارة بقية الشهر");
+        if (metrics.forecast) {
+          setText("#monthlyInsight", "هذه معاينة للشهر القادم دون احتساب أي رصيد مرحّل حتى يصبح الشهر فعليًا.");
         } else if (state.selectedMonth < defaultMonth) {
-          setText("#monthlyInsight", "انتهى الشهر برصيد " + formatMoney(metrics.balance) + " بعد احتساب كل ما سجلته.");
+          setText("#monthlyInsight", "انتهى الشهر برصيد " + formatMoney(metrics.balance) + ".");
         } else {
           setText("#monthlyInsight", metrics.usingSalaryCountdown ? "للبقاء ضمن الميزانية، حاول ألا يتجاوز صرفك اليومي " + formatMoney(metrics.daily) + " حتى موعد الراتب القادم." : "للبقاء ضمن الميزانية، حاول ألا يتجاوز صرفك اليومي " + formatMoney(metrics.daily) + " خلال الأيام المتبقية.");
         }
       }
 
-      function dueDateForMonth(item, recurring) {
-        var cycle = selectedSalaryCycle();
-        if (cycleAccountingEnabledFor(cycle)) {
-          var dates = itemDueDatesInCycle(item, cycle, Boolean(recurring));
-          if (dates.length) return dates[0];
-        }
-        var date = monthDate(state.selectedMonth);
-        var day = Math.min(Math.max(1, Number(item.dueDay) || 1), daysInMonth(state.selectedMonth));
-        return new Date(date.getFullYear(), date.getMonth(), day);
+      function dueDateForMonth(item) {
+        return dueDateForMonthKey(item, state.selectedMonth);
       }
 
       function renderUpcoming(commitments, recurringPayments) {
         var root = $("#upcomingList");
-        var cycle = selectedSalaryCycle();
         var items = commitments.map(function (item) {
           return Object.assign({ sourceType: "commitment" }, item);
         }).concat(recurringPayments.map(function (item) {
           return Object.assign({ sourceType: "recurring" }, item);
         }));
         if (!items.length) {
-          root.innerHTML = emptyState("ق", "لا توجد استحقاقات في هذه الدورة", "أضف قسطًا أو دفعة ثابتة لتظهر مواعيدها هنا تلقائيًا.");
+          root.innerHTML = emptyState("ق", "لا توجد استحقاقات هذا الشهر", "أضف قسطًا أو دفعة ثابتة لتظهر مواعيدها هنا تلقائيًا.");
           return;
         }
         var sorted = items.slice().sort(function (a, b) {
-          return dueDateForMonth(a, a.sourceType === "recurring") - dueDateForMonth(b, b.sourceType === "recurring");
+          return Number(a.dueDay || 1) - Number(b.dueDay || 1);
         });
         root.innerHTML = sorted.slice(0, 5).map(function (item) {
-          var recurring = item.sourceType === "recurring";
-          var due = dueDateForMonth(item, recurring);
-          var paid = cycleAccountingEnabledFor(cycle) ? isItemPaidForCycle(item, cycle, recurring) : (Array.isArray(item.paidMonths) && item.paidMonths.indexOf(state.selectedMonth) !== -1);
-          var meta = recurring
+          var due = dueDateForMonth(item);
+          var paid = item.sourceType === "recurring" ? isRecurringPaidForMonth(item, state.selectedMonth) : Boolean(getCommitmentChargeMap(state.selectedMonth)[item.id] != null);
+          var meta = item.sourceType === "recurring"
             ? (item.type || "دفعة ثابتة") + (item.endDate ? " · حتى " + formatDate(item.endDate) : " · تتكرر شهريًا")
             : (item.category || "أخرى") + " · ينتهي " + formatDate(item.endDate);
+          var dueLabel = item.sourceType === "recurring" ? (paid ? "مدفوع" : "بانتظار التأكيد") : (paid ? "مخصوم" : "استحقاق");
           return '<div class="upcoming-item">' +
-            '<div class="due-day"><div><b>' + due.getDate() + '</b><small>' + (paid ? "مدفوع" : "استحقاق") + '</small></div></div>' +
-            '<div><p class="item-title">' + escapeHTML(item.name) + '</p><p class="item-meta">' + escapeHTML(meta) + ' · ' + escapeHTML(formatDate(dateKey(due))) + '</p></div>' +
+            '<div class="due-day"><div><b>' + due.getDate() + '</b><small>' + dueLabel + '</small></div></div>' +
+            '<div><p class="item-title">' + escapeHTML(item.name) + '</p><p class="item-meta">' + escapeHTML(meta) + '</p></div>' +
             '<strong class="item-amount">' + moneyHTML(item.amount) + '</strong>' +
           '</div>';
         }).join("");
@@ -5408,12 +5302,12 @@
         root.innerHTML = sorted.map(function (item) {
           var style = categoryStyle[item.category] || categoryStyle["أخرى"];
           var active = isCommitmentActive(item, state.selectedMonth);
-          var selectedCycle = selectedSalaryCycle();
-          var paid = cycleAccountingEnabledFor(selectedCycle) ? isItemPaidForCycle(item, selectedCycle, false) : (Array.isArray(item.paidMonths) && item.paidMonths.indexOf(state.selectedMonth) !== -1);
+          var paid = Array.isArray(item.paidMonths) && item.paidMonths.indexOf(state.selectedMonth) !== -1;
           var endMonth = String(item.endDate).slice(0, 7);
           var remainingMonths = state.selectedMonth <= endMonth ? monthsInclusive(state.selectedMonth, endMonth) : 0;
           var projected = safeNumber(item.remainingTotal) || remainingMonths * safeNumber(item.amount);
-          var statusLabel = active ? (paid ? "مدفوع في هذه الدورة" : "نشط في هذه الدورة") : (endMonth < state.selectedMonth ? "منتهٍ" : "يبدأ لاحقًا");
+          var autoCharged = Boolean(getCommitmentChargeMap(state.selectedMonth)[item.id] != null);
+          var statusLabel = active ? (state.selectedMonth > defaultMonth ? "مجدول للشهر" : (autoCharged ? "مخصوم تلقائيًا" : "موعد الخصم لاحقًا")) : (endMonth < state.selectedMonth ? "منتهٍ" : "يبدأ لاحقًا");
           var notes = item.notes ? ' · ' + escapeHTML(item.notes) : "";
 
           return '<article class="commitment-card">' +
@@ -5429,9 +5323,9 @@
             '</div>' +
             '<div class="commitment-actions">' +
               '<strong class="commitment-amount">' + moneyHTML(item.amount) + ' / شهر</strong>' +
-              '<div class="item-meta">إجمالي متوقع متبقٍ: ' + moneyHTML(projected) + '</div>' +
+              '<div class="item-meta">يُخصم تلقائيًا عند يوم الخصم المسجل · إجمالي متوقع متبقٍ: ' + moneyHTML(projected) + '</div>' +
               '<div class="commitment-action-row">' +
-                (active ? '<button class="mini-btn mark-paid ' + (paid ? "is-paid" : "") + '" type="button" data-toggle-paid="' + escapeHTML(item.id) + '">' + (paid ? "إلغاء علامة الدفع" : "تم الدفع في هذه الدورة") + '</button>' : '') +
+                (active ? '<button class="mini-btn mark-paid ' + (paid ? "is-paid" : "") + '" type="button" data-toggle-paid="' + escapeHTML(item.id) + '">' + (paid ? "إلغاء علامة الدفع" : "تم دفع هذا الشهر") + '</button>' : '') +
                 '<button class="mini-btn" type="button" data-edit-commitment="' + escapeHTML(item.id) + '">تعديل</button>' +
                 '<button class="mini-btn" type="button" data-delete-commitment="' + escapeHTML(item.id) + '">حذف</button>' +
               '</div>' +
@@ -5442,9 +5336,9 @@
 
       function recurringActionLabel(item, paid) {
         if (paid) return item.type === "ادخار" ? "إلغاء علامة التحويل" : item.type === "محفظة" ? "إلغاء علامة الشحن" : "إلغاء علامة الدفع";
-        if (item.type === "ادخار") return "تم تحويل الادخار في هذه الدورة";
-        if (item.type === "محفظة") return "تم شحن المحفظة في هذه الدورة";
-        return "تم الدفع في هذه الدورة";
+        if (item.type === "ادخار") return "تم تحويل الادخار هذا الشهر";
+        if (item.type === "محفظة") return "تم شحن المحفظة هذا الشهر";
+        return "تم الدفع هذا الشهر";
       }
 
       function renderRecurring() {
@@ -5461,11 +5355,10 @@
         root.innerHTML = sorted.map(function (item) {
           var style = recurringStyle[item.type] || recurringStyle["أخرى"];
           var active = isRecurringActive(item, state.selectedMonth);
-          var selectedCycle = selectedSalaryCycle();
-          var paid = cycleAccountingEnabledFor(selectedCycle) ? isItemPaidForCycle(item, selectedCycle, true) : (Array.isArray(item.paidMonths) && item.paidMonths.indexOf(state.selectedMonth) !== -1);
+          var paid = Array.isArray(item.paidMonths) && item.paidMonths.indexOf(state.selectedMonth) !== -1;
           var startMonth = String(item.startDate || "").slice(0, 7);
           var endMonth = String(item.endDate || "").slice(0, 7);
-          var statusLabel = item.isPaused ? "متوقفة مؤقتًا" : active ? (paid ? "مكتملة في هذه الدورة" : "بانتظار التنفيذ") : (endMonth && endMonth < state.selectedMonth ? "منتهية" : startMonth > state.selectedMonth ? "تبدأ لاحقًا" : "غير نشطة");
+          var statusLabel = item.isPaused ? "متوقفة مؤقتًا" : active ? (paid ? "تم الدفع والخصم" : "بانتظار تأكيد الدفع") : (endMonth && endMonth < state.selectedMonth ? "منتهية" : startMonth > state.selectedMonth ? "تبدأ لاحقًا" : "غير نشطة");
           var schedule = item.endDate ? "حتى " + formatDate(item.endDate) : "مستمرة دون تاريخ نهاية";
           var notes = item.notes ? " · " + escapeHTML(item.notes) : "";
 
@@ -5481,9 +5374,9 @@
             '</div>' +
             '<div class="commitment-actions">' +
               '<strong class="commitment-amount">' + moneyHTML(item.amount) + ' / شهر</strong>' +
-              '<div class="item-meta">' + (item.type === "ادخار" ? "يُحجز كادخار ولا يُعرض كمصروف" : item.type === "محفظة" ? "مخصص محجوز مسبقًا للمحفظة" : "محسوبة ضمن المدفوعات الثابتة") + '</div>' +
+              '<div class="item-meta">' + (paid ? "تم خصم هذه الدفعة من رصيد الشهر" : "لن تُخصم من الرصيد حتى تؤكد الدفع") + '</div>' +
               '<div class="commitment-action-row">' +
-                (active ? '<button class="mini-btn mark-paid ' + (paid ? "is-paid" : "") + '" type="button" data-toggle-recurring-paid="' + escapeHTML(item.id) + '">' + recurringActionLabel(item, paid) + '</button>' : '') +
+                (active && state.selectedMonth <= defaultMonth ? '<button class="mini-btn mark-paid ' + (paid ? "is-paid" : "") + '" type="button" data-toggle-recurring-paid="' + escapeHTML(item.id) + '">' + recurringActionLabel(item, paid) + '</button>' : '') +
                 '<button class="mini-btn" type="button" data-toggle-recurring-status="' + escapeHTML(item.id) + '">' + (item.isPaused ? "إعادة التفعيل" : "إيقاف مؤقت") + '</button>' +
                 '<button class="mini-btn" type="button" data-edit-recurring="' + escapeHTML(item.id) + '">تعديل</button>' +
                 '<button class="mini-btn" type="button" data-delete-recurring="' + escapeHTML(item.id) + '">حذف</button>' +
@@ -5496,7 +5389,7 @@
       function renderExpenses(items) {
         var root = $("#expenseList");
         if (!items.length) {
-          root.innerHTML = emptyState("م", "لا توجد مصروفات في هذه الدورة", "سجّل أول مصروف، وسيتم تحديث الرصيد والحد اليومي مباشرة.");
+          root.innerHTML = emptyState("م", "لا توجد مصروفات في هذا الشهر", "سجّل أول مصروف، وسيتم تحديث الرصيد والحد اليومي مباشرة.");
           return;
         }
 
@@ -5611,13 +5504,6 @@
       }
 
       function normalizeExpenseDate(currentValue) {
-        var cycle = selectedSalaryCycle();
-        if (cycleAccountingEnabledFor(cycle)) {
-          if (currentValue && isDateInsideCycle(currentValue, cycle)) return currentValue;
-          var current = currentSalaryCycle();
-          if (current && current.startKey === cycle.startKey && isDateInsideCycle(toDateInput(today), cycle)) return toDateInput(today);
-          return cycle.startKey;
-        }
         var selected = state.selectedMonth;
         if (currentValue && currentValue.slice(0, 7) === selected) return currentValue;
         if (selected === defaultMonth) return toDateInput(today);
@@ -5628,43 +5514,12 @@
         event.preventDefault();
         var value = safeNumber($("#salaryInput").value);
         var payDay = Math.min(31, Math.max(0, Math.round(Number($("#salaryPayDayInput").value) || 0)));
-        var previousSalary = state.salary;
-        var previousPayDay = state.salaryPayDay;
-        var previousMetrics = getMetrics();
-        var previousBalance = signedNumber(previousMetrics.balance);
-        var previousDefault = defaultMonth;
-        var wasViewingCurrent = state.selectedMonth === previousDefault;
-
         state.salary = value;
         state.salaryPayDay = payDay;
-        today = new Date();
-
-        if (value > 0 && payDay > 0) {
-          if (previousSalary <= 0 || state.salaryCycleVersion < 3 || !state.salaryCycleAnchorDate) {
-            // أول استخدام لدورة الراتب: لا يوجد رصيد سابق مفترض.
-            setSalaryCycleAnchorCarryover(0, false);
-          } else if (payDay !== previousPayDay) {
-            // عند تغيير يوم الراتب نحافظ على الرصيد الحالي كنقطة انتقال دون اختلاق راتب سابق.
-            var newCycle = salaryCycleForDate(today, payDay);
-            var newTotals = rawCycleTotals(newCycle);
-            var transitionCarryover = previousBalance - value + newTotals.commitmentsTotal + newTotals.recurringTotal + newTotals.expensesTotal;
-            setSalaryCycleAnchorCarryover(transitionCarryover, Boolean(previousMetrics.cycleMode && previousMetrics.hasPreviousCycle));
-          } else if (value !== previousSalary) {
-            // تعديل قيمة الراتب لا يغيّر الرصيد المرحّل الحقيقي من الدورة السابقة.
-            var preservedCarryover = previousMetrics.cycleMode && previousMetrics.hasPreviousCycle ? previousMetrics.carryover : 0;
-            setSalaryCycleAnchorCarryover(preservedCarryover, Boolean(previousMetrics.cycleMode && previousMetrics.hasPreviousCycle));
-          }
-          var currentCycle = currentSalaryCycle();
-          defaultMonth = currentCycle ? currentCycle.monthKey : toMonthKey(today);
-          if (wasViewingCurrent || !/^\d{4}-\d{2}$/.test(state.selectedMonth || "")) state.selectedMonth = defaultMonth;
-        } else {
-          defaultMonth = toMonthKey(today);
-          if (wasViewingCurrent) state.selectedMonth = defaultMonth;
-        }
-
+        if (defaultMonth === state.managerStartMonth) state.managerStartingSalary = value;
         closeDialog("salaryDialog");
         render();
-        showToast("تم حفظ الراتب وتحديث دورة الراتب");
+        showToast("تم حفظ الراتب وتحديث ميزانية الشهر");
       }
 
       function submitCommitment(event) {
@@ -5697,8 +5552,24 @@
           state.commitments = state.commitments.map(function (current) {
             return current.id === existingId ? item : current;
           });
+          var currentCharges = getCommitmentChargeMap(defaultMonth);
+          if (!isCommitmentActive(item, defaultMonth)) {
+            delete currentCharges[item.id];
+          } else if (state.managerStartMonth === defaultMonth) {
+            currentCharges[item.id] = safeNumber(item.amount);
+          } else {
+            var editedDue = dueDateForMonthKey(item, defaultMonth);
+            editedDue.setHours(0, 0, 0, 0);
+            if (editedDue <= currentDateAtMidnight()) currentCharges[item.id] = safeNumber(item.amount);
+            else delete currentCharges[item.id];
+          }
         } else {
           state.commitments.push(item);
+          if (state.managerStartMonth === defaultMonth && isCommitmentActive(item, defaultMonth)) {
+            getCommitmentChargeMap(defaultMonth)[item.id] = safeNumber(item.amount);
+          } else {
+            ensureCommitmentChargesForMonth(defaultMonth, currentDateAtMidnight());
+          }
         }
 
         closeDialog("commitmentDialog");
@@ -5747,7 +5618,7 @@
 
         closeDialog("recurringDialog");
         render();
-        showToast(existing ? "تم تحديث الدفعة الثابتة" : "تمت إضافة الدفعة الثابتة وحجزها من الراتب");
+        showToast(existing ? "تم تحديث الدفعة الثابتة" : "تمت إضافة الدفعة الثابتة · لن تُخصم حتى تؤكد الدفع");
       }
 
       function submitExpense(event) {
@@ -5769,6 +5640,7 @@
         }
 
         state.expenses.push(item);
+        if (String(item.date).slice(0, 7) < defaultMonth) rebuildActualMonthOpenings();
         event.currentTarget.reset();
         $("#expenseDate").value = normalizeExpenseDate("");
         render();
@@ -5776,47 +5648,36 @@
       }
 
       function togglePaid(id) {
-        var cycle = selectedSalaryCycle();
-        var cycleMode = cycleAccountingEnabledFor(cycle);
-        var key = cycleMode ? cycleStatusKey(cycle) : state.selectedMonth;
         state.commitments = state.commitments.map(function (item) {
           if (item.id !== id) return item;
           var paidMonths = Array.isArray(item.paidMonths) ? item.paidMonths.slice() : [];
-          var index = paidMonths.indexOf(key);
-          if (index !== -1) {
-            paidMonths.splice(index, 1);
-          } else if (cycleMode && isItemPaidForCycle(item, cycle, false)) {
-            var legacyKeys = itemDueDatesInCycle(item, cycle, false).map(function (date) { return toMonthKey(date); });
-            paidMonths = paidMonths.filter(function (savedKey) { return legacyKeys.indexOf(savedKey) === -1; });
-          } else {
-            paidMonths.push(key);
-          }
+          var index = paidMonths.indexOf(state.selectedMonth);
+          if (index === -1) paidMonths.push(state.selectedMonth);
+          else paidMonths.splice(index, 1);
           return Object.assign({}, item, { paidMonths: paidMonths });
         });
         render();
-        showToast("تم تحديث حالة القسط لهذه الدورة");
+        showToast("تم تحديث حالة القسط لهذا الشهر");
       }
 
       function toggleRecurringPaid(id) {
-        var cycle = selectedSalaryCycle();
-        var cycleMode = cycleAccountingEnabledFor(cycle);
-        var key = cycleMode ? cycleStatusKey(cycle) : state.selectedMonth;
+        if (state.selectedMonth > defaultMonth) {
+          showToast("لا يمكن تأكيد دفع لشهر لم يبدأ بعد.", true);
+          return;
+        }
+        var wasPaid = false;
         state.recurringPayments = state.recurringPayments.map(function (item) {
           if (item.id !== id) return item;
           var paidMonths = Array.isArray(item.paidMonths) ? item.paidMonths.slice() : [];
-          var index = paidMonths.indexOf(key);
-          if (index !== -1) {
-            paidMonths.splice(index, 1);
-          } else if (cycleMode && isItemPaidForCycle(item, cycle, true)) {
-            var legacyKeys = itemDueDatesInCycle(item, cycle, true).map(function (date) { return toMonthKey(date); });
-            paidMonths = paidMonths.filter(function (savedKey) { return legacyKeys.indexOf(savedKey) === -1; });
-          } else {
-            paidMonths.push(key);
-          }
+          var index = paidMonths.indexOf(state.selectedMonth);
+          wasPaid = index !== -1;
+          if (index === -1) paidMonths.push(state.selectedMonth);
+          else paidMonths.splice(index, 1);
           return Object.assign({}, item, { paidMonths: paidMonths });
         });
+        if (state.selectedMonth < defaultMonth) rebuildActualMonthOpenings();
         render();
-        showToast("تم تحديث حالة الدفعة لهذه الدورة دون تغيير قيمة الميزانية");
+        showToast(wasPaid ? "تم إلغاء علامة الدفع وإعادة المبلغ إلى الرصيد" : "تم تأكيد الدفع وخصم المبلغ من رصيد الشهر");
       }
 
       function toggleRecurringStatus(id) {
@@ -5832,6 +5693,7 @@
         if (!item) return;
         if (!localizedConfirm('هل تريد حذف "' + item.name + '" نهائيًا؟')) return;
         state.commitments = state.commitments.filter(function (current) { return current.id !== id; });
+        if (state.commitmentCharges && state.commitmentCharges[defaultMonth]) delete state.commitmentCharges[defaultMonth][id];
         render();
         showToast("تم حذف الالتزام");
       }
@@ -5850,6 +5712,7 @@
         if (!item) return;
         if (!localizedConfirm('حذف المصروف "' + item.title + '"؟')) return;
         state.expenses = state.expenses.filter(function (current) { return current.id !== id; });
+        if (String(item.date || "").slice(0, 7) < defaultMonth) rebuildActualMonthOpenings();
         render();
         showToast("تم حذف المصروف وتحديث الرصيد");
       }
@@ -5883,12 +5746,7 @@
             var data = payload && payload.data ? payload.data : payload;
             if (!data || !Array.isArray(data.commitments) || !Array.isArray(data.expenses)) throw new Error("invalid");
             if (!localizedConfirm("سيتم استبدال البيانات الحالية بمحتوى النسخة الاحتياطية. هل تريد المتابعة؟")) return;
-            state.salary = safeNumber(data.salary);
-            state.salaryPayDay = Math.min(31, Math.max(0, Math.round(Number(data.salaryPayDay) || 0)));
-            state.selectedMonth = /^\d{4}-\d{2}$/.test(data.selectedMonth || "") ? data.selectedMonth : defaultMonth;
-            state.commitments = data.commitments;
-            state.recurringPayments = Array.isArray(data.recurringPayments) ? data.recurringPayments : [];
-            state.expenses = data.expenses;
+            if (!normalizeSavedState(data)) throw new Error("invalid");
             render();
             showToast("تم استيراد النسخة الاحتياطية بنجاح");
           } catch (error) {
@@ -5903,7 +5761,7 @@
       function resetData() {
         var message = authState.authenticated ? "هل أنت متأكد؟ سيتم مسح بيانات الراتب من حسابك ومزامنة الحذف مع أجهزتك الأخرى." : "هل أنت متأكد؟ سيتم حذف الراتب والأقساط والمدفوعات الثابتة والمصروفات المحفوظة على هذا الجهاز.";
         if (!localizedConfirm(message)) return;
-        state = { salary: 0, salaryPayDay: 0, selectedMonth: defaultMonth, commitments: [], recurringPayments: [], expenses: [] };
+        state = makeFreshState();
         localStorage.removeItem(accountStorageKey());
         localStorage.removeItem(accountStorageKey() + ".backup");
         if (!authState.authenticated) { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(STORAGE_BACKUP_KEY); }
@@ -6052,7 +5910,7 @@
         $("#logoutButton").addEventListener("click", async function () {
           try { await apiFetch("/api/auth/logout", { method: "POST", body: "{}" }); } catch (e) {}
           clearAuth();
-          state = { salary: 0, salaryPayDay: 0, salaryCycleVersion: 0, salaryCycleAnchorDate: "", salaryCycleAnchorCarryover: 0, salaryCycleAnchorHasPrevious: false, selectedMonth: defaultMonth, commitments: [], recurringPayments: [], expenses: [] };
+          state = makeFreshState();
           try {
             var guest = localStorage.getItem(STORAGE_KEY);
             if (guest) normalizeSavedState(JSON.parse(guest));
@@ -6086,12 +5944,22 @@
 
         $("#monthPicker").addEventListener("change", function (event) {
           if (!event.target.value) return;
-          state.selectedMonth = event.target.value;
+          if (event.target.value < state.managerStartMonth) {
+            state.selectedMonth = state.managerStartMonth;
+            showToast("لا توجد شهور أقدم من شهر بداية مدير الراتب.");
+          } else {
+            state.selectedMonth = event.target.value;
+          }
           render();
         });
 
         $("#previousMonth").addEventListener("click", function () {
-          state.selectedMonth = shiftMonth(state.selectedMonth, -1);
+          var previous = shiftMonth(state.selectedMonth, -1);
+          if (previous < state.managerStartMonth) {
+            showToast("هذا هو أول شهر في مدير الراتب.");
+            return;
+          }
+          state.selectedMonth = previous;
           render();
         });
 
@@ -6189,6 +6057,19 @@
         });
       }
 
+      var lastCalendarDaySeen = toDateInput(new Date());
+      setInterval(function () {
+        var nowKey = toDateInput(new Date());
+        if (nowKey !== lastCalendarDaySeen) {
+          lastCalendarDaySeen = nowKey;
+          var oldCurrent = defaultMonth;
+          var wasCurrent = state.selectedMonth === oldCurrent;
+          ensureCalendarLedgerCurrent();
+          if (wasCurrent && defaultMonth !== oldCurrent) state.selectedMonth = defaultMonth;
+          render();
+        }
+      }, 60000);
+
       setText("#appVersion", APP_VERSION);
       document.documentElement.lang = currentLanguage;
       document.documentElement.dir = currentLanguage === "en" ? "ltr" : "rtl";
@@ -6212,28 +6093,15 @@
         stopLiveSync();
         setSyncStatus(authState.authenticated ? "غير متصل · محفوظ محليًا" : "حفظ محلي", false);
       });
-      var observedLocalDate = toDateInput(new Date());
-      function checkSalaryCycleRollover() {
-        var nowKey = toDateInput(new Date());
-        if (nowKey === observedLocalDate) return false;
-        observedLocalDate = nowKey;
-        var changed = updateCurrentCycleContext(true);
-        render();
-        return changed;
-      }
-      setInterval(checkSalaryCycleRollover, 60 * 1000);
-
       window.addEventListener("focus", function () {
-        checkSalaryCycleRollover();
         resumeContinuousSync();
       });
       document.addEventListener("visibilitychange", function () {
         if (document.visibilityState === "hidden") {
           saveState();
           if (authState.authenticated) cloudSaveNow(true);
-        } else {
-          checkSalaryCycleRollover();
-          if (authState.authenticated && navigator.onLine) resumeContinuousSync();
+        } else if (authState.authenticated && navigator.onLine) {
+          resumeContinuousSync();
         }
       });
 

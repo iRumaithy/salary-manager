@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
 const VERSION = "3.8.7";
-const RELEASE_ID = "3.8.7-calendar-r9";
+const RELEASE_ID = "3.8.7-calendar-r10";
 const UPDATE_SIGNAL_VERSION = "3.8.7\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
 const PREVIOUS_RELEASE_ID = "3.8.6";
@@ -12,7 +12,8 @@ const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
   "3.8.7-calendar-r5",
   "3.8.7-calendar-r6",
   "3.8.7-calendar-r7",
-  "3.8.7-calendar-r8"
+  "3.8.7-calendar-r8",
+  "3.8.7-calendar-r9"
 ]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -1250,11 +1251,21 @@ export default {
         if (isWorkerScript) {
           assetPath = useLatest ? "/sw.js" : `/releases/${safePublishedReleaseId}/sw.js`;
         } else {
-          assetPath = useLatest ? "/index.html" : `/releases/${safePublishedReleaseId}/index.html`;
+          // Cloudflare Static Assets canonicalizes folder index HTML to a trailing-slash URL.
+          // Request the canonical path directly so env.ASSETS.fetch returns 200 instead of a 307 redirect.
+          assetPath = useLatest ? "/" : `/releases/${safePublishedReleaseId}/`;
         }
         const assetUrl = new URL(assetPath, url.origin);
-        const assetRequest = new Request(assetUrl.toString(), { method: "GET", headers: request.headers, redirect: "follow" });
-        const response = await env.ASSETS.fetch(assetRequest);
+        const assetRequest = new Request(assetUrl.toString(), { method: "GET", headers: request.headers, redirect: "manual" });
+        let response = await env.ASSETS.fetch(assetRequest);
+        // Defensive fallback for non-default html_handling configurations.
+        if (isAppShell && response && response.status >= 300 && response.status < 400) {
+          const location = response.headers.get("location");
+          if (location) {
+            const redirected = new URL(location, assetUrl);
+            response = await env.ASSETS.fetch(new Request(redirected.toString(), { method: "GET", headers: request.headers, redirect: "manual" }));
+          }
+        }
         if (response && response.ok) {
           const headers = new Headers(response.headers);
           headers.set("cache-control", "no-store");

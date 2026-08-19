@@ -20,7 +20,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.7-calendar-r8";
+      var v = "3.8.7-calendar-r9";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -3559,7 +3559,7 @@
 
 
       var APP_VERSION = "3.8.7";
-      var APP_RELEASE_ID = "3.8.7-calendar-r8";
+      var APP_RELEASE_ID = "3.8.7-calendar-r9";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";

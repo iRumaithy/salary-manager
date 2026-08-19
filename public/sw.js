@@ -1,5 +1,4 @@
-const CACHE = "salary-manager-v3.8.7-calendar-r6";
-const OWNER_PREVIEW_TOKEN = new URL(self.location.href).searchParams.get("owner_preview") || "";
+const CACHE = "salary-manager-v3.8.7-calendar-r8";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = [
@@ -55,7 +54,6 @@ function offlinePage() {
 async function fetchFreshShell() {
   const url = new URL("./index.html", SCOPE);
   url.searchParams.set("__app_shell", Date.now());
-  if (OWNER_PREVIEW_TOKEN) url.searchParams.set("owner_preview", OWNER_PREVIEW_TOKEN);
   const response = await fetch(url.href, { cache: "no-store", redirect: "follow" });
   if (!response || !response.ok) throw new Error("Shell HTTP " + (response ? response.status : "no-response"));
   const contentType = String(response.headers.get("content-type") || "").toLowerCase();

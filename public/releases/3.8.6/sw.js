@@ -1,4 +1,4 @@
-const CACHE = "salary-manager-v3.8.6";
+const CACHE = "salary-manager-v3.8.6-recovery-r9";
 const OWNER_PREVIEW_TOKEN = new URL(self.location.href).searchParams.get("owner_preview") || "";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
@@ -129,17 +129,34 @@ self.addEventListener("install", event => {
     let cache = null;
     try { cache = await caches.open(CACHE); } catch (_) {}
     await Promise.allSettled([refreshShell(cache), cacheStatic(cache)]);
-    // Keep the new worker waiting until the user explicitly approves the update.
+    // Service-worker-only recovery for users who accidentally received an unpublished 3.8.7 build.
+    // This does not publish 3.8.7 and does not change salary data.
+    await self.skipWaiting();
   })());
 });
 
 self.addEventListener("activate", event => {
   event.waitUntil((async () => {
+    let hadAccidental387Cache = false;
     try {
       const keys = await caches.keys();
+      hadAccidental387Cache = keys.some(key => /^salary-manager-v3\.8\.7(?:-|$)/.test(key));
       await Promise.all(keys.filter(key => key.startsWith("salary-manager-v") && key !== CACHE).map(key => caches.delete(key)));
     } catch (_) {}
     await self.clients.claim();
+
+    // Only devices that had an accidental 3.8.7 cache are forcibly returned to the
+    // currently published 3.8.6 shell. Normal 3.8.6 users are not redirected.
+    if (hadAccidental387Cache) {
+      try {
+        const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+        const target = new URL("./?__sw_recovery=" + Date.now(), SCOPE).href;
+        for (const client of windows) {
+          if (!client.url.startsWith(SCOPE)) continue;
+          try { await client.navigate(target); } catch (_) {}
+        }
+      } catch (_) {}
+    }
   })());
 });
 

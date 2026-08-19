@@ -3717,7 +3717,7 @@
 
 
       var APP_VERSION = "3.8.7";
-      var APP_RELEASE_ID = "3.8.7-wallet-r13";
+      var APP_RELEASE_ID = "3.8.7-wallet-r14";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -5375,6 +5375,8 @@
         var monthExpenses = getMonthExpenses(monthKey);
         var commitmentsTotal = monthTransactionTotal(monthKey, "commitment", "out");
         var recurringTotal = monthTransactionTotal(monthKey, "recurring", "out");
+        var scheduledCommitmentsTotal = activeCommitments.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
+        var scheduledRecurringTotal = activeRecurring.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
         var savingsMoved = monthTransactionTotal(monthKey, ["savings_transfer","savings_plan"], "out");
         var expensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0);
         var excludedExpensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? safeNumber(item.amount) : 0); }, 0);
@@ -5383,10 +5385,17 @@
         var balanceAdjustmentOut = monthTransactionTotal(monthKey, "balance_adjustment", "out");
         var balanceAdjustmentNet = monthTransactionTotal(monthKey, "balance_adjustment");
         var opening = safeNumber(state.walletMonthOpeningBalance);
-        var availableBase = Math.max(0, opening) + salaryDeposits + balanceAdjustmentIn;
-        var used = commitmentsTotal + recurringTotal + savingsMoved + expensesTotal + balanceAdjustmentOut;
         var balance = safeNumber(state.walletBalance);
-        var daysLeft = getDaysRemaining(monthKey);
+        // الرصيد المتاح المرجعي يجب أن يبقى صحيحًا أيضًا للحسابات التي انتقلت من البنايات التجريبية السابقة
+        // والتي قد لا تحتوي على عملية راتب افتتاحية في سجل المعاملات.
+        var ledgerAvailableBase = Math.max(0, opening) + salaryDeposits + balanceAdjustmentIn;
+        var availableBase = Math.max(ledgerAvailableBase, Math.max(0, safeNumber(state.salary)));
+        var used = commitmentsTotal + recurringTotal + savingsMoved + expensesTotal + balanceAdjustmentOut;
+        // نسبة الاستخدام تعكس الفرق الحقيقي بين الرصيد الذي كان متاحًا والرصيد الحالي، بدل الاعتماد فقط على اكتمال سجل المعاملات القديم.
+        var usedForPercent = availableBase > 0 ? Math.max(0, availableBase - balance) : 0;
+        var nextSalaryInfo = getNextSalaryInfo();
+        var calendarDaysLeft = getDaysRemaining(monthKey);
+        var daysLeft = nextSalaryInfo.days == null ? calendarDaysLeft : nextSalaryInfo.days;
         return {
           future:false,
           opening:opening,
@@ -5402,17 +5411,20 @@
           monthExpenses:monthExpenses,
           commitmentsTotal:commitmentsTotal,
           recurringTotal:recurringTotal,
+          scheduledCommitmentsTotal:scheduledCommitmentsTotal,
+          scheduledRecurringTotal:scheduledRecurringTotal,
           savingsTotal:safeNumber(state.savingsBalance),
           savingsMoved:savingsMoved,
           expensesTotal:expensesTotal,
           excludedExpensesTotal:excludedExpensesTotal,
           used:used,
+          usedForPercent:usedForPercent,
           balance:balance,
-          usedPercent:availableBase > 0 ? (used / availableBase) * 100 : 0,
+          usedPercent:availableBase > 0 ? (usedForPercent / availableBase) * 100 : 0,
           daysLeft:daysLeft,
-          calendarDaysLeft:daysLeft,
-          nextSalary:getNextSalaryInfo(),
-          usingSalaryCountdown:false,
+          calendarDaysLeft:calendarDaysLeft,
+          nextSalary:nextSalaryInfo,
+          usingSalaryCountdown:nextSalaryInfo.days != null,
           daily:Math.max(0,balance) / Math.max(1,daysLeft),
           carryover:0
         };
@@ -5443,8 +5455,8 @@
         setMoney("#salarySummary", metrics.salaryCredit);
         setMoney("#availableHero", metrics.balance);
         setMoney("#balanceSummary", metrics.balance);
-        setMoney("#commitmentsSummary", metrics.commitmentsTotal);
-        setMoney("#recurringSummary", metrics.recurringTotal);
+        setMoney("#commitmentsSummary", metrics.scheduledCommitmentsTotal);
+        setMoney("#recurringSummary", metrics.scheduledRecurringTotal);
         setMoney("#expensesSummary", metrics.expensesTotal);
         setMoney("#savingsSummary", metrics.savingsTotal);
         setMoney("#savingsBalanceLarge", metrics.savingsTotal);
@@ -5479,7 +5491,7 @@
         } else {
           setText("#daysLabel", "يوم متبقٍ");
         }
-        setText("#commitmentCountNote", metrics.activeCommitments.length ? metrics.activeCommitments.length + " التزام نشط هذا الشهر" : "لا توجد التزامات نشطة");
+        setText("#commitmentCountNote", metrics.activeCommitments.length ? metrics.activeCommitments.length + " التزام نشط · المخصوم " + formatMoney(metrics.commitmentsTotal) : "لا توجد التزامات نشطة");
         setText("#recurringCountNote", metrics.activeRecurring.length ? metrics.activeRecurring.length + " دفعة ثابتة · المخصوم بعد التأكيد " + formatMoney(metrics.recurringTotal) : "لا توجد دفعات ثابتة");
         setText("#expenseCountNote", metrics.monthExpenses.length ? metrics.monthExpenses.length + " عملية · المحتسب " + formatMoney(metrics.expensesTotal) : "لا توجد مصروفات مسجلة");
         setText("#expenseListSubtitle", "المصروفات المسجلة في " + formatMonth(defaultMonth));
@@ -5550,7 +5562,9 @@
 
         setText("#allocationHeadline", "تم تخصيص " + Math.round(metrics.usedPercent) + "% من الرصيد المتاح");
         setText("#allocationSubline", "متبقٍ " + formatMoney(metrics.balance) + " لإدارة بقية الشهر");
-        setText("#monthlyInsight", "للبقاء ضمن الميزانية، حاول ألا يتجاوز صرفك اليومي " + formatMoney(metrics.daily) + " خلال الأيام المتبقية من الشهر.");
+        setText("#monthlyInsight", metrics.usingSalaryCountdown
+          ? "للبقاء ضمن الميزانية، حاول ألا يتجاوز صرفك اليومي " + formatMoney(metrics.daily) + " حتى موعد الراتب القادم."
+          : "للبقاء ضمن الميزانية، حاول ألا يتجاوز صرفك اليومي " + formatMoney(metrics.daily) + " خلال الأيام المتبقية من الشهر.");
       }
 
       function dueDateForMonth(item) {

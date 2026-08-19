@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
 const VERSION = "3.8.7";
-const RELEASE_ID = "3.8.7-wallet-r14";
+const RELEASE_ID = "3.8.7-wallet-r15";
 const UPDATE_SIGNAL_VERSION = "3.8.7\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
 const PREVIOUS_RELEASE_ID = "3.8.6";
@@ -17,7 +17,8 @@ const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
   "3.8.7-calendar-r10",
   "3.8.7-calendar-r11",
   "3.8.7-wallet-r12",
-  "3.8.7-wallet-r13"
+  "3.8.7-wallet-r13",
+  "3.8.7-wallet-r14"
 ]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -938,7 +939,7 @@ export class SalaryStore extends DurableObject {
     }
 
     if (p === "/auth/system/release-state") {
-      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false, b.releaseId, b.previousReleaseId);
+      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, Boolean(b.notifyOwner), b.releaseId, b.previousReleaseId);
       return json({ ok: true, ...state });
     }
 
@@ -973,8 +974,7 @@ export class SalaryStore extends DurableObject {
       };
       await this.ctx.storage.put(key, record);
       if (record.role === "super_admin") {
-        // Keep an owner-specific copy for password-reset alerts and manual push tests,
-        // but do not send staged-release notifications automatically.
+        // Keep an owner-specific copy for password-reset alerts and staged-release notifications.
         await this.ctx.storage.put("push:owner:" + await sha256(subscription.endpoint), {
           subscription,
           ownerUserId: record.userId,
@@ -1317,7 +1317,8 @@ export default {
           releaseId: RELEASE_ID,
           previousVersion: PREVIOUS_PUBLISHED_VERSION,
           previousReleaseId: PREVIOUS_RELEASE_ID,
-          subject: ""
+          subject: "",
+          notifyOwner: true
         });
         console.log("Release stage check", body);
       } catch (error) {

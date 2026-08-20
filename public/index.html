@@ -2,7 +2,18 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <script>
+    (function () {
+      try {
+        var u = JSON.parse(localStorage.getItem("monthlySalaryManager.authUser") || "null");
+        if (u && u.id) {
+          var cfg = JSON.parse(localStorage.getItem("monthlySalaryManager.appLock.v1." + u.id) || "null");
+          if (cfg && cfg.enabled) document.documentElement.classList.add("app-lock-pending");
+        }
+      } catch (_) {}
+    })();
+  </script>
   <meta name="theme-color" content="#123f3b">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -20,7 +31,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.7-wallet-r16";
+      var v = "3.8.8-security-r1";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -2241,6 +2252,48 @@
     .release-chip.published { background:var(--teal-soft); color:var(--teal); }
     @media (max-width:680px) { .release-control-box { grid-template-columns:1fr; } .release-control-box button { width:100%; } .release-control-actions { min-width:0; } }
 
+    /* 3.8.8: prevent accidental iPhone zoom while keeping normal vertical scrolling. */
+    html, body { touch-action: pan-x pan-y; }
+    @media (max-width: 900px) {
+      input, select, textarea { font-size: 16px !important; }
+    }
+    .app-lock-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: max(24px, env(safe-area-inset-top)) 22px max(28px, env(safe-area-inset-bottom));
+      background: linear-gradient(155deg, #0f3d39 0%, #145d55 60%, #0c312e 100%);
+      color: #fff;
+    }
+    html.app-lock-pending .app-lock-overlay,
+    html.app-lock-active .app-lock-overlay { display: flex; }
+    html.app-lock-pending body > *:not(.app-lock-overlay),
+    html.app-lock-active body > *:not(.app-lock-overlay) { visibility: hidden !important; }
+    html.app-lock-pending .app-lock-overlay,
+    html.app-lock-active .app-lock-overlay { visibility: visible !important; }
+    .app-lock-card {
+      width: min(430px, 100%);
+      border-radius: 30px;
+      padding: 30px 24px 24px;
+      text-align: center;
+      background: rgba(255,255,255,.98);
+      color: var(--ink);
+      box-shadow: 0 28px 80px rgba(0,0,0,.28);
+    }
+    .app-lock-icon { width: 74px; height: 74px; margin: 0 auto 15px; display:grid; place-items:center; border-radius: 24px; background: var(--forest); color:#fff; font-size:34px; }
+    .app-lock-card h2 { margin:0 0 8px; font-size:25px; }
+    .app-lock-card p { margin:0 0 18px; color:var(--muted); line-height:1.75; }
+    .app-lock-pin { width:100%; text-align:center; letter-spacing:.35em; font-size:24px !important; font-weight:800; border:1px solid var(--line); border-radius:16px; padding:14px 12px; background:#fff; }
+    .app-lock-actions { display:grid; gap:10px; margin-top:14px; }
+    .app-lock-note { min-height:22px; margin-top:10px; font-size:12px; color:var(--muted); }
+    .app-lock-owner-recovery { display:none; margin-top:13px; padding-top:13px; border-top:1px solid var(--line); }
+    .app-lock-owner-recovery.show { display:block; }
+    .app-lock-settings-grid { display:grid; gap:10px; margin-top:12px; }
+    .app-lock-settings-grid .field { margin:0; }
+
     .settings-section {
       display: grid;
       gap: 12px;
@@ -3200,6 +3253,46 @@
     </div>
   </dialog>
 
+  <div class="app-lock-overlay" id="appLockOverlay" aria-hidden="true">
+    <div class="app-lock-card">
+      <div class="app-lock-icon" aria-hidden="true">🔒</div>
+      <h2>مدير الراتب مقفل</h2>
+      <p>استخدم Face ID أو أدخل رمز القفل لفتح بياناتك.</p>
+      <input class="app-lock-pin" id="appLockPinInput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" aria-label="رمز القفل">
+      <div class="app-lock-actions">
+        <button class="primary-btn" id="appLockUnlockButton" type="button">فتح مدير الراتب</button>
+        <button class="soft-btn" id="appLockFaceButton" type="button">استخدام Face ID</button>
+        <button class="ghost-btn" id="appLockForgotButton" type="button">نسيت رمز القفل؟</button>
+      </div>
+      <div class="app-lock-owner-recovery" id="appLockOwnerRecovery">
+        <div class="field"><label for="appLockOwnerPassword">كلمة مرور حساب المالك</label><input id="appLockOwnerPassword" type="password" autocomplete="current-password"></div>
+        <button class="soft-btn" id="appLockOwnerRecoverButton" type="button">التحقق وإلغاء رمز القفل</button>
+      </div>
+      <div class="app-lock-note" id="appLockMessage"></div>
+    </div>
+  </div>
+
+  <dialog class="modal" id="appLockSetupDialog">
+    <div class="modal-head"><h2>إعداد قفل التطبيق</h2><button class="close-btn" type="button" data-close-dialog="appLockSetupDialog" aria-label="إغلاق">×</button></div>
+    <form id="appLockSetupForm">
+      <div class="modal-body app-lock-settings-grid">
+        <p class="helper">اختر رمزًا من 4 إلى 8 أرقام. لا يتم حفظ الرمز نفسه؛ يُحفظ تحقق مشفّر على هذا الجهاز فقط.</p>
+        <div class="field"><label for="appLockNewPin">رمز القفل</label><input id="appLockNewPin" type="password" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="8" autocomplete="new-password" required></div>
+        <div class="field"><label for="appLockConfirmPin">تأكيد رمز القفل</label><input id="appLockConfirmPin" type="password" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="8" autocomplete="new-password" required></div>
+        <div class="field"><label for="appLockDelaySelect">القفل عند مغادرة التطبيق</label><select id="appLockDelaySelect"><option value="0">فورًا</option><option value="1">بعد دقيقة</option><option value="5">بعد 5 دقائق</option><option value="15">بعد 15 دقيقة</option></select></div>
+      </div>
+      <div class="modal-foot"><button class="ghost-btn" type="button" data-close-dialog="appLockSetupDialog">إلغاء</button><button class="primary-btn" type="submit">حفظ وتفعيل القفل</button></div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="appLockDisableDialog">
+    <div class="modal-head"><h2>إيقاف قفل التطبيق</h2><button class="close-btn" type="button" data-close-dialog="appLockDisableDialog" aria-label="إغلاق">×</button></div>
+    <form id="appLockDisableForm">
+      <div class="modal-body"><div class="field"><label for="appLockDisablePin">أدخل رمز القفل الحالي</label><input id="appLockDisablePin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" required></div></div>
+      <div class="modal-foot"><button class="ghost-btn" type="button" data-close-dialog="appLockDisableDialog">إلغاء</button><button class="danger-btn" type="submit">إيقاف القفل</button></div>
+    </form>
+  </dialog>
+
   <dialog class="modal" id="settingsDialog">
     <div class="modal-head"><h2>الإعدادات</h2><button class="close-btn" type="button" data-close-dialog="settingsDialog" aria-label="إغلاق">×</button></div>
     <div class="modal-body">
@@ -3216,6 +3309,15 @@
         </div>
         <div class="settings-actions"><button class="primary-btn" id="applyIconChoiceButton" type="button">اعتماد الأيقونة</button><button class="soft-btn" id="reinstallIconButton" type="button">تطبيقها على شاشة الهاتف</button></div>
         <div class="settings-status" id="iconChoiceStatus">سيتم اعتماد الأيقونة المختارة كتفضيل لتثبيت التطبيق على هذا الجهاز.</div>
+      </section>
+      <section class="settings-section">
+        <div class="settings-section-head"><div><h3>قفل التطبيق</h3><p>احمِ بياناتك برمز قفل خاص، ويمكن إضافة Face ID / بصمة الجهاز على الأجهزة المدعومة.</p></div></div>
+        <div class="settings-status" id="appLockStatus">قفل التطبيق غير مفعّل على هذا الجهاز.</div>
+        <div class="settings-actions">
+          <button class="primary-btn" id="configureAppLockButton" type="button">تفعيل / تغيير رمز القفل</button>
+          <button class="soft-btn" id="enableAppLockFaceButton" type="button">تفعيل Face ID</button>
+          <button class="ghost-btn" id="disableAppLockButton" type="button">إيقاف القفل</button>
+        </div>
       </section>
       <section class="settings-section">
         <div class="settings-section-head"><div><h3>إشعارات التحديثات</h3><p>استقبل إشعارًا خارجيًا واحدًا بعد اعتماد المالك للإصدار ونشره للمستخدمين، مع بقاء إشعار التحديث داخل التطبيق.</p></div></div>
@@ -3268,6 +3370,19 @@
     <div class="modal-body">
       <div class="changelog-list">
         <section class="changelog-entry current">
+          <div class="changelog-version">
+            <strong>الإصدار 3.8.8</strong>
+            <time datetime="2026-08-20">20 أغسطس 2026</time>
+          </div>
+          <ul>
+            <li>إضافة قفل اختياري لمدير الراتب برمز من 4 إلى 8 أرقام مع إمكانية استخدام Face ID / بصمة الجهاز عند دعم المتصفح.</li>
+            <li>إضافة استرجاع آمن لقفل المستخدم عبر طلب للمالك؛ المالك لا يرى الرمز ويمكنه فقط إلغاء القفل ليضع المستخدم رمزًا جديدًا.</li>
+            <li>إضافة استرجاع خاص بحساب المالك باستخدام كلمة مرور الحساب عند نسيان رمز القفل.</li>
+            <li>قفل التكبير العرضي على الهاتف ومنع Zoom الناتج عن النقر المزدوج أو التكبير بالإصبع أو تركيز حقول الإدخال.</li>
+            <li>الإصدار 3.8.8 يبقى للمالك فقط للمراجعة حتى يتم اعتماده ونشره للمستخدمين.</li>
+          </ul>
+        </section>
+        <section class="changelog-entry">
           <div class="changelog-version">
             <strong>الإصدار 3.8.7</strong>
             <time datetime="2026-08-19">19 أغسطس 2026</time>
@@ -3523,6 +3638,34 @@
       EN_TRANSLATIONS["الحفاظ على حد الصرف اليومي محسوبًا حتى موعد الراتب القادم عند عرض الشهر الحالي."] = "Kept the daily spending limit calculated through the next salary date for the current month.";
 
       Object.assign(EN_TRANSLATIONS, {
+        "قفل التطبيق": "App lock",
+        "احمِ بياناتك برمز قفل خاص، ويمكن إضافة Face ID / بصمة الجهاز على الأجهزة المدعومة.": "Protect your data with an app passcode and optionally Face ID / device biometrics on supported devices.",
+        "تفعيل / تغيير رمز القفل": "Enable / change passcode",
+        "تفعيل رمز القفل": "Enable passcode",
+        "تغيير رمز القفل": "Change passcode",
+        "تفعيل Face ID": "Enable Face ID",
+        "إعادة إعداد Face ID": "Set up Face ID again",
+        "إيقاف القفل": "Disable lock",
+        "مدير الراتب مقفل": "Salary Manager is locked",
+        "استخدم Face ID أو أدخل رمز القفل لفتح بياناتك.": "Use Face ID or enter your passcode to unlock your data.",
+        "فتح مدير الراتب": "Unlock Salary Manager",
+        "استخدام Face ID": "Use Face ID",
+        "إعداد قفل التطبيق": "Set up app lock",
+        "رمز القفل": "Passcode",
+        "تأكيد رمز القفل": "Confirm passcode",
+        "القفل عند مغادرة التطبيق": "Lock after leaving the app",
+        "فورًا": "Immediately",
+        "بعد دقيقة": "After 1 minute",
+        "بعد 5 دقائق": "After 5 minutes",
+        "بعد 15 دقيقة": "After 15 minutes",
+        "حفظ وتفعيل القفل": "Save and enable lock",
+        "إيقاف قفل التطبيق": "Disable app lock",
+        "أدخل رمز القفل الحالي": "Enter current passcode",
+        "طلب إعادة تعيين قفل التطبيق": "App lock reset request",
+        "إلغاء رمز قفل التطبيق": "Reset app lock"
+      });
+
+      Object.assign(EN_TRANSLATIONS, {
         "اختيار الشهر": "Select month",
         "الشهر السابق": "Previous month",
         "الشهر التالي": "Next month",
@@ -3715,11 +3858,16 @@
       }
 
 
-      var APP_VERSION = "3.8.7";
-      var APP_RELEASE_ID = "3.8.7-wallet-r16";
+      var APP_VERSION = "3.8.8";
+      var APP_RELEASE_ID = "3.8.8-security-r1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
+      var APP_LOCK_KEY_PREFIX = "monthlySalaryManager.appLock.v1.";
+      var appLockBackgroundAt = 0;
+      var appLockResetPollTimer = null;
+      var appLockFailedAttempts = 0;
+      var appLockBlockedUntil = 0;
       var PRE_ACCOUNT_BACKUP_KEY = "monthlySalaryManager.v1.preAccountBackup";
       var API_BASE = String(window.SALARY_API_BASE || "").replace(/\/+$/, "");
       var deferredInstallPrompt = null;
@@ -3806,6 +3954,335 @@
 
       function $all(selector) {
         return Array.prototype.slice.call(document.querySelectorAll(selector));
+      }
+
+
+      function appLockStorageKey() {
+        return authState.user && authState.user.id ? APP_LOCK_KEY_PREFIX + authState.user.id : "";
+      }
+
+      function readAppLockConfig() {
+        var key = appLockStorageKey();
+        if (!key) return null;
+        try {
+          var cfg = JSON.parse(localStorage.getItem(key) || "null");
+          return cfg && cfg.enabled ? cfg : null;
+        } catch (_) { return null; }
+      }
+
+      function writeAppLockConfig(cfg) {
+        var key = appLockStorageKey();
+        if (!key) return false;
+        try { localStorage.setItem(key, JSON.stringify(cfg)); return true; } catch (_) { return false; }
+      }
+
+      function removeAppLockConfig() {
+        var key = appLockStorageKey();
+        if (key) try { localStorage.removeItem(key); } catch (_) {}
+      }
+
+      function bytesToBase64Url(bytes) {
+        var raw = "";
+        var array = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        for (var i = 0; i < array.length; i++) raw += String.fromCharCode(array[i]);
+        return btoa(raw).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+      }
+
+      function randomBytes(length) {
+        var out = new Uint8Array(length || 24);
+        crypto.getRandomValues(out);
+        return out;
+      }
+
+      async function hashAppLockPin(pin, saltValue) {
+        var enc = new TextEncoder();
+        var salt = urlBase64ToUint8Array(saltValue);
+        var base = await crypto.subtle.importKey("raw", enc.encode(String(pin || "")), { name: "PBKDF2" }, false, ["deriveBits"]);
+        var bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: salt, iterations: 120000 }, base, 256);
+        return bytesToBase64Url(new Uint8Array(bits));
+      }
+
+      async function verifyAppLockPin(pin, cfg) {
+        if (!cfg || !cfg.salt || !cfg.hash) return false;
+        return (await hashAppLockPin(pin, cfg.salt)) === cfg.hash;
+      }
+
+      function appLockBiometricSupported() {
+        return Boolean(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
+      }
+
+      async function enrollAppLockBiometric() {
+        var cfg = readAppLockConfig();
+        if (!cfg) { showToast("فعّل رمز القفل أولًا", true); return false; }
+        if (!appLockBiometricSupported()) { showToast("Face ID / بصمة الجهاز غير متاحة في هذا المتصفح", true); return false; }
+        try {
+          var uid = randomBytes(16);
+          var credential = await navigator.credentials.create({ publicKey: {
+            challenge: randomBytes(32),
+            rp: { name: "مدير الراتب" },
+            user: { id: uid, name: String(authState.user?.username || "salary-user"), displayName: String(authState.user?.username || "مدير الراتب") },
+            pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+            authenticatorSelection: { authenticatorAttachment: "platform", residentKey: "discouraged", userVerification: "required" },
+            timeout: 60000,
+            attestation: "none"
+          }});
+          if (!credential) return false;
+          cfg.credentialId = bytesToBase64Url(new Uint8Array(credential.rawId));
+          cfg.biometricEnabled = true;
+          cfg.updatedAt = Date.now();
+          writeAppLockConfig(cfg);
+          refreshAppLockSettings();
+          showToast("تم تفعيل Face ID / بصمة الجهاز لهذا الجهاز");
+          return true;
+        } catch (error) {
+          console.warn("Biometric enrollment failed", error);
+          showToast("تعذر تفعيل Face ID / بصمة الجهاز. يمكنك الاستمرار باستخدام رمز القفل.", true);
+          return false;
+        }
+      }
+
+      async function unlockWithAppLockBiometric() {
+        var cfg = readAppLockConfig();
+        if (!cfg || !cfg.biometricEnabled || !cfg.credentialId || !appLockBiometricSupported()) return false;
+        try {
+          var credential = await navigator.credentials.get({ publicKey: {
+            challenge: randomBytes(32),
+            allowCredentials: [{ type: "public-key", id: urlBase64ToUint8Array(cfg.credentialId), transports: ["internal"] }],
+            userVerification: "required",
+            timeout: 60000
+          }});
+          if (!credential) return false;
+          releaseAppLock();
+          return true;
+        } catch (error) {
+          var msg = $("#appLockMessage");
+          if (msg) msg.textContent = "تعذر التحقق بـ Face ID. استخدم رمز القفل.";
+          return false;
+        }
+      }
+
+      function startAppLockResetPolling() {
+        clearInterval(appLockResetPollTimer);
+        appLockResetPollTimer = null;
+        if (!authState.authenticated || authState.user?.role === "super_admin") return;
+        appLockResetPollTimer = setInterval(function () { checkAppLockResetFromServer(); }, 12000);
+      }
+
+      function stopAppLockResetPolling() {
+        clearInterval(appLockResetPollTimer);
+        appLockResetPollTimer = null;
+      }
+
+      async function checkAppLockResetFromServer() {
+        var cfg = readAppLockConfig();
+        if (!cfg || !authState.authenticated || !navigator.onLine) return false;
+        try {
+          var data = await apiFetch("/api/auth/session");
+          var serverVersion = Number(data.user?.appLockResetVersion || 0);
+          if (serverVersion > Number(cfg.serverResetVersion || 0)) {
+            authState.user = data.user;
+            localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authState.user));
+            removeAppLockConfig();
+            stopAppLockResetPolling();
+            releaseAppLock();
+            showToast("تم إلغاء رمز القفل بواسطة المالك. يمكنك إنشاء رمز جديد من الإعدادات.");
+            return true;
+          }
+        } catch (_) {}
+        return false;
+      }
+
+      function activateAppLock(reason) {
+        var cfg = readAppLockConfig();
+        if (!cfg || !authState.authenticated) {
+          document.documentElement.classList.remove("app-lock-pending", "app-lock-active");
+          return false;
+        }
+        document.documentElement.classList.remove("app-lock-pending");
+        document.documentElement.classList.add("app-lock-active");
+        var overlay = $("#appLockOverlay");
+        if (overlay) overlay.setAttribute("aria-hidden", "false");
+        var pin = $("#appLockPinInput");
+        if (pin) { pin.value = ""; setTimeout(function(){ try { pin.focus({preventScroll:true}); } catch(_){} }, 80); }
+        var face = $("#appLockFaceButton");
+        if (face) face.style.display = cfg.biometricEnabled && cfg.credentialId && appLockBiometricSupported() ? "block" : "none";
+        var forgot = $("#appLockForgotButton");
+        if (forgot) forgot.textContent = authState.user?.role === "super_admin" ? "نسيت رمز القفل؟ استخدم كلمة مرور الحساب" : "نسيت رمز القفل؟ أرسل طلبًا للمالك";
+        var recovery = $("#appLockOwnerRecovery");
+        if (recovery) recovery.classList.remove("show");
+        var msg = $("#appLockMessage");
+        if (msg) msg.textContent = reason === "startup" ? "" : "تم قفل التطبيق لحماية بياناتك.";
+        startAppLockResetPolling();
+        if (cfg.biometricEnabled && cfg.credentialId && appLockBiometricSupported()) setTimeout(function(){ unlockWithAppLockBiometric(); }, 180);
+        return true;
+      }
+
+      function releaseAppLock() {
+        document.documentElement.classList.remove("app-lock-pending", "app-lock-active");
+        var overlay = $("#appLockOverlay");
+        if (overlay) overlay.setAttribute("aria-hidden", "true");
+        var msg = $("#appLockMessage"); if (msg) msg.textContent = "";
+        appLockFailedAttempts = 0;
+        appLockBlockedUntil = 0;
+        stopAppLockResetPolling();
+        appLockBackgroundAt = 0;
+      }
+
+      async function unlockAppLockWithPin() {
+        if (Date.now() < appLockBlockedUntil) {
+          var wait = Math.max(1, Math.ceil((appLockBlockedUntil - Date.now()) / 1000));
+          $("#appLockMessage").textContent = "محاولات كثيرة. حاول بعد " + wait + " ثانية.";
+          return;
+        }
+        var cfg = readAppLockConfig();
+        var pin = String($("#appLockPinInput")?.value || "");
+        if (!/^\d{4,8}$/.test(pin)) { $("#appLockMessage").textContent = "أدخل رمز القفل من 4 إلى 8 أرقام."; return; }
+        if (await verifyAppLockPin(pin, cfg)) {
+          releaseAppLock();
+          resumeContinuousSync();
+          return;
+        }
+        appLockFailedAttempts += 1;
+        $("#appLockPinInput").value = "";
+        if (appLockFailedAttempts >= 5) {
+          appLockBlockedUntil = Date.now() + 30000;
+          appLockFailedAttempts = 0;
+          $("#appLockMessage").textContent = "تم إيقاف المحاولات 30 ثانية لحماية التطبيق.";
+        } else {
+          $("#appLockMessage").textContent = "رمز القفل غير صحيح.";
+        }
+      }
+
+      function refreshAppLockSettings() {
+        var status = $("#appLockStatus");
+        var configure = $("#configureAppLockButton");
+        var face = $("#enableAppLockFaceButton");
+        var disable = $("#disableAppLockButton");
+        if (!status || !configure || !face || !disable) return;
+        if (!authState.authenticated) {
+          status.classList.remove("on");
+          status.textContent = "سجّل الدخول أولًا لتفعيل قفل التطبيق وإتاحة الاسترجاع عبر المالك.";
+          configure.disabled = true; face.disabled = true; disable.disabled = true;
+          return;
+        }
+        var cfg = readAppLockConfig();
+        configure.disabled = false;
+        face.disabled = !cfg || !appLockBiometricSupported();
+        disable.disabled = !cfg;
+        if (!cfg) {
+          status.classList.remove("on");
+          status.textContent = "قفل التطبيق غير مفعّل على هذا الجهاز.";
+          configure.textContent = "تفعيل رمز القفل";
+          face.textContent = "تفعيل Face ID";
+        } else {
+          status.classList.add("on");
+          var delayText = Number(cfg.delayMinutes || 0) === 0 ? "فور مغادرة التطبيق" : "بعد " + Number(cfg.delayMinutes) + " دقيقة";
+          status.textContent = "القفل مفعّل · " + delayText + (cfg.biometricEnabled ? " · Face ID مفعّل" : "");
+          configure.textContent = "تغيير رمز القفل";
+          face.textContent = cfg.biometricEnabled ? "إعادة إعداد Face ID" : "تفعيل Face ID";
+        }
+      }
+
+      async function saveAppLockSetup() {
+        if (!authState.authenticated || !authState.user) { showToast("سجّل الدخول أولًا", true); return false; }
+        var pin = String($("#appLockNewPin").value || "");
+        var confirmPin = String($("#appLockConfirmPin").value || "");
+        if (!/^\d{4,8}$/.test(pin)) { showToast("رمز القفل يجب أن يكون من 4 إلى 8 أرقام", true); return false; }
+        if (pin !== confirmPin) { showToast("رمزا القفل غير متطابقين", true); return false; }
+        var salt = bytesToBase64Url(randomBytes(18));
+        var cfg = {
+          enabled: true,
+          salt: salt,
+          hash: await hashAppLockPin(pin, salt),
+          delayMinutes: Math.max(0, Number($("#appLockDelaySelect").value || 0)),
+          biometricEnabled: false,
+          credentialId: "",
+          serverResetVersion: Number(authState.user.appLockResetVersion || 0),
+          updatedAt: Date.now()
+        };
+        writeAppLockConfig(cfg);
+        try { await apiFetch("/api/app-lock/cancel-reset", { method: "POST", body: "{}" }); } catch (_) {}
+        $("#appLockSetupForm").reset();
+        $("#appLockSetupDialog").close();
+        refreshAppLockSettings();
+        showToast("تم تفعيل قفل التطبيق على هذا الجهاز");
+        return true;
+      }
+
+      async function disableAppLockWithPin() {
+        var cfg = readAppLockConfig();
+        var pin = String($("#appLockDisablePin").value || "");
+        if (!cfg || !(await verifyAppLockPin(pin, cfg))) { showToast("رمز القفل غير صحيح", true); return false; }
+        removeAppLockConfig();
+        try { await apiFetch("/api/app-lock/cancel-reset", { method: "POST", body: "{}" }); } catch (_) {}
+        $("#appLockDisableForm").reset();
+        $("#appLockDisableDialog").close();
+        releaseAppLock();
+        refreshAppLockSettings();
+        showToast("تم إيقاف قفل التطبيق");
+        return true;
+      }
+
+      async function requestAppLockReset() {
+        if (!authState.authenticated) { $("#appLockMessage").textContent = "يجب أن يكون الحساب مسجل الدخول لطلب إعادة التعيين."; return; }
+        if (authState.user?.role === "super_admin") {
+          $("#appLockOwnerRecovery").classList.add("show");
+          $("#appLockOwnerPassword").focus();
+          return;
+        }
+        try {
+          await apiFetch("/api/app-lock/request-reset", { method: "POST", body: "{}" });
+          $("#appLockMessage").textContent = "تم إرسال طلب للمالك. ستُفتح الصفحة تلقائيًا بعد أن يلغي المالك رمز القفل واتصال الجهاز بالإنترنت.";
+          startAppLockResetPolling();
+        } catch (_) {
+          $("#appLockMessage").textContent = "تعذر إرسال الطلب الآن. تحقق من الإنترنت وحاول مرة أخرى.";
+        }
+      }
+
+      async function ownerRecoverAppLock() {
+        var password = String($("#appLockOwnerPassword").value || "");
+        if (!password) return;
+        try {
+          var data = await apiFetch("/api/auth/login", { method: "POST", body: JSON.stringify({ login: authState.user.username, password: password, deviceLabel: navigator.platform || "Owner recovery" }) });
+          rememberAuth(data);
+          removeAppLockConfig();
+          releaseAppLock();
+          $("#appLockOwnerPassword").value = "";
+          showToast("تم التحقق من كلمة مرور المالك وإلغاء رمز القفل");
+        } catch (_) {
+          $("#appLockMessage").textContent = "كلمة مرور الحساب غير صحيحة.";
+        }
+      }
+
+      function reconcileAppLockAfterAuth() {
+        document.documentElement.classList.remove("app-lock-pending");
+        if (!authState.authenticated || !authState.user) { releaseAppLock(); refreshAppLockSettings(); return; }
+        var cfg = readAppLockConfig();
+        if (!cfg) { releaseAppLock(); refreshAppLockSettings(); return; }
+        var serverVersion = Number(authState.user.appLockResetVersion || 0);
+        if (serverVersion > Number(cfg.serverResetVersion || 0)) {
+          removeAppLockConfig();
+          releaseAppLock();
+          showToast("تم إلغاء رمز القفل بواسطة المالك. يمكنك إنشاء رمز جديد من الإعدادات.");
+        } else {
+          activateAppLock("startup");
+        }
+        refreshAppLockSettings();
+      }
+
+      function installZoomLock() {
+        var lastTouchEnd = 0;
+        ["gesturestart", "gesturechange", "gestureend"].forEach(function (name) {
+          document.addEventListener(name, function (event) { event.preventDefault(); }, { passive: false });
+        });
+        document.addEventListener("touchmove", function (event) {
+          if (event.touches && event.touches.length > 1) event.preventDefault();
+        }, { passive: false });
+        document.addEventListener("touchend", function (event) {
+          var now = Date.now();
+          if (now - lastTouchEnd <= 300) event.preventDefault();
+          lastTouchEnd = now;
+        }, { passive: false });
       }
 
       function toMonthKey(date) {
@@ -4024,6 +4501,7 @@
         if (authState.token) localStorage.setItem(AUTH_TOKEN_KEY, authState.token); else localStorage.removeItem(AUTH_TOKEN_KEY);
         if (authState.user) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authState.user)); else localStorage.removeItem(AUTH_USER_KEY);
         updateAccountUI();
+        refreshAppLockSettings();
       }
 
       function clearAuth() {
@@ -4038,7 +4516,9 @@
         authState.sessionVerified = false;
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(AUTH_USER_KEY);
+        releaseAppLock();
         updateAccountUI();
+        refreshAppLockSettings();
       }
 
       async function cloudSaveNow(silent) {
@@ -4318,12 +4798,13 @@
             // the Safari page is added to the Home Screen, while localStorage is not.
             var session = await apiFetch("/api/auth/session");
             rememberAuth(session);
+            reconcileAppLockAfterAuth();
             await syncFromCloud({ silent: true, force: true });
             startLiveSync();
             rebindPushIdentityAfterAuth();
             if (authState.user?.role === "super_admin") setTimeout(refreshReleaseStatus, 120);
           } catch (sessionError) {
-            if (authState.token) clearAuth(); else updateAccountUI();
+            if (authState.token) clearAuth(); else { updateAccountUI(); document.documentElement.classList.remove("app-lock-pending"); }
           }
         } catch (error) {
           authState.backendReady = false;
@@ -4337,6 +4818,7 @@
 
       async function handleAuthSuccess(data, message) {
         rememberAuth(data);
+        reconcileAppLockAfterAuth();
         await syncFromCloud({ silent: true, force: true, initial: true, preserveLocalBackup: true });
         startLiveSync();
         rebindPushIdentityAfterAuth();
@@ -4426,10 +4908,12 @@
           root.innerHTML = data.users.map(function (user) {
             var owner = user.role === "super_admin";
             var reset = user.resetRequested ? '<span class="reset-request">طلب إعادة تعيين كلمة المرور</span>' : '';
+            var lockReset = user.appLockResetRequested ? '<span class="reset-request">طلب إعادة تعيين قفل التطبيق</span>' : '';
             return '<div class="admin-user">' +
-              '<div class="admin-user-main"><strong>' + escapeHTML(user.username) + (owner ? ' · المالك' : '') + '</strong><span>' + escapeHTML(user.email) + ' · ' + (user.status === 'active' ? 'نشط' : 'موقوف') + ' · ' + Number(user.activeSessions || 0) + ' جلسة نشطة</span>' + reset + '</div>' +
+              '<div class="admin-user-main"><strong>' + escapeHTML(user.username) + (owner ? ' · المالك' : '') + '</strong><span>' + escapeHTML(user.email) + ' · ' + (user.status === 'active' ? 'نشط' : 'موقوف') + ' · ' + Number(user.activeSessions || 0) + ' جلسة نشطة</span>' + reset + lockReset + '</div>' +
               '<div class="admin-user-actions">' +
                 (!owner ? '<button class="mini-btn mark-paid" type="button" data-admin-reset="' + escapeHTML(user.id) + '">رمز إعادة تعيين</button>' : '') +
+                (!owner && user.appLockResetRequested ? '<button class="mini-btn mark-paid" type="button" data-admin-lock-reset="' + escapeHTML(user.id) + '">إلغاء رمز قفل التطبيق</button>' : '') +
                 (!owner ? '<button class="mini-btn" type="button" data-admin-status="' + escapeHTML(user.id) + '" data-status="' + (user.status === 'active' ? 'suspended' : 'active') + '">' + (user.status === 'active' ? 'إيقاف الحساب' : 'تفعيل الحساب') + '</button>' : '') +
                 (!owner ? '<button class="mini-btn" type="button" data-admin-logout="' + escapeHTML(user.id) + '">تسجيل خروج من كل الأجهزة</button>' : '') +
               '</div></div>';
@@ -6418,6 +6902,7 @@
         $("#settingsButton").addEventListener("click", function () {
           closeBackupMenu();
           prepareIconSettings();
+          refreshAppLockSettings();
           $("#settingsDialog").showModal();
           refreshGeneralPushStatus();
         });
@@ -6453,6 +6938,29 @@
           try { localStorage.setItem(PUSH_PROMPT_KEY, String(Date.now() + 7 * 86400000)); } catch (_) {}
           $("#notificationPromptDialog").close();
         });
+
+        $("#configureAppLockButton").addEventListener("click", function () {
+          if (!authState.authenticated) { showToast("سجّل الدخول أولًا لتفعيل قفل التطبيق", true); return; }
+          var cfg = readAppLockConfig();
+          $("#appLockNewPin").value = "";
+          $("#appLockConfirmPin").value = "";
+          $("#appLockDelaySelect").value = String(cfg ? Number(cfg.delayMinutes || 0) : 0);
+          $("#appLockSetupDialog").showModal();
+        });
+        $("#appLockSetupForm").addEventListener("submit", async function (event) { event.preventDefault(); await saveAppLockSetup(); });
+        $("#enableAppLockFaceButton").addEventListener("click", function () { enrollAppLockBiometric(); });
+        $("#disableAppLockButton").addEventListener("click", function () {
+          if (!readAppLockConfig()) return;
+          $("#appLockDisablePin").value = "";
+          $("#appLockDisableDialog").showModal();
+        });
+        $("#appLockDisableForm").addEventListener("submit", async function (event) { event.preventDefault(); await disableAppLockWithPin(); });
+        $("#appLockUnlockButton").addEventListener("click", unlockAppLockWithPin);
+        $("#appLockPinInput").addEventListener("keydown", function (event) { if (event.key === "Enter") { event.preventDefault(); unlockAppLockWithPin(); } });
+        $("#appLockFaceButton").addEventListener("click", unlockWithAppLockBiometric);
+        $("#appLockForgotButton").addEventListener("click", requestAppLockReset);
+        $("#appLockOwnerRecoverButton").addEventListener("click", ownerRecoverAppLock);
+        $("#appLockOwnerPassword").addEventListener("keydown", function (event) { if (event.key === "Enter") { event.preventDefault(); ownerRecoverAppLock(); } });
 
         $("#accountButton").addEventListener("click", function () { updateAccountUI(); $("#authDialog").showModal(); });
         $("#refreshPageButton").addEventListener("click", function () {
@@ -6547,9 +7055,17 @@
         $("#enableOwnerPushButton").addEventListener("click", enableOwnerPushNotifications);
         $("#adminUserList").addEventListener("click", async function (event) {
           var reset = event.target.closest("[data-admin-reset]");
+          var lockReset = event.target.closest("[data-admin-lock-reset]");
           var status = event.target.closest("[data-admin-status]");
           var logout = event.target.closest("[data-admin-logout]");
           if (reset) generateResetCode(reset.dataset.adminReset);
+          if (lockReset) {
+            try {
+              await apiFetch("/api/admin/reset-app-lock", { method: "POST", body: JSON.stringify({ userId: lockReset.dataset.adminLockReset }) });
+              showToast("تم إلغاء رمز قفل التطبيق للمستخدم. سيُطلب منه إنشاء رمز جديد.");
+              renderAdminUsers();
+            } catch (error) { showToast(apiErrorMessage(error.code), true); }
+          }
           if (status) {
             try { await apiFetch("/api/admin/user-status", { method: "POST", body: JSON.stringify({ userId: status.dataset.adminStatus, status: status.dataset.status }) }); showToast("تم تحديث حالة الحساب"); renderAdminUsers(); }
             catch (error) { showToast(apiErrorMessage(error.code), true); }
@@ -6685,6 +7201,7 @@
       loadState();
       applyIconMetadata(selectedIconChoice, false);
       requestPersistentStorage();
+      installZoomLock();
       bindEvents();
       protectIconPreviews();
       initPWA();
@@ -6693,7 +7210,7 @@
       updateAccountUI();
       initializeAuth();
 
-      window.addEventListener("pagehide", function () { saveState(); if (authState.authenticated) cloudSaveNow(true); });
+      window.addEventListener("pagehide", function () { appLockBackgroundAt = Date.now(); saveState(); if (authState.authenticated) cloudSaveNow(true); });
       window.addEventListener("online", function () {
         resumeContinuousSync();
       });
@@ -6706,10 +7223,17 @@
       });
       document.addEventListener("visibilitychange", function () {
         if (document.visibilityState === "hidden") {
+          appLockBackgroundAt = Date.now();
           saveState();
           if (authState.authenticated) cloudSaveNow(true);
-        } else if (authState.authenticated && navigator.onLine) {
-          resumeContinuousSync();
+        } else {
+          var cfg = readAppLockConfig();
+          if (cfg && authState.authenticated && appLockBackgroundAt) {
+            var elapsed = Date.now() - appLockBackgroundAt;
+            var delayMs = Math.max(0, Number(cfg.delayMinutes || 0)) * 60000;
+            if (elapsed >= delayMs) activateAppLock("background");
+          }
+          if (authState.authenticated && navigator.onLine && !document.documentElement.classList.contains("app-lock-active")) resumeContinuousSync();
         }
       });
 

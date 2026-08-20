@@ -1,9 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.8.7";
-const RELEASE_ID = "3.8.7-wallet-r16";
-const UPDATE_SIGNAL_VERSION = "3.8.7\u200B";
+const VERSION = "3.8.8";
+const RELEASE_ID = "3.8.8-security-r1";
+const UPDATE_SIGNAL_VERSION = "3.8.8\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
 const PREVIOUS_RELEASE_ID = "3.8.6";
 const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
@@ -19,7 +19,8 @@ const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
   "3.8.7-wallet-r12",
   "3.8.7-wallet-r13",
   "3.8.7-wallet-r14",
-  "3.8.7-wallet-r15"
+  "3.8.7-wallet-r15",
+  "3.8.7-wallet-r16"
 ]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -473,6 +474,19 @@ async function handleApi(request, env, url) {
     return apiJson(request, env, body || { ok: false }, response.status);
   }
 
+  if (p === "/api/app-lock/request-reset" && request.method === "POST") {
+    const a = await requireAuth(request, env);
+    if (!a.ok) return a.response;
+    const { response, body } = await internal(env, "/auth/app-lock/request-reset", { token: a.token, origin: url.origin });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+  if (p === "/api/app-lock/cancel-reset" && request.method === "POST") {
+    const a = await requireAuth(request, env);
+    if (!a.ok) return a.response;
+    const { response, body } = await internal(env, "/auth/app-lock/cancel-reset", { token: a.token });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+
   if (p === "/api/admin/push-status" && request.method === "GET") {
     const a = await requireAuth(request, env, { admin: true });
     if (!a.ok) return a.response;
@@ -522,6 +536,13 @@ async function handleApi(request, env, url) {
     const { response, body } = await internal(env, "/auth/admin/logout-user", { token: a.token, userId: b.userId });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
+  if (p === "/api/admin/reset-app-lock" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/admin/reset-app-lock", { token: a.token, userId: b.userId });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
 
   if (p === "/api/data" && request.method === "GET") {
     const a = await requireAuth(request, env);
@@ -549,7 +570,7 @@ export class SalaryStore extends DurableObject {
     try { await this.ctx.storage.put(`audit:${Date.now()}:${crypto.randomUUID()}`, { type, at: Date.now(), ...details }); } catch (_) {}
   }
   async publicUser(u) {
-    return u ? { id: u.id, username: u.username, email: u.email, role: u.role, status: u.status, accountId: u.accountId, createdAt: u.createdAt, lastLoginAt: u.lastLoginAt || null } : null;
+    return u ? { id: u.id, username: u.username, email: u.email, role: u.role, status: u.status, accountId: u.accountId, createdAt: u.createdAt, lastLoginAt: u.lastLoginAt || null, appLockResetVersion: Number(u.appLockResetVersion || 0) } : null;
   }
   async createSession(user, deviceLabel = "") {
     const token = randomToken(32);
@@ -802,6 +823,40 @@ export class SalaryStore extends DurableObject {
     }
   }
 
+  async sendOwnerAppLockResetPush(user, origin = "") {
+    try {
+      const vapid = await this.ctx.storage.get("push:vapid");
+      if (!vapid?.publicKey || !vapid?.privateKey) return;
+      const subscriptions = await this.ctx.storage.list({ prefix: "push:owner:" });
+      if (!subscriptions.size) return;
+      const payloadData = {
+        title: "طلب إعادة تعيين قفل التطبيق",
+        body: "طلب المستخدم " + String(user?.username || "أحد المستخدمين") + " إلغاء رمز قفل مدير الراتب.",
+        icon: "./icons/choice/gold-192.png",
+        badge: "./icons/choice/gold-192.png",
+        url: "./?open=admin",
+        tag: "salary-app-lock-reset"
+      };
+      const message = { data: JSON.stringify(payloadData), options: { ttl: 3600, urgency: "high" } };
+      for (const [key, record] of subscriptions.entries()) {
+        const subscription = record?.subscription;
+        if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+          await this.ctx.storage.delete(key);
+          continue;
+        }
+        try {
+          const requestInit = await buildPushPayload(message, subscription, vapid);
+          const response = await fetch(subscription.endpoint, requestInit);
+          if (response.status === 404 || response.status === 410) await this.ctx.storage.delete(key);
+        } catch (error) {
+          console.error("Owner app-lock reset push failed", error);
+        }
+      }
+    } catch (error) {
+      console.error("Owner app-lock reset push setup failed", error);
+    }
+  }
+
   async authFetch(request, url) {
     const p = url.pathname;
     const b = await request.json().catch(() => ({}));
@@ -1032,6 +1087,23 @@ export class SalaryStore extends DurableObject {
     }
 
     const admin = await this.getSession(String(b.token || ""));
+    if (p === "/auth/app-lock/request-reset") {
+      const found = await this.getSession(String(b.token || ""));
+      if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
+      found.user.appLockResetRequestedAt = Date.now();
+      await this.ctx.storage.put(`user:${found.user.id}`, found.user);
+      await this.audit("app-lock-reset-request", { userId: found.user.id });
+      if (found.user.role !== "super_admin") await this.sendOwnerAppLockResetPush(found.user, b.origin);
+      return json({ ok: true, requestedAt: found.user.appLockResetRequestedAt });
+    }
+    if (p === "/auth/app-lock/cancel-reset") {
+      const found = await this.getSession(String(b.token || ""));
+      if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
+      found.user.appLockResetRequestedAt = 0;
+      await this.ctx.storage.put(`user:${found.user.id}`, found.user);
+      await this.audit("app-lock-reset-cancel", { userId: found.user.id });
+      return json({ ok: true });
+    }
     if (p.startsWith("/auth/admin/") && admin?.user?.role !== "super_admin") return json({ ok: false, error: "FORBIDDEN" }, 403);
     if (p === "/auth/admin/push-status") {
       const vapid = await this.ensureVapid(b.subject);
@@ -1120,7 +1192,7 @@ export class SalaryStore extends DurableObject {
       const out = [];
       for (const u of users) {
         const reset = resets.get(`reset:${u.id}`);
-        out.push({ ...(await this.publicUser(u)), activeSessions: sessions.filter(s => s.userId === u.id && Number(s.expiresAt || 0) > Date.now()).length, resetRequested: !!reset?.requestedAt, resetCodeActive: !!reset?.codeHash && Number(reset.expiresAt || 0) > Date.now() });
+        out.push({ ...(await this.publicUser(u)), activeSessions: sessions.filter(s => s.userId === u.id && Number(s.expiresAt || 0) > Date.now()).length, resetRequested: !!reset?.requestedAt, resetCodeActive: !!reset?.codeHash && Number(reset.expiresAt || 0) > Date.now(), appLockResetRequested: Number(u.appLockResetRequestedAt || 0) > 0, appLockResetRequestedAt: Number(u.appLockResetRequestedAt || 0) || null });
       }
       out.sort((a, b2) => Number(b2.createdAt) - Number(a.createdAt));
       return json({ ok: true, users: out, count: out.length });
@@ -1136,6 +1208,16 @@ export class SalaryStore extends DurableObject {
       await this.ctx.storage.put(`reset:${id}`, { ...old, userId: id, codeHash: await sha256(code + "\0" + pepper), createdAt: Date.now(), expiresAt, createdBy: admin.user.id });
       await this.audit("admin-reset-code", { userId: id, adminId: admin.user.id });
       return json({ ok: true, code, expiresAt });
+    }
+    if (p === "/auth/admin/reset-app-lock") {
+      const id = String(b.userId || ""), user = await this.ctx.storage.get(`user:${id}`);
+      if (!user) return json({ ok: false, error: "NOT_FOUND" }, 404);
+      if (user.role === "super_admin") return json({ ok: false, error: "CANNOT_RESET_OWNER_LOCK" }, 400);
+      user.appLockResetVersion = Number(user.appLockResetVersion || 0) + 1;
+      user.appLockResetRequestedAt = 0;
+      await this.ctx.storage.put(`user:${id}`, user);
+      await this.audit("admin-app-lock-reset", { userId: id, adminId: admin.user.id, resetVersion: user.appLockResetVersion });
+      return json({ ok: true, appLockResetVersion: user.appLockResetVersion });
     }
     if (p === "/auth/admin/status") {
       const id = String(b.userId || ""), user = await this.ctx.storage.get(`user:${id}`);

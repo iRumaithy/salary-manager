@@ -31,7 +31,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.9-deposits-shared-r4";
+      var v = "3.8.9-deposits-edit-r5";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -1138,8 +1138,11 @@
     .participant-editor-body { margin-top: 4px; }
 
     .deposit-form { grid-template-columns: 1.5fr 1fr .9fr .9fr auto; }
+    .deposit-form-actions { display:flex; align-items:end; gap:7px; }
+    .deposit-form-actions .primary-btn, .deposit-form-actions .soft-btn { white-space:nowrap; }
     .deposit-list { display:grid; gap:10px; }
     .deposit-positive { color:#14756c; }
+    .deposit-item-actions { display:flex; align-items:center; gap:6px; }
 
     .reimbursement-panel {
       margin-top: 16px;
@@ -2195,6 +2198,10 @@
         grid-template-columns: 1fr;
       }
       .deposit-form { grid-template-columns: 1fr; }
+      .deposit-form-actions { width:100%; }
+      .deposit-form-actions .primary-btn { flex:1; }
+      .deposit-list .deposit-item-actions { grid-column:3; grid-row:1 / 3; flex-direction:column; align-self:center; }
+      .deposit-list .item-amount { grid-column:2; }
       .participant-pay-chip { width:72px; }
 
       .reimbursement-item {
@@ -2965,12 +2972,6 @@
             <strong class="summary-value" id="depositsSummary"><span class="money-with-symbol"><span class="aed-symbol" aria-hidden="true"></span><span>0.00</span></span></strong>
             <span class="summary-note" id="depositCountNote">لا توجد إيداعات مسجلة</span>
           </article>
-          <article class="summary-card" style="--accent:#3b93b8;--accent-soft:#e8f6fb">
-            <div class="summary-icon" aria-hidden="true">ر</div>
-            <span class="summary-label">بانتظار الاسترداد</span>
-            <strong class="summary-value" id="refundsPendingSummary"><span class="money-with-symbol"><span class="aed-symbol" aria-hidden="true"></span><span>0.00</span></span></strong>
-            <span class="summary-note" id="refundsPendingNote">لا توجد مبالغ معلقة</span>
-          </article>
           <article class="summary-card" style="--accent:#56726c;--accent-soft:#e6ecea">
             <div class="summary-icon" aria-hidden="true">ب</div>
             <span class="summary-label">الرصيد الحالي</span>
@@ -3133,16 +3134,6 @@
             </label>
           </form>
         </article>
-        <article class="panel panel-pad reimbursement-panel">
-          <div class="panel-head">
-            <div>
-              <h2 class="panel-title">مبالغ بانتظار الاسترداد</h2>
-              <p class="panel-subtitle">المصروفات المشتركة التي ما زال لك مبلغ مستحق منها، حتى لو كانت من شهر سابق.</p>
-            </div>
-            <strong class="reimbursement-head-total" id="pendingReimbursementsTotal"><span class="money-with-symbol"><span class="aed-symbol" aria-hidden="true"></span><span>0.00</span></span></strong>
-          </div>
-          <div class="reimbursement-list" id="pendingReimbursementList"></div>
-        </article>
         <article class="panel panel-pad expense-table">
           <div class="panel-head">
             <div>
@@ -3163,11 +3154,15 @@
         </div>
         <article class="panel form-panel">
           <form class="quick-form deposit-form" id="depositForm">
+            <input id="depositId" name="id" type="hidden">
             <div class="field"><label for="depositTitle">وصف الإيداع</label><input id="depositTitle" name="title" type="text" maxlength="80" placeholder="مثال: تحويل وارد" required></div>
             <div class="field"><label for="depositSource">المصدر</label><select id="depositSource" name="source"><option value="تحويل وارد">تحويل وارد</option><option value="نقدي">نقدي</option><option value="مكافأة">مكافأة</option><option value="استرجاع شراء">استرجاع شراء</option><option value="أخرى">أخرى</option></select></div>
             <div class="field"><label for="depositAmount">المبلغ (<span class="aed-symbol" aria-hidden="true"></span><span class="sr-only">درهم إماراتي</span>)</label><input id="depositAmount" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required></div>
             <div class="field"><label for="depositDate">التاريخ</label><input id="depositDate" name="date" type="date" required></div>
-            <button class="primary-btn" type="submit">إضافة الإيداع</button>
+            <div class="deposit-form-actions">
+              <button class="primary-btn" id="depositSubmitButton" type="submit">إضافة الإيداع</button>
+              <button class="soft-btn" id="depositCancelEditButton" type="button" hidden>إلغاء التعديل</button>
+            </div>
           </form>
         </article>
         <article class="panel panel-pad expense-table">
@@ -3798,11 +3793,11 @@
             <time datetime="2026-08-22">22 أغسطس 2026</time>
           </div>
           <ul>
-            <li>إضافة قسم الإيداعات للمبالغ الواردة غير الراتب.</li>
-            <li>تقسيم المصروف المشترك تلقائيًا حسب عدد الأشخاص.</li>
-            <li>متابعة كل مشارك باسمه؛ تُخفى الأسماء وعلامات الدفع افتراضيًا وتظهر فقط عند الضغط على «تعديل المشاركين».</li>
-            <li>قفل التطبيق برمز أو Face ID ومنع التكبير العرضي على الهاتف.</li>
-            <li>إصلاح رفض التحديث ليعود المالك فعليًا إلى الإصدار المنشور للمستخدمين.</li>
+            <li>إضافة الإيداعات مع إمكانية تعديلها بعد التسجيل.</li>
+            <li>تقسيم المصروف المشترك تلقائيًا ومتابعة كل مشارك باسمه.</li>
+            <li>عرض حالة الاسترداد داخل عملية الشراء نفسها دون قسم منفصل.</li>
+            <li>قفل التطبيق برمز أو Face ID ومنع التكبير العرضي.</li>
+            <li>تحسين رفض التحديث والعودة للإصدار المنشور.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -4108,6 +4103,8 @@
         "وصف الإيداع": "Deposit description",
         "المصدر": "Source",
         "إضافة الإيداع": "Add deposit",
+        "حفظ التعديل": "Save changes",
+        "إلغاء التعديل": "Cancel editing",
         "سجل الإيداعات": "Deposit history",
         "عدد الأشخاص شاملًا أنت": "Number of people including you",
         "حصتي تلقائيًا": "My share automatically",
@@ -4342,7 +4339,7 @@
 
 
       var APP_VERSION = "3.8.9";
-      var APP_RELEASE_ID = "3.8.9-deposits-shared-r4";
+      var APP_RELEASE_ID = "3.8.9-deposits-edit-r5";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -7046,7 +7043,8 @@
             '<div class="expense-category">إ</div>' +
             '<div><p class="item-title">' + escapeHTML(item.title || 'إيداع') + '</p><p class="item-meta">' + escapeHTML(item.source || 'أخرى') + ' · ' + escapeHTML(formatDate(item.date)) + '</p></div>' +
             '<strong class="item-amount deposit-positive">+' + moneyHTML(item.amount) + '</strong>' +
-            '<button class="expense-delete" type="button" title="حذف الإيداع" aria-label="حذف ' + escapeHTML(item.title || 'الإيداع') + '" data-delete-deposit="' + escapeHTML(item.id) + '">×</button>' +
+            '<div class="deposit-item-actions"><button class="mini-btn" type="button" data-edit-deposit="' + escapeHTML(item.id) + '">تعديل</button>' +
+            '<button class="expense-delete" type="button" title="حذف الإيداع" aria-label="حذف ' + escapeHTML(item.title || 'الإيداع') + '" data-delete-deposit="' + escapeHTML(item.id) + '">×</button></div>' +
           '</div>';
         }).join('');
       }
@@ -7587,24 +7585,87 @@
         showToast(item.sharedExpense ? "تم تسجيل المصروف المشترك · سيبقى مبلغ الاسترداد ظاهرًا حتى تستلمه" : "تم تسجيل المصروف وتحديث الرصيد");
       }
 
+      function resetDepositForm() {
+        var form = $("#depositForm");
+        if (!form) return;
+        form.reset();
+        $("#depositId").value = "";
+        $("#depositDate").value = toDateInput(new Date());
+        $("#depositSubmitButton").textContent = "إضافة الإيداع";
+        $("#depositCancelEditButton").hidden = true;
+      }
+
+      function editDeposit(id) {
+        var item = (Array.isArray(state.deposits) ? state.deposits : []).find(function (current) { return current.id === id; });
+        if (!item) return;
+        if (calendarMonthForDate(item.date) !== defaultMonth) { showToast("الإيداعات المؤرشفة لا تُعدّل من الشاشة الحالية.", true); return; }
+        $("#depositId").value = item.id;
+        $("#depositTitle").value = item.title || "";
+        $("#depositSource").value = item.source || "أخرى";
+        $("#depositAmount").value = roundMoney(item.amount).toFixed(2);
+        $("#depositDate").value = item.date || toDateInput(new Date());
+        $("#depositSubmitButton").textContent = "حفظ التعديل";
+        $("#depositCancelEditButton").hidden = false;
+        $("#depositForm").scrollIntoView({ behavior:"smooth", block:"center" });
+        setTimeout(function () { $("#depositTitle").focus(); }, 180);
+      }
+
+      function updateDepositTransaction(item) {
+        var tx = (Array.isArray(state.transactions) ? state.transactions : []).find(function (current) {
+          return current && current.type === "deposit" && (String(current.depositId || "") === String(item.id) || String(current.refId || "") === String(item.id));
+        });
+        if (!tx) {
+          addTransaction("deposit", item.amount, "إيداع — " + item.title, item.date, item.id, { depositId:item.id, source:item.source });
+          return;
+        }
+        tx.amount = safeNumber(item.amount);
+        tx.title = "إيداع — " + item.title;
+        tx.date = String(item.date);
+        tx.month = calendarMonthForDate(item.date);
+        tx.refId = String(item.id);
+        tx.depositId = item.id;
+        tx.source = item.source;
+        tx.updatedAt = new Date().toISOString();
+      }
+
       function submitDeposit(event) {
         event.preventDefault();
         ensureWalletCalendarCurrent(false);
         var data = new FormData(event.currentTarget);
+        var editId = String(data.get("id") || "");
         var amount = roundMoney(data.get("amount"));
         var date = String(data.get("date") || "");
         var title = String(data.get("title") || "").trim();
         var source = String(data.get("source") || "أخرى");
         if (!title || amount <= 0 || !date) { showToast("أكمل وصف الإيداع والمبلغ والتاريخ", true); return; }
-        if (calendarMonthForDate(date) !== defaultMonth) { showToast("تسجيل الإيداعات متاح للشهر الحالي فقط. الشهور السابقة محفوظة في كشف الحساب.", true); return; }
-        var item = { id:makeId("deposit"), title:title, source:source, amount:amount, date:date, createdAt:new Date().toISOString() };
+        if (calendarMonthForDate(date) !== defaultMonth) { showToast("تسجيل وتعديل الإيداعات متاح للشهر الحالي فقط. الشهور السابقة محفوظة في كشف الحساب.", true); return; }
         if (!Array.isArray(state.deposits)) state.deposits = [];
+
+        if (editId) {
+          var item = state.deposits.find(function (current) { return current.id === editId; });
+          if (!item) { showToast("تعذر العثور على الإيداع", true); resetDepositForm(); return; }
+          if (calendarMonthForDate(item.date) !== defaultMonth) { showToast("الإيداعات المؤرشفة لا تُعدّل من الشاشة الحالية.", true); return; }
+          var oldAmount = safeNumber(item.amount);
+          item.title = title;
+          item.source = source;
+          item.amount = amount;
+          item.date = date;
+          item.updatedAt = new Date().toISOString();
+          state.walletBalance += roundMoney(amount - oldAmount);
+          state.walletStarted = true;
+          updateDepositTransaction(item);
+          resetDepositForm();
+          render();
+          showToast("تم تعديل الإيداع وتحديث الرصيد الحالي");
+          return;
+        }
+
+        var item = { id:makeId("deposit"), title:title, source:source, amount:amount, date:date, createdAt:new Date().toISOString() };
         state.deposits.push(item);
         state.walletBalance += amount;
         state.walletStarted = true;
         addTransaction("deposit", amount, "إيداع — " + title, date, item.id, { depositId:item.id, source:source });
-        event.currentTarget.reset();
-        $("#depositDate").value = toDateInput(new Date());
+        resetDepositForm();
         render();
         showToast("تمت إضافة الإيداع إلى الرصيد الحالي");
       }
@@ -7615,6 +7676,7 @@
         if (calendarMonthForDate(item.date) !== defaultMonth) { showToast("الإيداعات المؤرشفة لا تُعدّل من الشاشة الحالية.", true); return; }
         if (!localizedConfirm('حذف الإيداع "' + item.title + '"؟ سيتم خصم قيمته من الرصيد الحالي.')) return;
         state.deposits = state.deposits.filter(function (current) { return current.id !== id; });
+        if ($("#depositId") && $("#depositId").value === id) resetDepositForm();
         state.walletBalance -= safeNumber(item.amount);
         addTransaction("deposit_reversal", -safeNumber(item.amount), "إلغاء إيداع — " + item.title, toDateInput(new Date()), item.id, { depositId:item.id });
         render();
@@ -8106,7 +8168,8 @@
           if (refund) openExpenseReimbursementDialog(refund.dataset.recordReimbursement);
           if (button) deleteExpense(button.dataset.deleteExpense);
         });
-        $("#pendingReimbursementList").addEventListener("click", function (event) {
+        var pendingReimbursementList = $("#pendingReimbursementList");
+        if (pendingReimbursementList) pendingReimbursementList.addEventListener("click", function (event) {
           var refund = event.target.closest("[data-record-reimbursement]");
           var editor = event.target.closest("[data-toggle-participant-editor]");
           var participant = event.target.closest("[data-toggle-participant-paid]");
@@ -8115,9 +8178,12 @@
           if (refund) openExpenseReimbursementDialog(refund.dataset.recordReimbursement);
         });
         $("#depositList").addEventListener("click", function (event) {
+          var edit = event.target.closest("[data-edit-deposit]");
           var button = event.target.closest("[data-delete-deposit]");
+          if (edit) { editDeposit(edit.dataset.editDeposit); return; }
           if (button) deleteDeposit(button.dataset.deleteDeposit);
         });
+        $("#depositCancelEditButton").addEventListener("click", function () { resetDepositForm(); });
 
         $("#mobileFab").addEventListener("click", function () {
           if (activeView === "expensesView") {

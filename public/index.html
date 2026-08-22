@@ -31,7 +31,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.9-time-order-r6";
+      var v = "3.8.9-header-time-r7";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -128,7 +128,14 @@
       align-items: center;
       gap: 11px;
       margin-inline-end: auto;
-      min-width: max-content;
+      min-width: 0;
+      flex: 0 1 auto;
+    }
+
+    .brand-copy {
+      min-width: 0;
+      display: grid;
+      align-content: center;
     }
 
     .brand-mark {
@@ -204,6 +211,22 @@
     .today-date-text {
       font-weight: 700;
       letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .today-clock-text {
+      display: inline-flex;
+      width: fit-content;
+      margin-top: 2px;
+      padding: 1px 6px 2px;
+      border-radius: 999px;
+      color: var(--forest);
+      background: rgba(20, 117, 108, .08);
+      font-size: 10px;
+      font-weight: 900;
+      direction: ltr;
+      line-height: 1.35;
+      letter-spacing: .02em;
       white-space: nowrap;
     }
 
@@ -294,6 +317,8 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      flex: 0 0 auto;
+      white-space: nowrap;
     }
 
     .ghost-btn,
@@ -1953,7 +1978,8 @@
       }
 
       .brand {
-        flex: 1;
+        flex: 1 1 0;
+        min-width: 0;
       }
 
       .month-control {
@@ -2021,6 +2047,21 @@
       .today-date-text {
         font-size: 9px;
         margin-top: 2px;
+      }
+
+      .today-clock-text {
+        margin-top: 2px;
+        padding: 0 5px 1px;
+        font-size: 9px;
+      }
+
+      .brand-title {
+        font-size: 14px;
+      }
+
+      .brand-mark {
+        width: 42px;
+        height: 42px;
       }
 
       #printButton {
@@ -2836,9 +2877,10 @@
       <div class="topbar-inner">
         <div class="brand" aria-label="مدير الراتب الشهري">
           <div class="brand-mark" aria-hidden="true"><span class="aed-symbol"></span></div>
-          <div>
+          <div class="brand-copy">
             <span class="brand-title">مدير الراتب</span>
-            <span class="brand-subtitle today-date-text" id="todayDateText">22 أغسطس 2026 · 20:59:31</span>
+            <span class="brand-subtitle today-date-text" id="todayDateText">22 أغسطس 2026</span>
+            <span class="today-clock-text" id="todayClockText">20:59:31</span>
           </div>
         </div>
 
@@ -4311,10 +4353,12 @@
       }
 
       function updateHeaderDateTime() {
-        var el = document.getElementById("todayDateText");
-        if (!el) return;
+        var dateEl = document.getElementById("todayDateText");
+        var clockEl = document.getElementById("todayClockText");
+        if (!dateEl && !clockEl) return;
         var now = new Date();
-        el.textContent = (currentLanguage === "en" ? "Today · " : "اليوم · ") + formatDisplayDateObject(now, true) + " · " + formatClockWithSeconds(now);
+        if (dateEl) dateEl.textContent = (currentLanguage === "en" ? "Today · " : "اليوم · ") + formatDisplayDateObject(now, true);
+        if (clockEl) clockEl.textContent = formatClockWithSeconds(now);
       }
 
       function formatRecordedTime(item) {
@@ -4371,7 +4415,7 @@
 
 
       var APP_VERSION = "3.8.9";
-      var APP_RELEASE_ID = "3.8.9-time-order-r6";
+      var APP_RELEASE_ID = "3.8.9-header-time-r7";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";

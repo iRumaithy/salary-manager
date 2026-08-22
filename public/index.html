@@ -31,7 +31,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.8-security-r1";
+      var v = "3.8.9-shared-expenses-r2";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -979,6 +979,195 @@
       accent-color: var(--teal);
     }
 
+    .shared-expense-panel {
+      grid-column: 1 / -1;
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #d7e6e2;
+      border-radius: 15px;
+      background: #f3faf8;
+    }
+
+    .shared-expense-toggle {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      color: #365953;
+      cursor: pointer;
+      font-size: 10px;
+      line-height: 1.7;
+    }
+
+    .shared-expense-toggle input {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 auto;
+      margin: 1px 0 0;
+      accent-color: var(--teal);
+    }
+
+    .shared-expense-fields {
+      display: grid;
+      gap: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #dcebe7;
+    }
+
+    .shared-expense-fields[hidden] { display: none !important; }
+
+    .shared-expense-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .shared-expense-summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      color: #315a52;
+      background: #e5f4f0;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .shared-expense-summary strong { font-size: 12px; }
+
+    .reimbursement-panel {
+      margin-top: 16px;
+    }
+
+    .reimbursement-head-total {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 11px;
+      color: #245b75;
+      background: #e8f6fb;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .reimbursement-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .reimbursement-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 13px 14px;
+      border: 1px solid #dce8e5;
+      border-radius: 15px;
+      background: #fffefa;
+    }
+
+    .reimbursement-item h3 {
+      margin: 0;
+      font-size: 12px;
+    }
+
+    .reimbursement-item p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.7;
+    }
+
+    .reimbursement-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 7px;
+    }
+
+    .reimbursement-stat {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px 7px;
+      border-radius: 9px;
+      color: #49645f;
+      background: #f1f4f2;
+      font-size: 8px;
+      font-weight: 800;
+    }
+
+    .reimbursement-stat.pending {
+      color: #245b75;
+      background: #e8f6fb;
+    }
+
+    .expense-shared-tag {
+      display: inline-flex;
+      margin-top: 5px;
+      padding: 3px 7px;
+      border-radius: 99px;
+      color: #245b75;
+      background: #e8f6fb;
+      font-size: 8px;
+      font-weight: 900;
+    }
+
+    .expense-shared-meta {
+      margin-top: 5px;
+      color: #54706a;
+      font-size: 8px;
+      line-height: 1.7;
+    }
+
+    .expense-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .refund-btn {
+      min-height: 31px;
+      padding: 6px 9px;
+      border: 1px solid #bfe0eb;
+      border-radius: 10px;
+      color: #245b75;
+      background: #e8f6fb;
+      cursor: pointer;
+      font-size: 8px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .refund-btn:hover {
+      color: white;
+      background: #3b93b8;
+    }
+
+    .reimbursement-preview {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .reimbursement-preview > div {
+      padding: 10px;
+      border-radius: 12px;
+      background: #f4f2ec;
+    }
+
+    .reimbursement-preview small {
+      display: block;
+      color: var(--muted);
+      font-size: 8px;
+      margin-bottom: 4px;
+    }
+
+    .reimbursement-preview strong { font-size: 11px; }
+
     .tracked-only-tag {
       display: inline-flex;
       margin-top: 4px;
@@ -1895,6 +2084,26 @@
         grid-column: 2;
       }
 
+      .shared-expense-grid,
+      .reimbursement-preview {
+        grid-template-columns: 1fr;
+      }
+
+      .reimbursement-item {
+        grid-template-columns: 1fr;
+      }
+
+      .reimbursement-item .refund-btn {
+        width: 100%;
+      }
+
+      .expense-actions {
+        grid-column: 3;
+        grid-row: 1 / 3;
+        flex-direction: column;
+        align-items: stretch;
+      }
+
       .mobile-fab {
         display: grid;
       }
@@ -2252,7 +2461,7 @@
     .release-chip.published { background:var(--teal-soft); color:var(--teal); }
     @media (max-width:680px) { .release-control-box { grid-template-columns:1fr; } .release-control-box button { width:100%; } .release-control-actions { min-width:0; } }
 
-    /* 3.8.8: prevent accidental iPhone zoom while keeping normal vertical scrolling. */
+    /* 3.8.9: prevent accidental iPhone zoom while keeping normal vertical scrolling. */
     html, body { touch-action: pan-x pan-y; }
     @media (max-width: 900px) {
       input, select, textarea { font-size: 16px !important; }
@@ -2641,6 +2850,12 @@
             <strong class="summary-value" id="expensesSummary"><span class="money-with-symbol"><span class="aed-symbol" aria-hidden="true"></span><span>0.00</span></span></strong>
             <span class="summary-note" id="expenseCountNote">لا توجد مصروفات مسجلة</span>
           </article>
+          <article class="summary-card" style="--accent:#3b93b8;--accent-soft:#e8f6fb">
+            <div class="summary-icon" aria-hidden="true">ر</div>
+            <span class="summary-label">بانتظار الاسترداد</span>
+            <strong class="summary-value" id="refundsPendingSummary"><span class="money-with-symbol"><span class="aed-symbol" aria-hidden="true"></span><span>0.00</span></span></strong>
+            <span class="summary-note" id="refundsPendingNote">لا توجد مبالغ معلقة</span>
+          </article>
           <article class="summary-card" style="--accent:#56726c;--accent-soft:#e6ecea">
             <div class="summary-icon" aria-hidden="true">ب</div>
             <span class="summary-label">الرصيد الحالي</span>
@@ -2774,11 +2989,50 @@
               <input id="expenseDate" name="date" type="date" required>
             </div>
             <button class="primary-btn" type="submit">حفظ المصروف</button>
+            <div class="shared-expense-panel">
+              <label class="shared-expense-toggle" for="expenseShared">
+                <input id="expenseShared" name="sharedExpense" type="checkbox">
+                <span><strong>هذا المصروف مشترك وسيُعاد لي جزء منه</strong><br>يُخصم المبلغ الكامل الآن، ثم يضاف أي مبلغ مسترد إلى الرصيد الحالي عند استلامه فعليًا.</span>
+              </label>
+              <div class="shared-expense-fields" id="sharedExpenseFields" hidden>
+                <div class="shared-expense-grid">
+                  <div class="field">
+                    <label for="expenseSplitMode">طريقة حساب حصتي</label>
+                    <select id="expenseSplitMode" name="splitMode">
+                      <option value="share">أكتب حصتي مباشرة</option>
+                      <option value="equal">قسمة بالتساوي</option>
+                    </select>
+                  </div>
+                  <div class="field" id="expensePersonalShareField">
+                    <label for="expensePersonalShare">حصتي الشخصية من المبلغ</label>
+                    <input id="expensePersonalShare" name="personalShare" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00">
+                  </div>
+                  <div class="field" id="expensePeopleCountField" hidden>
+                    <label for="expensePeopleCount">عدد الأشخاص شاملًا أنت</label>
+                    <input id="expensePeopleCount" name="peopleCount" type="number" min="2" max="50" step="1" inputmode="numeric" value="2">
+                  </div>
+                </div>
+                <div class="shared-expense-summary">
+                  <span>المتوقع استرداده من الآخرين</span>
+                  <strong id="expenseExpectedRefund"><span class="money-with-symbol"><span class="aed-symbol" aria-hidden="true"></span><span>0.00</span></span></strong>
+                </div>
+              </div>
+            </div>
             <label class="budget-checkbox" for="expenseFromReserved">
               <input id="expenseFromReserved" name="excludeFromBudget" type="checkbox">
               <span><strong>دُفع من محفظة أو مخصص سبق حجزه</strong><br>فعّل هذا الخيار عند تسجيل مشتريات من محفظة أدنوك مثلًا؛ سيظهر المصروف في السجل للمتابعة، لكنه لن يُخصم من الراتب مرة ثانية.</span>
             </label>
           </form>
+        </article>
+        <article class="panel panel-pad reimbursement-panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">مبالغ بانتظار الاسترداد</h2>
+              <p class="panel-subtitle">المصروفات المشتركة التي ما زال لك مبلغ مستحق منها، حتى لو كانت من شهر سابق.</p>
+            </div>
+            <strong class="reimbursement-head-total" id="pendingReimbursementsTotal"><span class="money-with-symbol"><span class="aed-symbol" aria-hidden="true"></span><span>0.00</span></span></strong>
+          </div>
+          <div class="reimbursement-list" id="pendingReimbursementList"></div>
         </article>
         <article class="panel panel-pad expense-table">
           <div class="panel-head">
@@ -2876,7 +3130,7 @@
             <article class="guide-step">
               <div class="guide-step-number">5</div>
               <h3>سجّل مصروفاتك</h3>
-              <p>أدخل المصروفات اليومية أو الشهرية أولًا بأول حتى يتم تحديث الرصيد الحالي بشكل فوري ودقيق. وإذا بدأت استخدام مدير الراتب من منتصف الشهر، استخدم «تحرير الرصيد الحالي» لإدخال المبلغ الفعلي المتبقي لديك دون الحاجة لتذكر كل المصروفات السابقة.</p>
+              <p>أدخل المصروفات اليومية أو الشهرية أولًا بأول حتى يتم تحديث الرصيد الحالي بشكل فوري ودقيق. للمصروف المشترك فعّل «هذا المصروف مشترك» وسجّل حصتك، ثم سجّل كل مبلغ تسترده من الآخرين عند وصوله فعليًا. وإذا بدأت من منتصف الشهر، استخدم «تحرير الرصيد الحالي» لإدخال المبلغ الفعلي المتبقي لديك.</p>
             </article>
             <article class="guide-step">
               <div class="guide-step-number">6</div>
@@ -2932,6 +3186,7 @@
             </div>
             <div class="release-control-actions">
               <button class="primary-btn" id="publishUpdateButton" type="button" disabled>نشر التحديث للمستخدمين</button>
+              <button class="danger-btn" id="rejectUpdateButton" type="button" disabled>رفض التحديث والعودة للإصدار الحالي</button>
               <button class="soft-btn" id="testOwnerUpdatePushButton" type="button">اختبار إشعار التحديث الخارجي</button>
               <p class="release-control-test-note" id="ownerUpdatePushTestStatus">يمكنك إرسال إشعار تجريبي للتأكد من أن جهاز المالك مسجل بشكل صحيح.</p>
             </div>
@@ -2955,7 +3210,7 @@
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.8.2" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.8.9" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
         <span class="version-badge">الإصدار <b id="appVersion">3.8.2</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
@@ -3057,6 +3312,43 @@
       <div class="modal-foot">
         <button class="ghost-btn" type="button" data-close-dialog="savingsTransferDialog">إلغاء</button>
         <button class="primary-btn" type="submit">اعتماد</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="expenseReimbursementDialog">
+    <form id="expenseReimbursementForm">
+      <div class="modal-head">
+        <h2>تسجيل استرداد مصروف مشترك</h2>
+        <button class="close-btn" type="button" data-close-dialog="expenseReimbursementDialog" aria-label="إغلاق">×</button>
+      </div>
+      <div class="modal-body">
+        <input id="reimbursementExpenseId" name="expenseId" type="hidden">
+        <p class="auth-copy" id="reimbursementExpenseTitle">—</p>
+        <div class="reimbursement-preview">
+          <div><small>المطلوب استرداده</small><strong id="reimbursementExpected">0.00</strong></div>
+          <div><small>تم استرداده</small><strong id="reimbursementReceived">0.00</strong></div>
+          <div><small>المتبقي</small><strong id="reimbursementPending">0.00</strong></div>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="reimbursementAmount">المبلغ المستلم (بالدرهم الإماراتي)</label>
+            <input id="reimbursementAmount" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required>
+          </div>
+          <div class="field">
+            <label for="reimbursementDate">تاريخ الاستلام</label>
+            <input id="reimbursementDate" name="date" type="date" required>
+          </div>
+          <div class="field span-2">
+            <label for="reimbursementNote">ملاحظة (اختياري)</label>
+            <input id="reimbursementNote" name="note" type="text" maxlength="100" placeholder="مثال: تحويل حصة أحمد">
+          </div>
+        </div>
+        <p class="helper">يُضاف المبلغ إلى الرصيد الحالي في شهر تاريخ الاستلام. إذا كان المصروف من شهر سابق فلن يتغير كشف ذلك الشهر.</p>
+      </div>
+      <div class="modal-foot">
+        <button class="ghost-btn" type="button" data-close-dialog="expenseReimbursementDialog">إلغاء</button>
+        <button class="primary-btn" type="submit">تسجيل الاسترداد</button>
       </div>
     </form>
   </dialog>
@@ -3371,15 +3663,15 @@
       <div class="changelog-list">
         <section class="changelog-entry current">
           <div class="changelog-version">
-            <strong>الإصدار 3.8.8</strong>
-            <time datetime="2026-08-20">20 أغسطس 2026</time>
+            <strong>الإصدار 3.8.9</strong>
+            <time datetime="2026-08-22">22 أغسطس 2026</time>
           </div>
           <ul>
-            <li>إضافة قفل اختياري لمدير الراتب برمز من 4 إلى 8 أرقام مع إمكانية استخدام Face ID / بصمة الجهاز عند دعم المتصفح.</li>
-            <li>إضافة استرجاع آمن لقفل المستخدم عبر طلب للمالك؛ المالك لا يرى الرمز ويمكنه فقط إلغاء القفل ليضع المستخدم رمزًا جديدًا.</li>
-            <li>إضافة استرجاع خاص بحساب المالك باستخدام كلمة مرور الحساب عند نسيان رمز القفل.</li>
-            <li>قفل التكبير العرضي على الهاتف ومنع Zoom الناتج عن النقر المزدوج أو التكبير بالإصبع أو تركيز حقول الإدخال.</li>
-            <li>الإصدار 3.8.8 يبقى للمالك فقط للمراجعة حتى يتم اعتماده ونشره للمستخدمين.</li>
+            <li>قفل مدير الراتب برمز خاص مع دعم Face ID على الأجهزة المتوافقة.</li>
+            <li>منع التكبير العرضي في الهاتف أثناء استخدام التطبيق.</li>
+            <li>إضافة المصروفات المشتركة: حدّد حصتك وتابع المبلغ الذي سيعيده لك الآخرون.</li>
+            <li>عند استلام أي مبلغ مسترد، سجّله ليُضاف إلى الرصيد الحالي ويُحسب صافي مصروفك بشكل صحيح.</li>
+            <li>يمكن للمالك رفض التحديث التجريبي والعودة مباشرة إلى الإصدار المنشور للمستخدمين.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -3388,11 +3680,10 @@
             <time datetime="2026-08-19">19 أغسطس 2026</time>
           </div>
           <ul>
-            <li>الشهر المعروض يلتزم بالشهر الميلادي الفعلي ولا ينتقل للشهر التالي لمجرد حلول موعد نزول الراتب.</li>
-            <li>موعد نزول الراتب يجهّز الشهر التالي ماليًا في الخلفية فقط، مع إضافة الراتب والرصيد المرحّل وخصم السلف والأقساط النشطة حسب النظام المعتمد.</li>
-            <li>المصروفات تُسجل في شهر تاريخ العملية الفعلي؛ مصروف بتاريخ 19 أغسطس يبقى في سجل أغسطس حتى لو كان الراتب قد نزل في اليوم نفسه.</li>
-            <li>رصيد الشهر الحالي يستمر في خصم جميع مصروفاته حتى نهاية آخر يوم من الشهر، ثم يُرحّل صافي المتبقي عند دخول اليوم الأول من الشهر التالي.</li>
-            <li>المدفوعات الثابتة لا تُخصم إلا بعد تأكيد المستخدم «تم الدفع هذا الشهر»، ويظل الإصدار 3.8.7 للمالك فقط إلى أن يعتمد نشره.</li>
+            <li>اعتماد الشهر الميلادي الفعلي في جميع المصروفات والحسابات.</li>
+            <li>تحسين نزول الراتب وترحيل الرصيد وخصم الأقساط تلقائيًا.</li>
+            <li>المدفوعات الثابتة لا تُخصم إلا بعد تأكيد الدفع.</li>
+            <li>إضافة المدخرات وكشف الحساب الشهري.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -3609,8 +3900,47 @@
       EN_TRANSLATIONS["جارٍ إرسال اختبار الإشعار…"] = "Sending test notification…";
       EN_TRANSLATIONS["يمكنك إرسال إشعار تجريبي للتأكد من أن جهاز المالك مسجل بشكل صحيح."] = "Send a test notification to verify that the owner device is registered correctly.";
       EN_TRANSLATIONS["جارٍ تجهيز رابط تسجيل الدخول الآمن…"] = "Preparing secure signed-in link…";
+      EN_TRANSLATIONS["بانتظار الاسترداد"] = "Pending reimbursement";
+      EN_TRANSLATIONS["لا توجد مبالغ معلقة"] = "No pending reimbursements";
+      EN_TRANSLATIONS["هذا المصروف مشترك وسيُعاد لي جزء منه"] = "This is a shared expense and part of it will be reimbursed";
+      EN_TRANSLATIONS["يُخصم المبلغ الكامل الآن، ثم يضاف أي مبلغ مسترد إلى الرصيد الحالي عند استلامه فعليًا."] = "The full amount is deducted now; reimbursements are added back to the current balance when actually received.";
+      EN_TRANSLATIONS["طريقة حساب حصتي"] = "How to calculate my share";
+      EN_TRANSLATIONS["أكتب حصتي مباشرة"] = "Enter my share directly";
+      EN_TRANSLATIONS["قسمة بالتساوي"] = "Split equally";
+      EN_TRANSLATIONS["حصتي الشخصية من المبلغ"] = "My share of the amount";
+      EN_TRANSLATIONS["عدد الأشخاص شاملًا أنت"] = "Number of people including you";
+      EN_TRANSLATIONS["المتوقع استرداده من الآخرين"] = "Expected reimbursement from others";
+      EN_TRANSLATIONS["مبالغ بانتظار الاسترداد"] = "Amounts pending reimbursement";
+      EN_TRANSLATIONS["المصروفات المشتركة التي ما زال لك مبلغ مستحق منها، حتى لو كانت من شهر سابق."] = "Shared expenses that still have money owed to you, including expenses from a previous month.";
+      EN_TRANSLATIONS["تسجيل استرداد مصروف مشترك"] = "Record shared-expense reimbursement";
+      EN_TRANSLATIONS["المطلوب استرداده"] = "Expected";
+      EN_TRANSLATIONS["تم استرداده"] = "Received";
+      EN_TRANSLATIONS["المتبقي"] = "Pending";
+      EN_TRANSLATIONS["المبلغ المستلم (بالدرهم الإماراتي)"] = "Amount received (AED)";
+      EN_TRANSLATIONS["تاريخ الاستلام"] = "Received date";
+      EN_TRANSLATIONS["مثال: تحويل حصة أحمد"] = "Example: Ahmed's share transfer";
+      EN_TRANSLATIONS["يُضاف المبلغ إلى الرصيد الحالي في شهر تاريخ الاستلام. إذا كان المصروف من شهر سابق فلن يتغير كشف ذلك الشهر."] = "The amount is added to the current balance in the month it is received. A prior month's archived statement is not changed.";
+      EN_TRANSLATIONS["تسجيل الاسترداد"] = "Record reimbursement";
+      EN_TRANSLATIONS["مصروف مشترك"] = "Shared expense";
+      EN_TRANSLATIONS["حصتي"] = "My share";
+      EN_TRANSLATIONS["تم استرداده بالكامل"] = "Fully reimbursed";
+      EN_TRANSLATIONS["استردادات مستلمة"] = "Reimbursements received";
+      EN_TRANSLATIONS["بانتظار الاسترداد عند الإغلاق"] = "Pending reimbursement at close";
+      EN_TRANSLATIONS["لا توجد مبالغ بانتظار الاسترداد"] = "No amounts pending reimbursement";
+      EN_TRANSLATIONS["عند تسجيل مصروف مشترك سيظهر المبلغ المستحق لك هنا حتى تستلمه بالكامل."] = "When you record a shared expense, the amount owed to you appears here until it is fully received.";
+      EN_TRANSLATIONS["هذا الشهر"] = "This month";
+      EN_TRANSLATIONS["المبلغ المستلم أكبر من المبلغ المتبقي للاسترداد"] = "The received amount is greater than the remaining reimbursement.";
+      EN_TRANSLATIONS["تسجيل الاسترداد متاح للشهر الحالي فقط حتى يبقى كشف الأشهر السابقة ثابتًا."] = "Reimbursements can only be recorded in the current month so previous statements remain unchanged.";
+      EN_TRANSLATIONS["تاريخ الاسترداد لا يمكن أن يسبق تاريخ المصروف"] = "The reimbursement date cannot be before the expense date.";
+      EN_TRANSLATIONS["تم استرداد هذا المصروف بالكامل"] = "This expense has been fully reimbursed.";
+      EN_TRANSLATIONS["حدد حصتك بحيث تكون أكبر من صفر وأقل من إجمالي المصروف"] = "Set your share above zero and below the total expense.";
+      EN_TRANSLATIONS["تم تسجيل المصروف المشترك · سيبقى مبلغ الاسترداد ظاهرًا حتى تستلمه"] = "Shared expense recorded · the pending reimbursement will remain visible until received.";
+      EN_TRANSLATIONS["تم استرداد المبلغ كاملًا وإضافته إلى الرصيد الحالي"] = "The full reimbursement was received and added to the current balance.";
       EN_TRANSLATIONS["تم نقل تسجيل الدخول بأمان إلى المتصفح. سيبقى الحساب مسجلًا عند إعادة إضافة التطبيق من المتصفح."] = "Your sign-in was securely transferred to the browser. The account will stay signed in when the app is added again from the browser.";
       EN_TRANSLATIONS["مراجعة ونشر التحديث"] = "Review and publish update";
+      EN_TRANSLATIONS["رفض التحديث والعودة للإصدار الحالي"] = "Reject update and return to current release";
+      EN_TRANSLATIONS["تم رفض التحديث ✓"] = "Update rejected ✓";
+
       EN_TRANSLATIONS["نشر التحديث للمستخدمين"] = "Publish update to users";
       EN_TRANSLATIONS["جارٍ التحقق من حالة الإصدار…"] = "Checking release status…";
       EN_TRANSLATIONS["تم نشر التحديث للمستخدمين"] = "Update published to users";
@@ -3721,6 +4051,8 @@
         if ((m = s.match(/^(\d+)\s+التزام نشط هذا الشهر$/))) return m[1] + " active commitment" + (m[1] === "1" ? "" : "s") + " this month";
         if ((m = s.match(/^(\d+)\s+دفعة\s*·\s*منها\s+(.+)\s+ادخار$/))) return m[1] + " payment" + (m[1] === "1" ? "" : "s") + " · savings " + m[2];
         if ((m = s.match(/^(\d+)\s+عملية\s*·\s*المحتسب\s+(.+)$/))) return m[1] + " transaction" + (m[1] === "1" ? "" : "s") + " · counted " + m[2];
+        if ((m = s.match(/^(\d+)\s+عملية\s*·\s*الصافي\s+(.+)$/))) return m[1] + " transaction" + (m[1] === "1" ? "" : "s") + " · net " + m[2];
+        if ((m = s.match(/^(\d+)\s+مصروف مشترك لم يُسترد بالكامل$/))) return m[1] + " shared expense" + (m[1] === "1" ? "" : "s") + " not fully reimbursed";
         if ((m = s.match(/^المصروفات المسجلة في\s+(.+)$/))) return "Expenses recorded in " + m[1];
         if ((m = s.match(/^تم تخصيص\s+(\d+)%\s+من راتبك$/))) return m[1] + "% of your salary allocated";
         if ((m = s.match(/^متبقٍ\s+(.+)\s+لإدارة بقية الشهر$/))) return m[1] + " remaining for the rest of the month";
@@ -3858,8 +4190,8 @@
       }
 
 
-      var APP_VERSION = "3.8.8";
-      var APP_RELEASE_ID = "3.8.8-security-r1";
+      var APP_VERSION = "3.8.9";
+      var APP_RELEASE_ID = "3.8.9-shared-expenses-r2";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -4834,11 +5166,13 @@
         if (!authState.authenticated || authState.user?.role !== "super_admin") return;
         var status = $("#releaseControlStatus");
         var button = $("#publishUpdateButton");
+        var rejectButton = $("#rejectUpdateButton");
         try {
           var data = await apiFetch("/api/admin/release-status?check=" + Date.now());
           var staged = String(data.stagedVersion || APP_VERSION);
           var published = String(data.publishedVersion || "—");
           var pending = String(data.stagedReleaseId || APP_RELEASE_ID) !== String(data.publishedReleaseId || "");
+          var rejected = Boolean(data.currentReleaseRejected);
           if ($("#stagedVersionChip")) { $("#stagedVersionChip").textContent = "قيد المراجعة: " + staged; $("#stagedVersionChip").classList.toggle("ready", pending); }
           if ($("#publishedVersionChip")) { $("#publishedVersionChip").textContent = "المتاح للمستخدمين: " + published; $("#publishedVersionChip").classList.toggle("published", !pending); }
           if ($("#releasePushCountChip")) $("#releasePushCountChip").textContent = "إشعارات المستخدمين: " + Number(data.userPushSubscriptions || 0) + " · المالك: " + Number(data.ownerPushSubscriptions || 0);
@@ -4848,16 +5182,20 @@
             var subs = Number(data.ownerNotification.subscriptionCount || 0);
             testStatus.textContent = sent > 0 ? "تم إرسال إشعار المراجعة تلقائيًا إلى " + sent + " جهاز للمالك عند الدخول ✓" : "لم يصل إشعار المراجعة الخارجي بعد. الأجهزة المسجلة للمالك: " + subs + ". سيعيد النظام المحاولة بعد ربط اشتراك الإشعارات.";
           }
-          if (status) status.textContent = pending
-            ? (staged === published
-                ? "تحديث جديد لنفس الإصدار " + staged + " وصل لك للمراجعة فقط. لن يصل للمستخدمين حتى تضغط «نشر التحديث للمستخدمين»."
-                : "الإصدار " + staged + " وصل لك للمراجعة فقط. المستخدمون ما زالوا على " + published + " ولن يصلهم إشعار التحديث حتى تضغط «نشر التحديث للمستخدمين».")
-            : "الإصدار " + published + " منشور للمستخدمين حاليًا ولا يوجد إصدار بانتظار المراجعة.";
-          if (button) { button.disabled = !pending; button.textContent = pending ? "نشر التحديث للمستخدمين" : "تم نشر الإصدار " + published + " ✓"; }
+          if (status) status.textContent = rejected
+            ? "تم رفض هذا التحديث. المالك والمستخدمون الآن على الإصدار المنشور " + published + "."
+            : (pending
+              ? (staged === published
+                  ? "تحديث جديد لنفس الإصدار " + staged + " وصل لك للمراجعة فقط. يمكنك نشره أو رفضه والعودة للإصدار المنشور."
+                  : "الإصدار " + staged + " وصل لك للمراجعة فقط. المستخدمون ما زالوا على " + published + ". يمكنك نشره أو رفضه.")
+              : "الإصدار " + published + " منشور للمستخدمين حاليًا ولا يوجد إصدار بانتظار المراجعة.");
+          if (button) { button.disabled = !pending || rejected; button.textContent = pending && !rejected ? "نشر التحديث للمستخدمين" : "تم نشر الإصدار " + published + " ✓"; }
+          if (rejectButton) { rejectButton.disabled = !pending || rejected; rejectButton.textContent = rejected ? "تم رفض التحديث ✓" : "رفض التحديث والعودة للإصدار الحالي"; }
           translateDom($("#releaseControlBox") || document.body);
         } catch (error) {
           if (status) status.textContent = "تعذر التحقق من حالة الإصدار الآن.";
           if (button) button.disabled = true;
+          if (rejectButton) rejectButton.disabled = true;
         }
       }
 
@@ -4894,6 +5232,21 @@
           await refreshReleaseStatus();
         } catch (error) {
           showToast("تعذر نشر التحديث الآن. حاول مرة أخرى.", true);
+          if (button) button.disabled = false;
+        }
+      }
+
+      async function rejectUpdateAndReturnToPublished() {
+        if (!authState.authenticated || authState.user?.role !== "super_admin") return;
+        var button = $("#rejectUpdateButton");
+        if (!localizedConfirm("هل تريد رفض هذا التحديث؟ لن يصل للمستخدمين، وسيعود حساب المالك فورًا إلى نفس الإصدار المنشور لديهم. يمكنك مراجعة أي تحديث جديد لاحقًا.")) return;
+        try {
+          if (button) { button.disabled = true; button.textContent = "جارٍ رفض التحديث…"; }
+          var data = await apiFetch("/api/admin/reject-update", { method: "POST", body: "{}" });
+          showToast("تم رفض التحديث. جارٍ العودة إلى الإصدار " + String(data.publishedVersion || "المنشور") + "…");
+          setTimeout(function () { location.replace("./?rejected=" + Date.now()); }, 850);
+        } catch (error) {
+          showToast("تعذر رفض التحديث الآن. حاول مرة أخرى.", true);
           if (button) button.disabled = false;
         }
       }
@@ -5438,7 +5791,7 @@
         state.salaryPayDay = Math.min(31, Math.max(0, Math.round(Number(saved.salaryPayDay) || 0)));
         state.commitments = Array.isArray(saved.commitments) ? saved.commitments : [];
         state.recurringPayments = Array.isArray(saved.recurringPayments) ? saved.recurringPayments : [];
-        state.expenses = Array.isArray(saved.expenses) ? saved.expenses.map(function (item) { return Object.assign({}, item); }) : [];
+        state.expenses = Array.isArray(saved.expenses) ? saved.expenses.map(function (item) { return normalizeExpenseRecord(item); }) : [];
 
         state.monthlyLedgerVersion = 2;
         state.managerStartMonth = defaultMonth;
@@ -5515,7 +5868,9 @@
         }
 
         state.expenses = state.expenses.map(function (item) {
-          return Object.assign({}, item, { accountMonth: calendarMonthForDate(item && item.date) });
+          var normalized = normalizeExpenseRecord(item);
+          normalized.accountMonth = calendarMonthForDate(normalized && normalized.date);
+          return normalized;
         });
         if (!state.monthOpeningBalances[defaultMonth] && state.currentCalendarMonth === defaultMonth && state.walletMonthOpeningBalance) {
           state.monthOpeningBalances[defaultMonth] = state.walletMonthOpeningBalance;
@@ -5609,6 +5964,68 @@
 
       function expenseMonth(item) {
         return calendarMonthForDate(item && item.date);
+      }
+
+      function roundMoney(value) {
+        return Math.round((safeNumber(value) + Number.EPSILON) * 100) / 100;
+      }
+
+      function normalizeExpenseRecord(item) {
+        var copy = Object.assign({}, item || {});
+        copy.amount = roundMoney(copy.amount);
+        copy.reimbursements = Array.isArray(copy.reimbursements) ? copy.reimbursements.map(function (entry) {
+          return Object.assign({}, entry, { amount: roundMoney(entry && entry.amount), date: String(entry && entry.date || "") });
+        }).filter(function (entry) { return entry.amount > 0; }) : [];
+        copy.sharedExpense = Boolean(copy.sharedExpense || safeNumber(copy.expectedReimbursement) > 0 || copy.reimbursements.length);
+        if (copy.sharedExpense) {
+          var expected = roundMoney(copy.expectedReimbursement);
+          var personalShare = roundMoney(copy.personalShare);
+          if (expected <= 0 && personalShare > 0 && copy.amount > personalShare) expected = roundMoney(copy.amount - personalShare);
+          if (personalShare <= 0 && expected > 0) personalShare = roundMoney(Math.max(0, copy.amount - expected));
+          expected = Math.max(0, Math.min(copy.amount, expected));
+          personalShare = Math.max(0, Math.min(copy.amount, personalShare || roundMoney(copy.amount - expected)));
+          copy.expectedReimbursement = expected;
+          copy.personalShare = personalShare;
+          copy.splitMode = copy.splitMode === "equal" ? "equal" : "share";
+          copy.peopleCount = Math.max(0, Math.round(Number(copy.peopleCount) || 0));
+        } else {
+          copy.expectedReimbursement = 0;
+          copy.personalShare = copy.amount;
+          copy.splitMode = "share";
+          copy.peopleCount = 0;
+        }
+        return copy;
+      }
+
+      function reimbursementReceived(item) {
+        return roundMoney((Array.isArray(item && item.reimbursements) ? item.reimbursements : []).reduce(function (sum, entry) {
+          return sum + safeNumber(entry && entry.amount);
+        }, 0));
+      }
+
+      function reimbursementPending(item) {
+        return roundMoney(Math.max(0, safeNumber(item && item.expectedReimbursement) - reimbursementReceived(item)));
+      }
+
+      function reimbursementsInMonth(item, monthKey) {
+        return roundMoney((Array.isArray(item && item.reimbursements) ? item.reimbursements : []).reduce(function (sum, entry) {
+          return sum + (calendarMonthForDate(entry && entry.date) === monthKey ? safeNumber(entry && entry.amount) : 0);
+        }, 0));
+      }
+
+      function netExpenseAmountForMonth(item, monthKey) {
+        if (!item || item.excludeFromBudget || expenseMonth(item) !== monthKey) return 0;
+        return roundMoney(Math.max(0, safeNumber(item.amount) - reimbursementsInMonth(item, monthKey)));
+      }
+
+      function pendingReimbursementsTotal() {
+        return roundMoney(state.expenses.reduce(function (sum, item) {
+          return sum + (item && item.sharedExpense ? reimbursementPending(item) : 0);
+        }, 0));
+      }
+
+      function pendingSharedExpenses() {
+        return state.expenses.filter(function (item) { return item && item.sharedExpense && reimbursementPending(item) > 0; });
       }
 
       function isCommitmentActive(item, monthKey) {
@@ -5714,7 +6131,11 @@
         if (!state.statements || typeof state.statements !== "object") state.statements = {};
         if (state.statements[monthKey]) return;
         var tx = transactionsForMonth(monthKey).map(function (item) { return Object.assign({}, item); });
-        var monthExpenses = getMonthExpenses(monthKey).map(function (item) { return Object.assign({}, item); });
+        var monthExpenses = getMonthExpenses(monthKey).map(function (item) {
+          var copy = Object.assign({}, item);
+          copy.reimbursements = Array.isArray(item.reimbursements) ? item.reimbursements.map(function (entry) { return Object.assign({}, entry); }) : [];
+          return copy;
+        });
         var opening = safeNumber((state.monthOpeningBalances || {})[monthKey]);
         var statement = {
           month: monthKey,
@@ -5725,7 +6146,10 @@
           commitmentsTotal: monthTransactionTotal(monthKey, "commitment", "out"),
           recurringTotal: monthTransactionTotal(monthKey, "recurring", "out"),
           savingsTransferTotal: monthTransactionTotal(monthKey, ["savings_transfer","savings_plan"], "out"),
-          expensesTotal: monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0),
+          expensesGrossTotal: monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0),
+          expensesTotal: monthExpenses.reduce(function (sum, item) { return sum + netExpenseAmountForMonth(item, monthKey); }, 0),
+          reimbursementsReceivedTotal: Math.max(0, monthTransactionTotal(monthKey, ["expense_reimbursement","expense_reimbursement_reversal"])),
+          pendingReimbursementsAtClose: pendingReimbursementsTotal(),
           closingBalance: safeNumber(state.walletBalance),
           savingsBalanceAtClose: safeNumber(state.savingsBalance),
           transactions: tx,
@@ -5868,7 +6292,11 @@
         var scheduledCommitmentsTotal = activeCommitments.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
         var scheduledRecurringTotal = activeRecurring.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
         var savingsMoved = monthTransactionTotal(monthKey, ["savings_transfer","savings_plan"], "out");
-        var expensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0);
+        var grossExpensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0);
+        var sameMonthExpenseReimbursements = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : reimbursementsInMonth(item, monthKey)); }, 0);
+        var expensesTotal = monthExpenses.reduce(function (sum, item) { return sum + netExpenseAmountForMonth(item, monthKey); }, 0);
+        var reimbursementsReceivedTotal = Math.max(0, monthTransactionTotal(monthKey, ["expense_reimbursement","expense_reimbursement_reversal"]));
+        var pendingReimbursements = pendingReimbursementsTotal();
         var excludedExpensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? safeNumber(item.amount) : 0); }, 0);
         var salaryDeposits = monthTransactionTotal(monthKey, ["salary","initial_salary"], "in");
         var balanceAdjustmentIn = monthTransactionTotal(monthKey, "balance_adjustment", "in");
@@ -5905,7 +6333,11 @@
           scheduledRecurringTotal:scheduledRecurringTotal,
           savingsTotal:safeNumber(state.savingsBalance),
           savingsMoved:savingsMoved,
+          grossExpensesTotal:grossExpensesTotal,
+          sameMonthExpenseReimbursements:sameMonthExpenseReimbursements,
           expensesTotal:expensesTotal,
+          reimbursementsReceivedTotal:reimbursementsReceivedTotal,
+          pendingReimbursements:pendingReimbursements,
           excludedExpensesTotal:excludedExpensesTotal,
           used:used,
           usedForPercent:usedForPercent,
@@ -5948,6 +6380,8 @@
         setMoney("#commitmentsSummary", metrics.scheduledCommitmentsTotal);
         setMoney("#recurringSummary", metrics.scheduledRecurringTotal);
         setMoney("#expensesSummary", metrics.expensesTotal);
+        setMoney("#refundsPendingSummary", metrics.pendingReimbursements);
+        setMoney("#pendingReimbursementsTotal", metrics.pendingReimbursements);
         setMoney("#savingsSummary", metrics.savingsTotal);
         setMoney("#savingsBalanceLarge", metrics.savingsTotal);
         setMoney("#dailyBudget", metrics.daily);
@@ -5983,7 +6417,8 @@
         }
         setText("#commitmentCountNote", metrics.activeCommitments.length ? metrics.activeCommitments.length + " التزام نشط · المخصوم " + formatMoney(metrics.commitmentsTotal) : "لا توجد التزامات نشطة");
         setText("#recurringCountNote", metrics.activeRecurring.length ? metrics.activeRecurring.length + " دفعة ثابتة · المخصوم بعد التأكيد " + formatMoney(metrics.recurringTotal) : "لا توجد دفعات ثابتة");
-        setText("#expenseCountNote", metrics.monthExpenses.length ? metrics.monthExpenses.length + " عملية · المحتسب " + formatMoney(metrics.expensesTotal) : "لا توجد مصروفات مسجلة");
+        setText("#expenseCountNote", metrics.monthExpenses.length ? metrics.monthExpenses.length + " عملية · الصافي " + formatMoney(metrics.expensesTotal) : "لا توجد مصروفات مسجلة");
+        setText("#refundsPendingNote", metrics.pendingReimbursements > 0 ? pendingSharedExpenses().length + " مصروف مشترك لم يُسترد بالكامل" : "لا توجد مبالغ معلقة");
         setText("#expenseListSubtitle", "المصروفات المسجلة في " + formatMonth(defaultMonth));
 
         var clampedUsed = Math.min(100, Math.max(0, metrics.usedPercent));
@@ -6028,6 +6463,7 @@
         renderCommitments();
         renderRecurring();
         renderExpenses(metrics.monthExpenses);
+        renderPendingReimbursements();
         renderSavings();
         renderStatements();
         saveState();
@@ -6272,6 +6708,8 @@
               '<div class="statement-metric"><small>الأقساط والسلف</small><strong>' + moneyHTML(st.commitmentsTotal) + '</strong></div>' +
               '<div class="statement-metric"><small>المدفوعات الثابتة</small><strong>' + moneyHTML(st.recurringTotal) + '</strong></div>' +
               '<div class="statement-metric"><small>المصروفات</small><strong>' + moneyHTML(st.expensesTotal) + '</strong></div>' +
+              '<div class="statement-metric"><small>استردادات مستلمة</small><strong>+' + moneyHTML(st.reimbursementsReceivedTotal || 0) + '</strong></div>' +
+              '<div class="statement-metric"><small>بانتظار الاسترداد عند الإغلاق</small><strong>' + moneyHTML(st.pendingReimbursementsAtClose || 0) + '</strong></div>' +
               '<div class="statement-metric"><small>المحوّل للمدخرات</small><strong>' + moneyHTML(st.savingsTransferTotal) + '</strong></div>' +
               '<div class="statement-metric"><small>إجمالي المدخرات عند الإغلاق</small><strong>' + moneyHTML(st.savingsBalanceAtClose) + '</strong></div>' +
             '</div><div class="statement-transactions">' + txHtml + '</div></div></details>';
@@ -6289,13 +6727,51 @@
           return String(b.date).localeCompare(String(a.date));
         });
 
-        root.innerHTML = sorted.map(function (item) {
+        root.innerHTML = sorted.map(function (rawItem) {
+          var item = normalizeExpenseRecord(rawItem);
           var trackedOnly = item.excludeFromBudget ? '<span class="tracked-only-tag">من مخصص محجوز · لم يُخصم مرة ثانية</span>' : '';
+          var sharedHtml = '';
+          var refundButton = '';
+          if (item.sharedExpense) {
+            var received = reimbursementReceived(item);
+            var pending = reimbursementPending(item);
+            sharedHtml = '<span class="expense-shared-tag">مصروف مشترك</span>' +
+              '<div class="expense-shared-meta">حصتي ' + formatMoney(item.personalShare) + ' · تم استرداده ' + formatMoney(received) + ' · ' +
+              (pending > 0 ? 'متبقي ' + formatMoney(pending) : 'تم استرداده بالكامل') + '</div>';
+            if (pending > 0) refundButton = '<button class="refund-btn" type="button" data-record-reimbursement="' + escapeHTML(item.id) + '">تسجيل استرداد</button>';
+          }
           return '<div class="expense-item">' +
             '<div class="expense-category">' + escapeHTML(expenseSymbols[item.category] || "أ") + '</div>' +
-            '<div><p class="item-title">' + escapeHTML(item.title) + '</p><p class="item-meta">' + escapeHTML(item.category || "أخرى") + ' · ' + escapeHTML(formatDate(item.date)) + '</p>' + trackedOnly + '</div>' +
+            '<div><p class="item-title">' + escapeHTML(item.title) + '</p><p class="item-meta">' + escapeHTML(item.category || "أخرى") + ' · ' + escapeHTML(formatDate(item.date)) + '</p>' + trackedOnly + sharedHtml + '</div>' +
             '<strong class="item-amount">' + moneyHTML(item.amount) + '</strong>' +
-            '<button class="expense-delete" type="button" title="حذف المصروف" aria-label="حذف ' + escapeHTML(item.title) + '" data-delete-expense="' + escapeHTML(item.id) + '">×</button>' +
+            '<div class="expense-actions">' + refundButton + '<button class="expense-delete" type="button" title="حذف المصروف" aria-label="حذف ' + escapeHTML(item.title) + '" data-delete-expense="' + escapeHTML(item.id) + '">×</button></div>' +
+          '</div>';
+        }).join("");
+      }
+
+      function renderPendingReimbursements() {
+        var root = $("#pendingReimbursementList");
+        if (!root) return;
+        var items = pendingSharedExpenses().slice().sort(function (a, b) {
+          return String(a.date).localeCompare(String(b.date));
+        });
+        if (!items.length) {
+          root.innerHTML = emptyState("ر", "لا توجد مبالغ بانتظار الاسترداد", "عند تسجيل مصروف مشترك سيظهر المبلغ المستحق لك هنا حتى تستلمه بالكامل.");
+          return;
+        }
+        root.innerHTML = items.map(function (item) {
+          var received = reimbursementReceived(item);
+          var pending = reimbursementPending(item);
+          var origin = expenseMonth(item) === defaultMonth ? "هذا الشهر" : formatMonth(expenseMonth(item));
+          return '<div class="reimbursement-item">' +
+            '<div><h3>' + escapeHTML(item.title || "مصروف مشترك") + '</h3>' +
+            '<p>' + escapeHTML(origin) + ' · دفعت ' + formatMoney(item.amount) + '</p>' +
+            '<div class="reimbursement-stats">' +
+              '<span class="reimbursement-stat">حصتي ' + formatMoney(item.personalShare) + '</span>' +
+              '<span class="reimbursement-stat">استُرد ' + formatMoney(received) + '</span>' +
+              '<span class="reimbursement-stat pending">متبقي ' + formatMoney(pending) + '</span>' +
+            '</div></div>' +
+            '<button class="refund-btn" type="button" data-record-reimbursement="' + escapeHTML(item.id) + '">تسجيل استرداد</button>' +
           '</div>';
         }).join("");
       }
@@ -6637,19 +7113,122 @@
         showToast(item.type === "ادخار" ? (existing ? "تم تحديث خطة الادخار" : "تمت إضافة خطة الادخار") : (existing ? "تم تحديث الدفعة الثابتة" : "تمت إضافة الدفعة الثابتة · لن تُخصم حتى تؤكد الدفع"));
       }
 
+      function updateSharedExpenseForm() {
+        var enabled = Boolean($("#expenseShared") && $("#expenseShared").checked);
+        var fields = $("#sharedExpenseFields");
+        if (fields) fields.hidden = !enabled;
+        var mode = $("#expenseSplitMode") ? $("#expenseSplitMode").value : "share";
+        var shareField = $("#expensePersonalShareField");
+        var peopleField = $("#expensePeopleCountField");
+        if (shareField) shareField.hidden = !enabled || mode === "equal";
+        if (peopleField) peopleField.hidden = !enabled || mode !== "equal";
+        var amount = roundMoney($("#expenseAmount") && $("#expenseAmount").value);
+        var personalShare = amount;
+        if (enabled && amount > 0) {
+          if (mode === "equal") {
+            var people = Math.max(2, Math.min(50, Math.round(Number($("#expensePeopleCount").value) || 2)));
+            if ($("#expensePeopleCount")) $("#expensePeopleCount").value = people;
+            personalShare = roundMoney(amount / people);
+          } else {
+            personalShare = roundMoney($("#expensePersonalShare") && $("#expensePersonalShare").value);
+          }
+        }
+        var expected = enabled ? roundMoney(Math.max(0, amount - personalShare)) : 0;
+        setMoney("#expenseExpectedRefund", expected);
+      }
+
+      function sharedExpenseValues(data, amount) {
+        var shared = data.get("sharedExpense") === "on";
+        if (!shared) return { sharedExpense:false, splitMode:"share", peopleCount:0, personalShare:amount, expectedReimbursement:0, reimbursements:[] };
+        var mode = String(data.get("splitMode") || "share") === "equal" ? "equal" : "share";
+        var peopleCount = mode === "equal" ? Math.max(2, Math.min(50, Math.round(Number(data.get("peopleCount")) || 2))) : 0;
+        var personalShare = mode === "equal" ? roundMoney(amount / peopleCount) : roundMoney(data.get("personalShare"));
+        if (personalShare <= 0 || personalShare >= amount) return null;
+        return {
+          sharedExpense:true,
+          splitMode:mode,
+          peopleCount:peopleCount,
+          personalShare:personalShare,
+          expectedReimbursement:roundMoney(amount - personalShare),
+          reimbursements:[]
+        };
+      }
+
+      function openExpenseReimbursementDialog(id) {
+        var item = state.expenses.find(function (current) { return current.id === id; });
+        if (!item || !item.sharedExpense) return;
+        item = normalizeExpenseRecord(item);
+        var expected = safeNumber(item.expectedReimbursement);
+        var received = reimbursementReceived(item);
+        var pending = reimbursementPending(item);
+        if (pending <= 0) { showToast("تم استرداد هذا المصروف بالكامل"); return; }
+        $("#reimbursementExpenseId").value = item.id;
+        $("#reimbursementExpenseTitle").textContent = item.title + " · " + formatDate(item.date);
+        setMoney("#reimbursementExpected", expected);
+        setMoney("#reimbursementReceived", received);
+        setMoney("#reimbursementPending", pending);
+        $("#reimbursementAmount").value = pending.toFixed(2);
+        $("#reimbursementAmount").max = pending.toFixed(2);
+        $("#reimbursementDate").value = toDateInput(new Date());
+        $("#reimbursementNote").value = "";
+        $("#expenseReimbursementDialog").showModal();
+        setTimeout(function () { $("#reimbursementAmount").focus(); $("#reimbursementAmount").select(); }, 40);
+      }
+
+      function submitExpenseReimbursement(event) {
+        event.preventDefault();
+        ensureWalletCalendarCurrent(false);
+        var data = new FormData(event.currentTarget);
+        var id = String(data.get("expenseId") || "");
+        var item = state.expenses.find(function (current) { return current.id === id; });
+        if (!item || !item.sharedExpense) { showToast("تعذر العثور على المصروف المشترك", true); return; }
+        item.reimbursements = Array.isArray(item.reimbursements) ? item.reimbursements : [];
+        var pending = reimbursementPending(item);
+        var amount = roundMoney(data.get("amount"));
+        var date = String(data.get("date") || "");
+        var note = String(data.get("note") || "").trim();
+        if (amount <= 0) { showToast("أدخل مبلغًا صحيحًا", true); return; }
+        if (amount > pending + 0.001) { showToast("المبلغ المستلم أكبر من المبلغ المتبقي للاسترداد", true); return; }
+        if (!date) { showToast("حدد تاريخ الاستلام", true); return; }
+        if (calendarMonthForDate(date) !== defaultMonth) { showToast("تسجيل الاسترداد متاح للشهر الحالي فقط حتى يبقى كشف الأشهر السابقة ثابتًا.", true); return; }
+        if (String(date) < String(item.date || "")) { showToast("تاريخ الاسترداد لا يمكن أن يسبق تاريخ المصروف", true); return; }
+        var reimbursement = {
+          id: makeId("reimbursement"),
+          amount: amount,
+          date: date,
+          note: note,
+          createdAt: new Date().toISOString()
+        };
+        item.reimbursements.push(reimbursement);
+        state.walletBalance += amount;
+        state.walletStarted = true;
+        addTransaction("expense_reimbursement", amount, "استرداد مصروف — " + (item.title || "مصروف مشترك"), date, item.id, {
+          expenseId: item.id,
+          reimbursementId: reimbursement.id,
+          originalExpenseMonth: expenseMonth(item)
+        });
+        closeDialog("expenseReimbursementDialog");
+        render();
+        var left = reimbursementPending(item);
+        showToast(left > 0 ? "تمت إضافة الاسترداد إلى الرصيد الحالي · المتبقي " + formatMoney(left) : "تم استرداد المبلغ كاملًا وإضافته إلى الرصيد الحالي");
+      }
+
       function submitExpense(event) {
         event.preventDefault();
         ensureWalletCalendarCurrent(false);
         var data = new FormData(event.currentTarget);
-        var item = {
+        var amount = roundMoney(data.get("amount"));
+        var sharedValues = sharedExpenseValues(data, amount);
+        if (data.get("sharedExpense") === "on" && !sharedValues) { showToast("حدد حصتك بحيث تكون أكبر من صفر وأقل من إجمالي المصروف", true); return; }
+        var item = Object.assign({
           id: makeId("expense"),
           title: String(data.get("title") || "").trim(),
           category: String(data.get("category") || "أخرى"),
-          amount: safeNumber(data.get("amount")),
+          amount: amount,
           date: String(data.get("date") || ""),
           excludeFromBudget: data.get("excludeFromBudget") === "on",
           createdAt: new Date().toISOString()
-        };
+        }, sharedValues || {});
         if (!item.title || !item.amount || !item.date) { showToast("أكمل وصف المصروف والمبلغ والتاريخ", true); return; }
         item.accountMonth = calendarMonthForDate(item.date);
         if (item.accountMonth !== defaultMonth) {
@@ -6664,8 +7243,9 @@
         }
         event.currentTarget.reset();
         $("#expenseDate").value = normalizeExpenseDate("");
+        updateSharedExpenseForm();
         render();
-        showToast("تم تسجيل المصروف وتحديث الرصيد");
+        showToast(item.sharedExpense ? "تم تسجيل المصروف المشترك · سيبقى مبلغ الاسترداد ظاهرًا حتى تستلمه" : "تم تسجيل المصروف وتحديث الرصيد");
       }
 
       function togglePaid(id) {
@@ -6805,10 +7385,15 @@
         if (!item) return;
         if (!localizedConfirm('حذف المصروف "' + item.title + '"؟')) return;
         if (expenseMonth(item) !== defaultMonth) { showToast("المصروفات المؤرشفة لا تُعدّل من الشاشة الحالية.", true); return; }
+        var receivedReimbursements = reimbursementReceived(item);
         state.expenses = state.expenses.filter(function (current) { return current.id !== id; });
         if (!item.excludeFromBudget) {
           state.walletBalance += safeNumber(item.amount);
           addTransaction("expense_reversal", safeNumber(item.amount), "إلغاء مصروف " + item.title, toDateInput(new Date()), item.id);
+        }
+        if (receivedReimbursements > 0) {
+          state.walletBalance -= receivedReimbursements;
+          addTransaction("expense_reimbursement_reversal", -receivedReimbursements, "إلغاء استردادات مصروف " + item.title, toDateInput(new Date()), item.id);
         }
         render();
         showToast("تم حذف المصروف وتحديث الرصيد");
@@ -6882,6 +7467,12 @@
         $("#commitmentForm").addEventListener("submit", submitCommitment);
         $("#recurringForm").addEventListener("submit", submitRecurring);
         $("#expenseForm").addEventListener("submit", submitExpense);
+        $("#expenseReimbursementForm").addEventListener("submit", submitExpenseReimbursement);
+        $("#expenseShared").addEventListener("change", updateSharedExpenseForm);
+        $("#expenseSplitMode").addEventListener("change", updateSharedExpenseForm);
+        $("#expenseAmount").addEventListener("input", updateSharedExpenseForm);
+        $("#expensePersonalShare").addEventListener("input", updateSharedExpenseForm);
+        $("#expensePeopleCount").addEventListener("input", updateSharedExpenseForm);
         $("#savingsTransferForm").addEventListener("submit", submitSavingsTransfer);
         $("#addSavingsButton").addEventListener("click", function () { openSavingsTransferDialog("deposit"); });
         $("#withdrawSavingsButton").addEventListener("click", function () { openSavingsTransferDialog("withdraw"); });
@@ -7051,6 +7642,7 @@
         $("#syncNowButton").addEventListener("click", function () { syncFromCloud({ silent: false, force: true }); });
         $("#adminRefreshButton").addEventListener("click", function () { renderAdminUsers(); refreshReleaseStatus(); });
         $("#publishUpdateButton").addEventListener("click", publishUpdateToUsers);
+        $("#rejectUpdateButton").addEventListener("click", rejectUpdateAndReturnToPublished);
         $("#testOwnerUpdatePushButton").addEventListener("click", testOwnerUpdatePush);
         $("#enableOwnerPushButton").addEventListener("click", enableOwnerPushNotifications);
         $("#adminUserList").addEventListener("click", async function (event) {
@@ -7134,7 +7726,13 @@
 
         $("#expenseList").addEventListener("click", function (event) {
           var button = event.target.closest("[data-delete-expense]");
+          var refund = event.target.closest("[data-record-reimbursement]");
+          if (refund) openExpenseReimbursementDialog(refund.dataset.recordReimbursement);
           if (button) deleteExpense(button.dataset.deleteExpense);
+        });
+        $("#pendingReimbursementList").addEventListener("click", function (event) {
+          var refund = event.target.closest("[data-record-reimbursement]");
+          if (refund) openExpenseReimbursementDialog(refund.dataset.recordReimbursement);
         });
 
         $("#mobileFab").addEventListener("click", function () {
@@ -7203,6 +7801,7 @@
       requestPersistentStorage();
       installZoomLock();
       bindEvents();
+      updateSharedExpenseForm();
       protectIconPreviews();
       initPWA();
       render();

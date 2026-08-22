@@ -31,7 +31,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.9-deposits-shared-r3";
+      var v = "3.8.9-deposits-shared-r4";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -1116,6 +1116,26 @@
     .participant-pay-chip.me { cursor:default; opacity:.78; background:#e7ecea; border-color:#ccd7d3; color:#536b65; }
     .participant-pay-chip.me .participant-circle { background:#56726c; border-color:#56726c; color:#fff; }
     .participant-payment-hint { margin:8px 0 0; color:var(--muted); font-size:8px; line-height:1.7; }
+
+    .participant-editor { margin-top: 9px; }
+    .participant-editor-toggle {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 11px;
+      border: 1px solid #c9ded8;
+      border-radius: 11px;
+      color: #2d6d63;
+      background: #f2faf7;
+      cursor: pointer;
+      font-size: 9px;
+      font-weight: 900;
+    }
+    .participant-editor-toggle:hover { background:#e8f6f2; border-color:#abd2c8; }
+    .participant-editor-body[hidden] { display:none !important; }
+    .participant-editor-body { margin-top: 4px; }
 
     .deposit-form { grid-template-columns: 1.5fr 1fr .9fr .9fr auto; }
     .deposit-list { display:grid; gap:10px; }
@@ -3780,7 +3800,7 @@
           <ul>
             <li>إضافة قسم الإيداعات للمبالغ الواردة غير الراتب.</li>
             <li>تقسيم المصروف المشترك تلقائيًا حسب عدد الأشخاص.</li>
-            <li>متابعة كل مشارك باسمه؛ اضغط دائرته عند التحويل، واضغط مرة أخرى للتراجع.</li>
+            <li>متابعة كل مشارك باسمه؛ تُخفى الأسماء وعلامات الدفع افتراضيًا وتظهر فقط عند الضغط على «تعديل المشاركين».</li>
             <li>قفل التطبيق برمز أو Face ID ومنع التكبير العرضي على الهاتف.</li>
             <li>إصلاح رفض التحديث ليعود المالك فعليًا إلى الإصدار المنشور للمستخدمين.</li>
           </ul>
@@ -4011,6 +4031,9 @@
       EN_TRANSLATIONS["جارٍ إرسال اختبار الإشعار…"] = "Sending test notification…";
       EN_TRANSLATIONS["يمكنك إرسال إشعار تجريبي للتأكد من أن جهاز المالك مسجل بشكل صحيح."] = "Send a test notification to verify that the owner device is registered correctly.";
       EN_TRANSLATIONS["جارٍ تجهيز رابط تسجيل الدخول الآمن…"] = "Preparing secure signed-in link…";
+      EN_TRANSLATIONS["تعديل المشاركين"] = "Edit participants";
+      EN_TRANSLATIONS["إخفاء المشاركين"] = "Hide participants";
+      EN_TRANSLATIONS["أسماء وحالة المشاركين مخفية"] = "Participant names and payment status are hidden";
       EN_TRANSLATIONS["بانتظار الاسترداد"] = "Pending reimbursement";
       EN_TRANSLATIONS["لا توجد مبالغ معلقة"] = "No pending reimbursements";
       EN_TRANSLATIONS["هذا المصروف مشترك وسيُعاد لي جزء منه"] = "This is a shared expense and part of it will be reimbursed";
@@ -4319,7 +4342,7 @@
 
 
       var APP_VERSION = "3.8.9";
-      var APP_RELEASE_ID = "3.8.9-deposits-shared-r3";
+      var APP_RELEASE_ID = "3.8.9-deposits-shared-r4";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -4328,6 +4351,7 @@
       var appLockResetPollTimer = null;
       var appLockFailedAttempts = 0;
       var appLockBlockedUntil = 0;
+      var openParticipantEditors = new Set();
       var PRE_ACCOUNT_BACKUP_KEY = "monthlySalaryManager.v1.preAccountBackup";
       var API_BASE = String(window.SALARY_API_BASE || "").replace(/\/+$/, "");
       var deferredInstallPrompt = null;
@@ -6925,7 +6949,9 @@
 
       function participantPaymentHTML(item, compact) {
         if (!hasParticipantTracking(item)) return "";
-        return '<div class="participant-payment-grid">' + item.participants.map(function (person) {
+        var open = openParticipantEditors.has(String(item.id));
+        var toggleLabel = open ? "إخفاء المشاركين" : "تعديل المشاركين";
+        var grid = '<div class="participant-payment-grid">' + item.participants.map(function (person) {
           var paid = Boolean(person.paid || person.isMe);
           var cls = 'participant-pay-chip' + (paid ? ' paid' : '') + (person.isMe ? ' me' : '');
           var attrs = person.isMe ? ' disabled aria-disabled="true"' : ' data-toggle-participant-paid="' + escapeHTML(item.id) + '" data-participant-id="' + escapeHTML(person.id) + '"';
@@ -6935,6 +6961,21 @@
             '<small>' + escapeHTML(formatMoney(person.amount)) + '</small>' +
           '</button>';
         }).join('') + '</div>' + (compact ? '' : '<p class="participant-payment-hint">الدائرة المظللة تعني أن المبلغ وصل. دائرتك مظللة دائمًا ولا تدخل ضمن المبلغ المنتظر.</p>');
+        return '<div class="participant-editor">' +
+          '<button class="participant-editor-toggle" type="button" data-toggle-participant-editor="' + escapeHTML(item.id) + '" aria-expanded="' + (open ? 'true' : 'false') + '">' + (open ? '✓ ' : '✎ ') + toggleLabel + '</button>' +
+          '<div class="participant-editor-body"' + (open ? '' : ' hidden') + '>' + grid + '</div>' +
+        '</div>';
+      }
+
+      function toggleParticipantEditor(expenseId) {
+        var id = String(expenseId || "");
+        if (!id) return;
+        if (openParticipantEditors.has(id)) openParticipantEditors.delete(id);
+        else openParticipantEditors.add(id);
+        var metrics = getMetrics(defaultMonth);
+        renderExpenses(metrics.monthExpenses);
+        renderPendingReimbursements();
+        translateDom(document.body);
       }
 
       function renderExpenses(items) {
@@ -8058,14 +8099,18 @@
         $("#expenseList").addEventListener("click", function (event) {
           var button = event.target.closest("[data-delete-expense]");
           var refund = event.target.closest("[data-record-reimbursement]");
+          var editor = event.target.closest("[data-toggle-participant-editor]");
           var participant = event.target.closest("[data-toggle-participant-paid]");
+          if (editor) { toggleParticipantEditor(editor.dataset.toggleParticipantEditor); return; }
           if (participant) toggleParticipantPayment(participant.dataset.toggleParticipantPaid, participant.dataset.participantId);
           if (refund) openExpenseReimbursementDialog(refund.dataset.recordReimbursement);
           if (button) deleteExpense(button.dataset.deleteExpense);
         });
         $("#pendingReimbursementList").addEventListener("click", function (event) {
           var refund = event.target.closest("[data-record-reimbursement]");
+          var editor = event.target.closest("[data-toggle-participant-editor]");
           var participant = event.target.closest("[data-toggle-participant-paid]");
+          if (editor) { toggleParticipantEditor(editor.dataset.toggleParticipantEditor); return; }
           if (participant) toggleParticipantPayment(participant.dataset.toggleParticipantPaid, participant.dataset.participantId);
           if (refund) openExpenseReimbursementDialog(refund.dataset.recordReimbursement);
         });

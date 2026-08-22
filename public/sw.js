@@ -1,4 +1,4 @@
-const CACHE = "salary-manager-v3.8.9-shared-expenses-r2";
+const CACHE = "salary-manager-v3.8.9-deposits-shared-r3";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = [
@@ -88,14 +88,16 @@ async function cacheStatic(cache) {
 async function safeNavigation(request) {
   let cache = null;
   try { cache = await caches.open(CACHE); } catch (_) {}
-  if (cache) {
-    try {
-      const shell = await cache.match(SHELL_KEY);
-      if (shell) return shell;
-    } catch (_) {}
-  }
+  // Network-first is intentional: the owner can reject a staged build and must
+  // immediately receive the published user shell instead of a stale staged cache.
   try { return await refreshShell(cache); }
   catch (_) {
+    if (cache) {
+      try {
+        const shell = await cache.match(SHELL_KEY);
+        if (shell) return shell;
+      } catch (_) {}
+    }
     try {
       const response = await fetch(request, { cache: "no-store", redirect: "follow" });
       if (response) return response;

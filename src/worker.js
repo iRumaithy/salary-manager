@@ -1,9 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.8.8";
-const RELEASE_ID = "3.8.8-security-r1";
-const UPDATE_SIGNAL_VERSION = "3.8.8\u200B";
+const VERSION = "3.8.9";
+const RELEASE_ID = "3.8.9-shared-expenses-r2";
+const UPDATE_SIGNAL_VERSION = "3.8.9\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
 const PREVIOUS_RELEASE_ID = "3.8.6";
 const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
@@ -20,7 +20,11 @@ const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
   "3.8.7-wallet-r13",
   "3.8.7-wallet-r14",
   "3.8.7-wallet-r15",
-  "3.8.7-wallet-r16"
+  "3.8.7-wallet-r16",
+  "3.8.8-security-r1",
+  "3.8.8-shared-expenses-r2",
+  "3.8.8-shared-expenses-r3",
+  "3.8.9-shared-expenses-r1"
 ]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -311,8 +315,9 @@ async function handleApi(request, env, url) {
     const publicPublishedReleaseId = publicPublishedVersion === PREVIOUS_PUBLISHED_VERSION
       ? PREVIOUS_RELEASE_ID
       : rawPublicReleaseId;
-    const displayTargetVersion = isOwner ? String(release.stagedVersion || VERSION) : publicPublishedVersion;
-    const targetReleaseId = isOwner ? String(release.stagedReleaseId || RELEASE_ID) : publicPublishedReleaseId;
+    const ownerCanPreview = isOwner && !Boolean(release.currentReleaseRejected);
+    const displayTargetVersion = ownerCanPreview ? String(release.stagedVersion || VERSION) : publicPublishedVersion;
+    const targetReleaseId = ownerCanPreview ? String(release.stagedReleaseId || RELEASE_ID) : publicPublishedReleaseId;
     // البنايات القديمة من 3.8.7 كانت تقارن رقم الإصدار فقط. محرف غير مرئي يجعلها ترى تحديثًا جديدًا مع بقاء الرقم ظاهرًا 3.8.7.
     const targetVersion = targetReleaseId === RELEASE_ID ? UPDATE_SIGNAL_VERSION : displayTargetVersion;
     return apiJson(request, env, {
@@ -325,6 +330,9 @@ async function handleApi(request, env, url) {
       publishedVersion: publicPublishedVersion,
       publishedReleaseId: publicPublishedReleaseId,
       published: publicPublishedReleaseId === String(release.stagedReleaseId || RELEASE_ID),
+      currentReleaseRejected: Boolean(release.currentReleaseRejected),
+      rejectedReleaseId: release.rejectedReleaseId || null,
+      rejectedAt: release.rejectedAt || null,
       stagedAt: release.stagedAt || null,
       publishedAt: release.publishedAt || null
     });
@@ -341,6 +349,13 @@ async function handleApi(request, env, url) {
     const a = await requireAuth(request, env, { admin: true });
     if (!a.ok) return a.response;
     const { response, body } = await internal(env, "/auth/admin/publish-update", { token: a.token, version: VERSION, releaseId: RELEASE_ID, previousVersion: PREVIOUS_PUBLISHED_VERSION, previousReleaseId: PREVIOUS_RELEASE_ID, subject: url.origin });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+
+  if (p === "/api/admin/reject-update" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const { response, body } = await internal(env, "/auth/admin/reject-update", { token: a.token, version: VERSION, releaseId: RELEASE_ID, previousVersion: PREVIOUS_PUBLISHED_VERSION, previousReleaseId: PREVIOUS_RELEASE_ID, subject: url.origin });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
 
@@ -733,8 +748,33 @@ export class SalaryStore extends DurableObject {
     let stagedReleaseId = String(await this.ctx.storage.get("release:stagedReleaseId") || "");
     let stagedAt = Number(await this.ctx.storage.get("release:stagedAt") || 0);
     let previewToken = String(await this.ctx.storage.get("release:previewToken") || "");
+    let rejectedReleaseId = String(await this.ctx.storage.get("release:rejectedReleaseId") || "");
+    let rejectedVersion = String(await this.ctx.storage.get("release:rejectedVersion") || "");
+    let rejectedAt = Number(await this.ctx.storage.get("release:rejectedAt") || 0);
 
-    if (stagedReleaseId !== releaseId) {
+    // إذا رفض المالك البناء الحالي، يبقى هو أيضًا على نفس الإصدار المنشور للمستخدمين.
+    // عند وصول RELEASE_ID جديد نعتبره مرشحًا جديدًا ونسمح بمراجعته تلقائيًا.
+    let currentReleaseRejected = rejectedReleaseId === releaseId && publishedReleaseId !== releaseId;
+    if (rejectedReleaseId && rejectedReleaseId !== releaseId) {
+      rejectedReleaseId = "";
+      rejectedVersion = "";
+      rejectedAt = 0;
+      await this.ctx.storage.delete("release:rejectedReleaseId");
+      await this.ctx.storage.delete("release:rejectedVersion");
+      await this.ctx.storage.delete("release:rejectedAt");
+      currentReleaseRejected = false;
+    }
+
+    if (currentReleaseRejected) {
+      stagedVersion = publishedVersion;
+      stagedReleaseId = publishedReleaseId;
+      stagedAt = 0;
+      previewToken = "";
+      await this.ctx.storage.put("release:stagedVersion", stagedVersion);
+      await this.ctx.storage.put("release:stagedReleaseId", stagedReleaseId);
+      await this.ctx.storage.delete("release:stagedAt");
+      await this.ctx.storage.delete("release:previewToken");
+    } else if (stagedReleaseId !== releaseId) {
       stagedVersion = version;
       stagedReleaseId = releaseId;
       stagedAt = Date.now();
@@ -785,6 +825,10 @@ export class SalaryStore extends DurableObject {
       stagedAt: stagedAt || null,
       publishedAt: Number(await this.ctx.storage.get("release:publishedAt") || 0) || null,
       previewToken,
+      currentReleaseRejected,
+      rejectedReleaseId: rejectedReleaseId || null,
+      rejectedVersion: rejectedVersion || null,
+      rejectedAt: rejectedAt || null,
       ownerNotification: ownerNotification || null
     };
   }
@@ -1149,6 +1193,39 @@ export class SalaryStore extends DurableObject {
       const owners = await this.ctx.storage.list({ prefix: "push:owner:" });
       return json({ ok: true, ...state, userPushSubscriptions: all.size, ownerPushSubscriptions: owners.size });
     }
+    if (p === "/auth/admin/reject-update") {
+      const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false, b.releaseId, b.previousReleaseId);
+      const rejectedVersion = String(state.stagedVersion || b.version || VERSION).slice(0, 30);
+      const rejectedReleaseId = String(state.stagedReleaseId || b.releaseId || RELEASE_ID).slice(0, 80);
+      if (!rejectedReleaseId || rejectedReleaseId === state.publishedReleaseId) {
+        return json({ ok: true, alreadyOnPublished: true, ...state });
+      }
+      const rejectedAt = Date.now();
+      await this.ctx.storage.put("release:rejectedVersion", rejectedVersion);
+      await this.ctx.storage.put("release:rejectedReleaseId", rejectedReleaseId);
+      await this.ctx.storage.put("release:rejectedAt", rejectedAt);
+      await this.ctx.storage.put("release:stagedVersion", state.publishedVersion);
+      await this.ctx.storage.put("release:stagedReleaseId", state.publishedReleaseId);
+      await this.ctx.storage.delete("release:stagedAt");
+      await this.ctx.storage.delete("release:previewToken");
+      await this.ctx.storage.delete("release:ownerNotifiedVersion");
+      await this.ctx.storage.delete("release:ownerNotifiedReleaseId");
+      await this.ctx.storage.delete("release:ownerLastPushResult");
+      await this.audit("release-rejected-by-owner", { rejectedVersion, rejectedReleaseId, returnedToVersion: state.publishedVersion, returnedToReleaseId: state.publishedReleaseId, adminId: admin.user.id });
+      return json({
+        ok: true,
+        rejected: true,
+        rejectedVersion,
+        rejectedReleaseId,
+        rejectedAt,
+        stagedVersion: state.publishedVersion,
+        stagedReleaseId: state.publishedReleaseId,
+        publishedVersion: state.publishedVersion,
+        publishedReleaseId: state.publishedReleaseId,
+        published: true,
+        currentReleaseRejected: true
+      });
+    }
     if (p === "/auth/admin/publish-update") {
       const state = await this.ensureReleaseState(b.version, b.previousVersion, b.subject, false, b.releaseId, b.previousReleaseId);
       const version = String(state.stagedVersion || b.version || VERSION).slice(0, 30);
@@ -1159,6 +1236,9 @@ export class SalaryStore extends DurableObject {
       await this.ctx.storage.put("release:publishedVersion", version);
       await this.ctx.storage.put("release:publishedReleaseId", releaseId);
       await this.ctx.storage.put("release:publishedAt", publishedAt);
+      await this.ctx.storage.delete("release:rejectedVersion");
+      await this.ctx.storage.delete("release:rejectedReleaseId");
+      await this.ctx.storage.delete("release:rejectedAt");
       await this.ctx.storage.put("push:lastUpdateVersion", version);
       await this.ctx.storage.put("push:lastUpdateReleaseId", releaseId);
       const payload = {
@@ -1340,7 +1420,7 @@ export default {
         // Critical release gate: staged assets are served ONLY to a currently authenticated owner session.
         // Query-string preview tokens and stale preview cookies can never grant a normal user access.
         const shellAuth = await optionalAuth(request, env);
-        const preview = shellAuth?.user?.role === "super_admin";
+        const preview = shellAuth?.user?.role === "super_admin" && !Boolean(release.currentReleaseRejected);
         const publishedVersion = String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
         const rawPublishedReleaseId = String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
         // Defensive normalization: 3.8.6 can only map to its canonical archived release id.

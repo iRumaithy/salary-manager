@@ -31,7 +31,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.0-expense-sign-r2";
+      var v = "3.9.0-expense-edit-r3";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -3124,6 +3124,7 @@
         </div>
         <article class="panel form-panel">
           <form class="quick-form" id="expenseForm">
+            <input id="expenseId" name="id" type="hidden">
             <div class="field">
               <label for="expenseTitle">وصف المصروف</label>
               <input id="expenseTitle" name="title" type="text" maxlength="80" placeholder="مثال: مشتريات المنزل" required>
@@ -3147,7 +3148,8 @@
               <label for="expenseDate">التاريخ</label>
               <input id="expenseDate" name="date" type="date" required>
             </div>
-            <button class="primary-btn" type="submit">حفظ المصروف</button>
+            <button class="primary-btn" id="expenseSubmitButton" type="submit">حفظ المصروف</button>
+            <button class="soft-btn" id="expenseCancelEditButton" type="button" hidden>إلغاء التعديل</button>
             <div class="shared-expense-panel">
               <label class="shared-expense-toggle" for="expenseShared">
                 <input id="expenseShared" name="sharedExpense" type="checkbox">
@@ -3837,6 +3839,7 @@
           </div>
           <ul>
             <li>تمييز المصروفات بالمبلغ الأحمر وعلامة الناقص لتوضيح الخصم من الرصيد.</li>
+            <li>إمكانية تعديل المصروف المسجل وتصحيح المبلغ أو بياناته.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -4079,6 +4082,9 @@
       EN_TRANSLATIONS["جارٍ إرسال اختبار الإشعار…"] = "Sending test notification…";
       EN_TRANSLATIONS["يمكنك إرسال إشعار تجريبي للتأكد من أن جهاز المالك مسجل بشكل صحيح."] = "Send a test notification to verify that the owner device is registered correctly.";
       EN_TRANSLATIONS["جارٍ تجهيز رابط تسجيل الدخول الآمن…"] = "Preparing secure signed-in link…";
+      EN_TRANSLATIONS["تعديل المصروف"] = "Edit expense";
+      EN_TRANSLATIONS["حفظ التعديل"] = "Save changes";
+      EN_TRANSLATIONS["إلغاء التعديل"] = "Cancel editing";
       EN_TRANSLATIONS["تعديل المشاركين"] = "Edit participants";
       EN_TRANSLATIONS["إخفاء المشاركين"] = "Hide participants";
       EN_TRANSLATIONS["أسماء وحالة المشاركين مخفية"] = "Participant names and payment status are hidden";
@@ -4425,7 +4431,7 @@
 
 
       var APP_VERSION = "3.9.0";
-      var APP_RELEASE_ID = "3.9.0-expense-sign-r2";
+      var APP_RELEASE_ID = "3.9.0-expense-edit-r3";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -7085,7 +7091,7 @@
             '<div class="expense-category">' + escapeHTML(expenseSymbols[item.category] || "أ") + '</div>' +
             '<div><p class="item-title">' + escapeHTML(item.title) + '</p><p class="item-meta">' + escapeHTML(item.category || "أخرى") + ' · ' + escapeHTML(formatDate(item.date)) + (formatRecordedTime(item) ? ' · ' + escapeHTML(formatRecordedTime(item)) : '') + '</p>' + trackedOnly + sharedHtml + '</div>' +
             '<strong class="item-amount expense-negative">-' + moneyHTML(item.amount) + '</strong>' +
-            '<div class="expense-actions">' + refundButton + '<button class="expense-delete" type="button" title="حذف المصروف" aria-label="حذف ' + escapeHTML(item.title) + '" data-delete-expense="' + escapeHTML(item.id) + '">×</button></div>' +
+            '<div class="expense-actions">' + refundButton + '<button class="mini-btn" type="button" data-edit-expense="' + escapeHTML(item.id) + '">تعديل</button><button class="expense-delete" type="button" title="حذف المصروف" aria-label="حذف ' + escapeHTML(item.title) + '" data-delete-expense="' + escapeHTML(item.id) + '">×</button></div>' +
           '</div>';
         }).join("");
       }
@@ -7635,40 +7641,173 @@
         showToast(left > 0 ? "تمت إضافة الاسترداد إلى الرصيد الحالي · المتبقي " + formatMoney(left) : "تم استرداد المبلغ كاملًا وإضافته إلى الرصيد الحالي");
       }
 
+      function resetExpenseForm() {
+        var form = $("#expenseForm");
+        if (!form) return;
+        form.reset();
+        $("#expenseId").value = "";
+        $("#expenseDate").value = normalizeExpenseDate("");
+        $("#expenseSubmitButton").textContent = "حفظ المصروف";
+        $("#expenseCancelEditButton").hidden = true;
+        if ($("#expenseParticipantNames")) { $("#expenseParticipantNames").innerHTML = ""; $("#expenseParticipantNames").dataset.count = ""; }
+        updateSharedExpenseForm();
+      }
+
+      function editExpense(id) {
+        ensureWalletCalendarCurrent(false);
+        var item = state.expenses.find(function (current) { return current.id === id; });
+        if (!item) return;
+        item = normalizeExpenseRecord(item);
+        if (expenseMonth(item) !== defaultMonth) { showToast("المصروفات المؤرشفة لا تُعدّل من الشاشة الحالية.", true); return; }
+        $("#expenseId").value = item.id;
+        $("#expenseTitle").value = item.title || "";
+        $("#expenseCategory").value = item.category || "أخرى";
+        $("#expenseAmount").value = roundMoney(item.amount).toFixed(2);
+        $("#expenseDate").value = item.date || toDateInput(new Date());
+        $("#expenseFromReserved").checked = Boolean(item.excludeFromBudget);
+        $("#expenseShared").checked = Boolean(item.sharedExpense);
+        if (item.sharedExpense) $("#expensePeopleCount").value = Math.max(2, Number(item.peopleCount || (item.participants || []).length || 2));
+        if ($("#expenseParticipantNames")) { $("#expenseParticipantNames").innerHTML = ""; $("#expenseParticipantNames").dataset.count = ""; }
+        updateSharedExpenseForm();
+        if (item.sharedExpense && Array.isArray(item.participants)) {
+          item.participants.forEach(function (person, index) {
+            if (index === 0) return;
+            var input = $('#expenseParticipantNames input[data-person-index="' + index + '"]');
+            if (input) input.value = person.name || "";
+          });
+        }
+        $("#expenseSubmitButton").textContent = "حفظ التعديل";
+        $("#expenseCancelEditButton").hidden = false;
+        $("#expenseForm").scrollIntoView({ behavior:"smooth", block:"center" });
+        setTimeout(function () { $("#expenseAmount").focus(); try { $("#expenseAmount").select(); } catch (_) {} }, 180);
+      }
+
+      function updateExpenseTransaction(item) {
+        if (!Array.isArray(state.transactions)) state.transactions = [];
+        var txIndex = state.transactions.findIndex(function (current) {
+          return current && current.type === "expense" && String(current.refId || "") === String(item.id);
+        });
+        if (item.excludeFromBudget) {
+          if (txIndex >= 0) state.transactions.splice(txIndex, 1);
+          return;
+        }
+        if (txIndex < 0) {
+          addTransaction("expense", -safeNumber(item.amount), item.title, item.date, item.id);
+          return;
+        }
+        var tx = state.transactions[txIndex];
+        tx.amount = -safeNumber(item.amount);
+        tx.title = String(item.title || "مصروف");
+        tx.date = String(item.date || toDateInput(new Date()));
+        tx.month = calendarMonthForDate(tx.date);
+        tx.refId = String(item.id);
+        tx.updatedAt = new Date().toISOString();
+      }
+
+      function preserveParticipantPaymentState(nextShared, oldItem) {
+        if (!nextShared || !nextShared.sharedExpense || !oldItem || !oldItem.sharedExpense) return nextShared;
+        var oldParticipants = Array.isArray(oldItem.participants) ? oldItem.participants : [];
+        if (oldParticipants.length !== nextShared.participants.length) return nextShared;
+        nextShared.participants = nextShared.participants.map(function (person, index) {
+          var oldPerson = oldParticipants[index];
+          if (!oldPerson) return person;
+          return Object.assign({}, person, {
+            id: String(oldPerson.id || person.id),
+            paid: Boolean(oldPerson.paid || oldPerson.isMe || person.isMe),
+            paidAt: String(oldPerson.paidAt || person.paidAt || ""),
+            reimbursementId: String(oldPerson.reimbursementId || "")
+          });
+        });
+        nextShared.reimbursements = Array.isArray(oldItem.reimbursements) ? oldItem.reimbursements.map(function (entry) { return Object.assign({}, entry); }) : [];
+        return nextShared;
+      }
+
       function submitExpense(event) {
         event.preventDefault();
         ensureWalletCalendarCurrent(false);
         var data = new FormData(event.currentTarget);
+        var editId = String(data.get("id") || "");
         var amount = roundMoney(data.get("amount"));
         var sharedValues = sharedExpenseValues(data, amount);
         if (data.get("sharedExpense") === "on" && !sharedValues) { showToast("أدخل مبلغًا صحيحًا وحدد عدد المشاركين", true); return; }
-        var item = Object.assign({
-          id: makeId("expense"),
-          title: String(data.get("title") || "").trim(),
-          category: String(data.get("category") || "أخرى"),
-          amount: amount,
-          date: String(data.get("date") || ""),
-          excludeFromBudget: data.get("excludeFromBudget") === "on",
-          createdAt: new Date().toISOString()
-        }, sharedValues || {});
-        if (!item.title || !item.amount || !item.date) { showToast("أكمل وصف المصروف والمبلغ والتاريخ", true); return; }
-        item.accountMonth = calendarMonthForDate(item.date);
-        if (item.accountMonth !== defaultMonth) {
-          showToast("تسجيل المصروفات متاح للشهر الحالي فقط. الشهور السابقة محفوظة في كشف الحساب.", true);
+        var title = String(data.get("title") || "").trim();
+        var category = String(data.get("category") || "أخرى");
+        var date = String(data.get("date") || "");
+        var excludeFromBudget = data.get("excludeFromBudget") === "on";
+        if (!title || amount <= 0 || !date) { showToast("أكمل وصف المصروف والمبلغ والتاريخ", true); return; }
+        if (calendarMonthForDate(date) !== defaultMonth) {
+          showToast("تسجيل وتعديل المصروفات متاح للشهر الحالي فقط. الشهور السابقة محفوظة في كشف الحساب.", true);
           return;
         }
+
+        if (editId) {
+          var existing = state.expenses.find(function (current) { return current.id === editId; });
+          if (!existing) { showToast("تعذر العثور على المصروف", true); resetExpenseForm(); return; }
+          existing = normalizeExpenseRecord(existing);
+          if (expenseMonth(existing) !== defaultMonth) { showToast("المصروفات المؤرشفة لا تُعدّل من الشاشة الحالية.", true); return; }
+
+          var received = reimbursementReceived(existing);
+          var nextShared = sharedValues || { sharedExpense:false, splitMode:"share", peopleCount:0, personalShare:amount, expectedReimbursement:0, reimbursements:[], participants:[] };
+          var oldPeople = Number(existing.peopleCount || (existing.participants || []).length || 0);
+          var newPeople = Number(nextShared.peopleCount || (nextShared.participants || []).length || 0);
+          var splitChangedAfterReceipt = received > 0 && (
+            Math.abs(amount - safeNumber(existing.amount)) > 0.001 ||
+            Boolean(existing.sharedExpense) !== Boolean(nextShared.sharedExpense) ||
+            oldPeople !== newPeople
+          );
+          if (splitChangedAfterReceipt) {
+            showToast("قبل تعديل مبلغ أو تقسيم مصروف تم استرداد جزء منه، أعد المشاركين المدفوعين إلى حالة انتظار التحويل أولًا.", true);
+            return;
+          }
+
+          nextShared = preserveParticipantPaymentState(nextShared, existing);
+          var oldImpact = existing.excludeFromBudget ? 0 : safeNumber(existing.amount);
+          var newImpact = excludeFromBudget ? 0 : amount;
+
+          var target = state.expenses.find(function (current) { return current.id === editId; });
+          target.title = title;
+          target.category = category;
+          target.amount = amount;
+          target.date = date;
+          target.accountMonth = defaultMonth;
+          target.excludeFromBudget = excludeFromBudget;
+          target.sharedExpense = Boolean(nextShared.sharedExpense);
+          target.splitMode = nextShared.splitMode;
+          target.peopleCount = nextShared.peopleCount;
+          target.personalShare = nextShared.personalShare;
+          target.expectedReimbursement = nextShared.expectedReimbursement;
+          target.reimbursements = nextShared.reimbursements;
+          target.participants = nextShared.participants;
+          target.updatedAt = new Date().toISOString();
+
+          state.walletBalance += roundMoney(oldImpact - newImpact);
+          if (oldImpact !== newImpact) state.walletStarted = true;
+          updateExpenseTransaction(target);
+          resetExpenseForm();
+          render();
+          showToast("تم تعديل المصروف وتحديث الرصيد الحالي");
+          return;
+        }
+
+        var item = Object.assign({
+          id: makeId("expense"),
+          title: title,
+          category: category,
+          amount: amount,
+          date: date,
+          excludeFromBudget: excludeFromBudget,
+          createdAt: new Date().toISOString()
+        }, sharedValues || {});
+        item.accountMonth = defaultMonth;
         state.expenses.push(item);
         if (!item.excludeFromBudget) {
           state.walletBalance -= item.amount;
           addTransaction("expense", -item.amount, item.title, item.date, item.id);
           state.walletStarted = true;
         }
-        event.currentTarget.reset();
-        $("#expenseDate").value = normalizeExpenseDate("");
-        if ($("#expenseParticipantNames")) { $("#expenseParticipantNames").innerHTML = ""; $("#expenseParticipantNames").dataset.count = ""; }
-        updateSharedExpenseForm();
+        resetExpenseForm();
         render();
-        showToast(item.sharedExpense ? "تم تسجيل المصروف المشترك · سيبقى مبلغ الاسترداد ظاهرًا حتى تستلمه" : "تم تسجيل المصروف وتحديث الرصيد");
+        showToast(item.sharedExpense ? "تم تسجيل المصروف المشترك · تابع الاستردادات من نفس العملية" : "تم تسجيل المصروف وتحديث الرصيد");
       }
 
       function resetDepositForm() {
@@ -7908,6 +8047,7 @@
         if (expenseMonth(item) !== defaultMonth) { showToast("المصروفات المؤرشفة لا تُعدّل من الشاشة الحالية.", true); return; }
         var receivedReimbursements = reimbursementReceived(item);
         state.expenses = state.expenses.filter(function (current) { return current.id !== id; });
+        if ($("#expenseId") && $("#expenseId").value === id) resetExpenseForm();
         if (!item.excludeFromBudget) {
           state.walletBalance += safeNumber(item.amount);
           addTransaction("expense_reversal", safeNumber(item.amount), "إلغاء مصروف " + item.title, toDateInput(new Date()), item.id);
@@ -7988,6 +8128,7 @@
         $("#commitmentForm").addEventListener("submit", submitCommitment);
         $("#recurringForm").addEventListener("submit", submitRecurring);
         $("#expenseForm").addEventListener("submit", submitExpense);
+        $("#expenseCancelEditButton").addEventListener("click", resetExpenseForm);
         $("#expenseReimbursementForm").addEventListener("submit", submitExpenseReimbursement);
         $("#expenseShared").addEventListener("change", updateSharedExpenseForm);
         $("#expenseAmount").addEventListener("input", updateSharedExpenseForm);
@@ -8245,10 +8386,12 @@
         });
 
         $("#expenseList").addEventListener("click", function (event) {
+          var edit = event.target.closest("[data-edit-expense]");
           var button = event.target.closest("[data-delete-expense]");
           var refund = event.target.closest("[data-record-reimbursement]");
           var editor = event.target.closest("[data-toggle-participant-editor]");
           var participant = event.target.closest("[data-toggle-participant-paid]");
+          if (edit) { editExpense(edit.dataset.editExpense); return; }
           if (editor) { toggleParticipantEditor(editor.dataset.toggleParticipantEditor); return; }
           if (participant) toggleParticipantPayment(participant.dataset.toggleParticipantPaid, participant.dataset.participantId);
           if (refund) openExpenseReimbursementDialog(refund.dataset.recordReimbursement);

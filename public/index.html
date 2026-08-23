@@ -31,7 +31,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.8.9-header-time-r7";
+      var v = "3.9.0-expense-sign-r1";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -1167,6 +1167,7 @@
     .deposit-form-actions .primary-btn, .deposit-form-actions .soft-btn { white-space:nowrap; }
     .deposit-list { display:grid; gap:10px; }
     .deposit-positive { color:#14756c; }
+    .expense-negative { color:var(--red); }
     .deposit-item-actions { display:flex; align-items:center; gap:6px; }
 
     .reimbursement-panel {
@@ -3378,7 +3379,7 @@
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.8.9" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.9.0" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
         <span class="version-badge">الإصدار <b id="appVersion">3.8.2</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
@@ -3830,6 +3831,15 @@
     <div class="modal-body">
       <div class="changelog-list">
         <section class="changelog-entry current">
+          <div class="changelog-version">
+            <strong>الإصدار 3.9.0</strong>
+            <time datetime="2026-08-23">23 أغسطس 2026</time>
+          </div>
+          <ul>
+            <li>تمييز المصروفات بالمبلغ الأحمر وعلامة الناقص لتوضيح الخصم من الرصيد.</li>
+          </ul>
+        </section>
+        <section class="changelog-entry">
           <div class="changelog-version">
             <strong>الإصدار 3.8.9</strong>
             <time datetime="2026-08-22">22 أغسطس 2026</time>
@@ -4414,8 +4424,8 @@
       }
 
 
-      var APP_VERSION = "3.8.9";
-      var APP_RELEASE_ID = "3.8.9-header-time-r7";
+      var APP_VERSION = "3.9.0";
+      var APP_RELEASE_ID = "3.9.0-expense-sign-r1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -6847,7 +6857,7 @@
           return '<div class="upcoming-item">' +
             '<div class="due-day"><div><b>' + due.getDate() + '</b><small>' + dueLabel + '</small></div></div>' +
             '<div><p class="item-title">' + escapeHTML(item.name) + '</p><p class="item-meta">' + escapeHTML(meta) + '</p></div>' +
-            '<strong class="item-amount">' + moneyHTML(item.amount) + '</strong>' +
+            '<strong class="item-amount expense-negative">-' + moneyHTML(item.amount) + '</strong>' +
           '</div>';
         }).join("");
       }

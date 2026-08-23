@@ -6,12 +6,17 @@
   <script>
     (function () {
       try {
+        var skipKey = "monthlySalaryManager.skipAppLockOnce";
+        var skipAt = Number(sessionStorage.getItem(skipKey) || 0);
+        var skipOnce = skipAt > 0 && (Date.now() - skipAt) < 15000;
+        if (skipAt) sessionStorage.removeItem(skipKey);
+        window.__salarySkipAppLockOnce = skipOnce;
         var u = JSON.parse(localStorage.getItem("monthlySalaryManager.authUser") || "null");
-        if (u && u.id) {
+        if (!skipOnce && u && u.id) {
           var cfg = JSON.parse(localStorage.getItem("monthlySalaryManager.appLock.v1." + u.id) || "null");
           if (cfg && cfg.enabled) document.documentElement.classList.add("app-lock-pending");
         }
-      } catch (_) {}
+      } catch (_) { window.__salarySkipAppLockOnce = false; }
     })();
   </script>
   <meta name="theme-color" content="#123f3b">
@@ -31,7 +36,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.0-expense-edit-r3";
+      var v = "3.9.0-refresh-bypass-r4";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -4431,7 +4436,7 @@
 
 
       var APP_VERSION = "3.9.0";
-      var APP_RELEASE_ID = "3.9.0-expense-edit-r3";
+      var APP_RELEASE_ID = "3.9.0-refresh-bypass-r4";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -4831,6 +4836,12 @@
       function reconcileAppLockAfterAuth() {
         document.documentElement.classList.remove("app-lock-pending");
         if (!authState.authenticated || !authState.user) { releaseAppLock(); refreshAppLockSettings(); return; }
+        if (window.__salarySkipAppLockOnce) {
+          window.__salarySkipAppLockOnce = false;
+          releaseAppLock();
+          refreshAppLockSettings();
+          return;
+        }
         var cfg = readAppLockConfig();
         if (!cfg) { releaseAppLock(); refreshAppLockSettings(); return; }
         var serverVersion = Number(authState.user.appLockResetVersion || 0);
@@ -8216,6 +8227,7 @@
 
         $("#accountButton").addEventListener("click", function () { updateAccountUI(); $("#authDialog").showModal(); });
         $("#refreshPageButton").addEventListener("click", function () {
+          try { sessionStorage.setItem("monthlySalaryManager.skipAppLockOnce", String(Date.now())); } catch (_) {}
           location.reload();
         });
 

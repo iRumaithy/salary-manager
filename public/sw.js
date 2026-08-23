@@ -1,4 +1,4 @@
-const CACHE = "salary-manager-v3.9.0-expense-edit-r3";
+const CACHE = "salary-manager-v3.9.0-refresh-bypass-r4";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = [

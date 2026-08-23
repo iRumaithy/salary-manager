@@ -31,7 +31,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.0-expense-sign-r1";
+      var v = "3.9.0-expense-sign-r2";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -4425,7 +4425,7 @@
 
 
       var APP_VERSION = "3.9.0";
-      var APP_RELEASE_ID = "3.9.0-expense-sign-r1";
+      var APP_RELEASE_ID = "3.9.0-expense-sign-r2";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -7084,7 +7084,7 @@
           return '<div class="expense-item">' +
             '<div class="expense-category">' + escapeHTML(expenseSymbols[item.category] || "أ") + '</div>' +
             '<div><p class="item-title">' + escapeHTML(item.title) + '</p><p class="item-meta">' + escapeHTML(item.category || "أخرى") + ' · ' + escapeHTML(formatDate(item.date)) + (formatRecordedTime(item) ? ' · ' + escapeHTML(formatRecordedTime(item)) : '') + '</p>' + trackedOnly + sharedHtml + '</div>' +
-            '<strong class="item-amount">' + moneyHTML(item.amount) + '</strong>' +
+            '<strong class="item-amount expense-negative">-' + moneyHTML(item.amount) + '</strong>' +
             '<div class="expense-actions">' + refundButton + '<button class="expense-delete" type="button" title="حذف المصروف" aria-label="حذف ' + escapeHTML(item.title) + '" data-delete-expense="' + escapeHTML(item.id) + '">×</button></div>' +
           '</div>';
         }).join("");

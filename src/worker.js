@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
 const VERSION = "3.9.1";
-const RELEASE_ID = "3.9.1-salary-balance-r1";
+const RELEASE_ID = "3.9.1-finance-integrity-r2";
 const UPDATE_SIGNAL_VERSION = "3.9.1\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
 const PREVIOUS_RELEASE_ID = "3.8.6";
@@ -34,7 +34,8 @@ const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
   "3.9.0-expense-sign-r1",
   "3.9.0-expense-sign-r2",
   "3.9.0-expense-edit-r3",
-  "3.9.0-refresh-bypass-r4"
+  "3.9.0-refresh-bypass-r4",
+  "3.9.1-salary-balance-r1"
 ]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -193,7 +194,7 @@ function corsHeaders(request, env) {
     "access-control-allow-credentials": "true",
     "vary": "Origin",
     "access-control-allow-methods": "GET,POST,PUT,OPTIONS",
-    "access-control-allow-headers": "content-type,authorization,x-salary-manager-app",
+    "access-control-allow-headers": "content-type,authorization,x-salary-manager-app,x-salary-manager-version,x-salary-manager-release",
     "access-control-max-age": "86400"
   } : {};
 }
@@ -228,7 +229,11 @@ async function internal(env, path, body = {}) {
 async function requireAuth(request, env, { admin = false } = {}) {
   const token = requestAuthToken(request);
   if (!token) return { ok: false, response: apiJson(request, env, { ok: false, error: "AUTH_REQUIRED" }, 401) };
-  const { body } = await internal(env, "/auth/session", { token });
+  const { body } = await internal(env, "/auth/session", {
+    token,
+    clientVersion: String(request.headers.get("x-salary-manager-version") || "").slice(0,30),
+    clientReleaseId: String(request.headers.get("x-salary-manager-release") || "").slice(0,80)
+  });
   if (!body?.ok) return { ok: false, response: apiJson(request, env, { ok: false, error: "AUTH_REQUIRED" }, 401) };
   if (admin && body.user?.role !== "super_admin") return { ok: false, response: apiJson(request, env, { ok: false, error: "FORBIDDEN" }, 403) };
   return { ok: true, token, session: body.session, user: body.user };
@@ -266,7 +271,11 @@ async function optionalAuth(request, env) {
   const token = requestAuthToken(request);
   if (!token) return null;
   try {
-    const { body } = await internal(env, "/auth/session", { token });
+    const { body } = await internal(env, "/auth/session", {
+    token,
+    clientVersion: String(request.headers.get("x-salary-manager-version") || "").slice(0,30),
+    clientReleaseId: String(request.headers.get("x-salary-manager-release") || "").slice(0,80)
+  });
     return body?.ok ? body : null;
   } catch (_) {
     return null;
@@ -346,6 +355,20 @@ async function handleApi(request, env, url) {
       stagedAt: release.stagedAt || null,
       publishedAt: release.publishedAt || null
     });
+  }
+
+  if (p === "/api/client-version-report" && request.method === "POST") {
+    const a = await requireAuth(request, env);
+    if (!a.ok) return a.response;
+    const release = await getReleaseState(env, url.origin);
+    const publishedVersion = String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
+    const publishedReleaseId = String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
+    const { response, body } = await internal(env, "/auth/session", {
+      token: a.token,
+      clientVersion: publishedVersion,
+      clientReleaseId: publishedReleaseId
+    });
+    return apiJson(request, env, { ok: Boolean(body?.ok), publishedVersion, publishedReleaseId }, response.status);
   }
 
   if (p === "/api/admin/release-status" && request.method === "GET") {
@@ -431,7 +454,8 @@ async function handleApi(request, env, url) {
     const { response, body } = await internal(env, "/auth/push/subscribe", {
       subscription: b.subscription,
       deviceLabel: b.deviceLabel,
-      appVersion: b.appVersion,
+      appVersion: b.appVersion || String(request.headers.get("x-salary-manager-version") || ""),
+      appReleaseId: String(request.headers.get("x-salary-manager-release") || ""),
       userId: auth?.user?.id || "",
       role: auth?.user?.role || "user",
       subject: url.origin
@@ -533,6 +557,14 @@ async function handleApi(request, env, url) {
     return apiJson(request, env, body || { ok: false }, response.status);
   }
 
+  if (p === "/api/admin/send-user-update" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/admin/send-user-update", { token:a.token, userId:b.userId, subject:url.origin });
+    return apiJson(request, env, body || { ok:false }, response.status);
+  }
+
   if (p === "/api/admin/users" && request.method === "GET") {
     const a = await requireAuth(request, env, { admin: true });
     if (!a.ok) return a.response;
@@ -595,7 +627,7 @@ export class SalaryStore extends DurableObject {
     try { await this.ctx.storage.put(`audit:${Date.now()}:${crypto.randomUUID()}`, { type, at: Date.now(), ...details }); } catch (_) {}
   }
   async publicUser(u) {
-    return u ? { id: u.id, username: u.username, email: u.email, role: u.role, status: u.status, accountId: u.accountId, createdAt: u.createdAt, lastLoginAt: u.lastLoginAt || null, appLockResetVersion: Number(u.appLockResetVersion || 0) } : null;
+    return u ? { id: u.id, username: u.username, email: u.email, role: u.role, status: u.status, accountId: u.accountId, createdAt: u.createdAt, lastLoginAt: u.lastLoginAt || null, appLockResetVersion: Number(u.appLockResetVersion || 0), lastAppVersion:String(u.lastAppVersion || ""), lastAppReleaseId:String(u.lastAppReleaseId || ""), lastVersionSeenAt:Number(u.lastVersionSeenAt || 0) || null } : null;
   }
   async createSession(user, deviceLabel = "") {
     const token = randomToken(32);
@@ -651,6 +683,42 @@ export class SalaryStore extends DurableObject {
     await this.ctx.storage.put("push:vapid", vapid);
     return vapid;
   }
+  async trackClientVersion(found, version, releaseId) {
+    version = String(version || "").slice(0,30);
+    releaseId = String(releaseId || "").slice(0,80);
+    if (!found || !version) return found;
+    const now = Date.now();
+    let changedSession = false, changedUser = false;
+    if (String(found.session.appVersion || "") !== version) { found.session.appVersion = version; changedSession = true; }
+    if (releaseId && String(found.session.appReleaseId || "") !== releaseId) { found.session.appReleaseId = releaseId; changedSession = true; }
+    if (changedSession || now - Number(found.session.versionSeenAt || 0) > 15 * 60 * 1000) { found.session.versionSeenAt = now; await this.ctx.storage.put(found.key, found.session); }
+    if (String(found.user.lastAppVersion || "") !== version) { found.user.lastAppVersion = version; changedUser = true; }
+    if (releaseId && String(found.user.lastAppReleaseId || "") !== releaseId) { found.user.lastAppReleaseId = releaseId; changedUser = true; }
+    if (changedUser || now - Number(found.user.lastVersionSeenAt || 0) > 15 * 60 * 1000) { found.user.lastVersionSeenAt = now; await this.ctx.storage.put(`user:${found.user.id}`, found.user); }
+    return found;
+  }
+
+  async sendPushToUser(userId, payloadData, subject = "") {
+    userId = String(userId || "");
+    const vapid = await this.ensureVapid(subject);
+    const subscriptions = await this.ctx.storage.list({ prefix:"push:all:" });
+    const records = [...subscriptions.entries()].filter(([,record]) => String(record?.userId || "") === userId);
+    if (!records.length) return { sent:0, failed:0, removed:0, subscriptionCount:0 };
+    const message = { data: JSON.stringify(payloadData), options:{ ttl:86400, urgency:"high" } };
+    let sent=0, failed=0, removed=0;
+    for (const [key,record] of records) {
+      const subscription = record?.subscription;
+      if (!subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) { await this.ctx.storage.delete(key); failed++; removed++; continue; }
+      try {
+        const init = await buildPushPayload(message, subscription, vapid);
+        const response = await fetch(subscription.endpoint, init);
+        if (response.ok || response.status === 201) sent++; else failed++;
+        if (response.status === 404 || response.status === 410) { await this.ctx.storage.delete(key); removed++; }
+      } catch (error) { failed++; console.error("Targeted update push failed", error); }
+    }
+    return { sent, failed, removed, subscriptionCount:records.length };
+  }
+
   async sendPushToPrefix(prefix, payloadData, subject = "") {
     const vapid = await this.ensureVapid(subject);
     const subscriptions = await this.ctx.storage.list({ prefix });
@@ -737,10 +805,11 @@ export class SalaryStore extends DurableObject {
     // Repair any inconsistent pre-publish state created by earlier 3.8.7 staging builds.
     // Public users must remain on the canonical 3.8.6 release until the owner explicitly publishes 3.8.7.
     const hasAccidentalReleaseId = ACCIDENTAL_PREPUBLISH_RELEASE_IDS.has(publishedReleaseId);
+    const existingPublishedAt = Number(await this.ctx.storage.get("release:publishedAt") || 0);
     const previousVersionHasWrongReleaseId =
       publishedVersion === PREVIOUS_PUBLISHED_VERSION && publishedReleaseId !== PREVIOUS_RELEASE_ID;
     const currentVersionWasAccidentallyPublished =
-      publishedVersion === VERSION && hasAccidentalReleaseId;
+      publishedVersion === VERSION && hasAccidentalReleaseId && !existingPublishedAt;
     if (previousVersionHasWrongReleaseId || currentVersionWasAccidentallyPublished) {
       const fromVersion = publishedVersion;
       const fromReleaseId = publishedReleaseId;
@@ -965,6 +1034,7 @@ export class SalaryStore extends DurableObject {
     if (p === "/auth/session") {
       const found = await this.getSession(String(b.token || ""));
       if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
+      await this.trackClientVersion(found, b.clientVersion, b.clientReleaseId);
       return json({ ok: true, session: found.session, user: await this.publicUser(found.user) });
     }
     if (p === "/auth/browser-handoff/create") {
@@ -1077,6 +1147,7 @@ export class SalaryStore extends DurableObject {
         subscription,
         deviceLabel: String(b.deviceLabel || "User device").slice(0, 100),
         appVersion: String(b.appVersion || "").slice(0, 30),
+        appReleaseId: String(b.appReleaseId || existing?.appReleaseId || "").slice(0, 80),
         userId: String(b.userId || existing?.userId || "").slice(0, 80),
         role: b.role === "super_admin" || existing?.role === "super_admin" ? "super_admin" : "user",
         createdAt: Number(existing?.createdAt || Date.now()),
@@ -1279,13 +1350,52 @@ export class SalaryStore extends DurableObject {
       const users = [...(await this.ctx.storage.list({ prefix: "user:" })).values()];
       const sessions = [...(await this.ctx.storage.list({ prefix: "session:" })).values()];
       const resets = await this.ctx.storage.list({ prefix: "reset:" });
+      const pushes = [...(await this.ctx.storage.list({ prefix:"push:all:" })).values()];
+      const publishedVersion = String(await this.ctx.storage.get("release:publishedVersion") || PREVIOUS_PUBLISHED_VERSION);
+      const publishedReleaseId = String(await this.ctx.storage.get("release:publishedReleaseId") || PREVIOUS_RELEASE_ID);
       const out = [];
       for (const u of users) {
         const reset = resets.get(`reset:${u.id}`);
-        out.push({ ...(await this.publicUser(u)), activeSessions: sessions.filter(s => s.userId === u.id && Number(s.expiresAt || 0) > Date.now()).length, resetRequested: !!reset?.requestedAt, resetCodeActive: !!reset?.codeHash && Number(reset.expiresAt || 0) > Date.now(), appLockResetRequested: Number(u.appLockResetRequestedAt || 0) > 0, appLockResetRequestedAt: Number(u.appLockResetRequestedAt || 0) || null });
+        const activeSessions = sessions.filter(s => s.userId === u.id && Number(s.expiresAt || 0) > Date.now());
+        const versionRecords = [];
+        for (const s of activeSessions) if (s.appVersion) versionRecords.push({ version:String(s.appVersion), releaseId:String(s.appReleaseId || ""), seenAt:Number(s.versionSeenAt || s.lastSeenAt || 0), deviceLabel:String(s.deviceLabel || "جهاز") });
+        for (const p2 of pushes) if (String(p2?.userId || "") === String(u.id) && p2.appVersion) versionRecords.push({ version:String(p2.appVersion), releaseId:String(p2.appReleaseId || ""), seenAt:Number(p2.updatedAt || p2.createdAt || 0), deviceLabel:String(p2.deviceLabel || "جهاز") });
+        if (u.lastAppVersion) versionRecords.push({ version:String(u.lastAppVersion), releaseId:String(u.lastAppReleaseId || ""), seenAt:Number(u.lastVersionSeenAt || 0), deviceLabel:"آخر استخدام" });
+        versionRecords.sort((a,b2) => Number(b2.seenAt || 0) - Number(a.seenAt || 0));
+        const current = versionRecords[0] || null;
+        const currentAppVersion = current ? current.version : "";
+        const currentAppReleaseId = current ? current.releaseId : "";
+        const onPublishedVersion = Boolean(currentAppVersion && currentAppVersion === publishedVersion && (!currentAppReleaseId || !publishedReleaseId || currentAppReleaseId === publishedReleaseId));
+        const deviceVersions = []; const seen = new Set();
+        for (const rec of versionRecords) { const key=rec.deviceLabel+"|"+rec.version+"|"+rec.releaseId; if (seen.has(key)) continue; seen.add(key); deviceVersions.push(rec); if (deviceVersions.length>=6) break; }
+        const hasKnownOutdatedDevice = deviceVersions.some(rec => rec.version && (rec.version !== publishedVersion || (rec.releaseId && publishedReleaseId && rec.releaseId !== publishedReleaseId)));
+        out.push({ ...(await this.publicUser(u)), activeSessions: activeSessions.length, resetRequested: !!reset?.requestedAt, resetCodeActive: !!reset?.codeHash && Number(reset.expiresAt || 0) > Date.now(), appLockResetRequested: Number(u.appLockResetRequestedAt || 0) > 0, appLockResetRequestedAt: Number(u.appLockResetRequestedAt || 0) || null, currentAppVersion, currentAppReleaseId, onPublishedVersion, hasKnownOutdatedDevice, deviceVersions, targetedUpdateSentAt:Number(u.targetedUpdateSentAt || 0) || null });
       }
       out.sort((a, b2) => Number(b2.createdAt) - Number(a.createdAt));
-      return json({ ok: true, users: out, count: out.length });
+      return json({ ok: true, users: out, count: out.length, publishedVersion, publishedReleaseId });
+    }
+    if (p === "/auth/admin/send-user-update") {
+      const id = String(b.userId || ""), user = await this.ctx.storage.get(`user:${id}`);
+      if (!user) return json({ ok:false, error:"NOT_FOUND" },404);
+      if (user.role === "super_admin") return json({ ok:false, error:"CANNOT_TARGET_OWNER" },400);
+      const publishedVersion = String(await this.ctx.storage.get("release:publishedVersion") || PREVIOUS_PUBLISHED_VERSION);
+      const publishedReleaseId = String(await this.ctx.storage.get("release:publishedReleaseId") || PREVIOUS_RELEASE_ID);
+      const nonce = Date.now();
+      const bridgePath = `/user-update?__app_shell=${nonce}&targeted=1`;
+      const payload = {
+        title:"تحديث مدير الراتب متوفر لك",
+        body:`اضغط لتحديث مدير الراتب إلى الإصدار ${publishedVersion} المستخدم حاليًا لدى بقية المستخدمين.`,
+        icon:"./icons/choice/gold-192.png", badge:"./icons/choice/gold-192.png",
+        url:bridgePath,
+        tag:`salary-manager-target-${id}-${publishedReleaseId}`
+      };
+      const result = await this.sendPushToUser(id, payload, b.subject);
+      user.targetedUpdateSentAt = Date.now(); user.targetedUpdateVersion = publishedVersion; user.targetedUpdateReleaseId = publishedReleaseId;
+      await this.ctx.storage.put(`user:${id}`, user);
+      await this.audit("targeted-user-update", { userId:id, adminId:admin.user.id, publishedVersion, publishedReleaseId, sent:result.sent, subscriptionCount:result.subscriptionCount });
+      const origin = String(b.subject || "").replace(/\/$/, "");
+      const manualUpdateUrl = origin ? origin + bridgePath : bridgePath;
+      return json({ ok:true, publishedVersion, publishedReleaseId, manualUpdateUrl, ...result });
     }
     if (p === "/auth/admin/reset-code") {
       const id = String(b.userId || ""), user = await this.ctx.storage.get(`user:${id}`);
@@ -1423,6 +1533,17 @@ export default {
 
       if (url.pathname.startsWith("/api/")) return await handleApi(request, env, url);
 
+      if (url.pathname === "/user-update") {
+        const release = await getReleaseState(env, url.origin);
+        const publishedVersion = String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
+        const rawPublishedReleaseId = String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
+        const publishedReleaseId = publishedVersion === PREVIOUS_PUBLISHED_VERSION ? PREVIOUS_RELEASE_ID : rawPublishedReleaseId;
+        const safeVersion = publishedVersion.replace(/[<>&"']/g, "");
+        const nonce = Date.now();
+        const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#123f3b"><title>تحديث مدير الراتب</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f3efe7;color:#173331;font-family:Tahoma,Arial,sans-serif}.card{width:min(430px,calc(100% - 36px));box-sizing:border-box;padding:30px 24px;border-radius:26px;background:#fffdf9;box-shadow:0 20px 60px rgba(20,45,42,.12);text-align:center}.mark{width:64px;height:64px;margin:0 auto 16px;display:grid;place-items:center;border-radius:20px;background:#123f3b;color:white;font-size:28px}.bar{height:8px;margin:20px 0 12px;overflow:hidden;border-radius:99px;background:#e5e1d8}.bar i{display:block;width:35%;height:100%;border-radius:inherit;background:#14756c;animation:p 1.15s ease-in-out infinite alternate}@keyframes p{to{width:100%}}h2{margin:0 0 9px;font-size:22px}p{margin:0;color:#6d7d79;line-height:1.8;font-size:13px}.err{color:#bf4e48}</style></head><body><main class="card"><div class="mark">↻</div><h2>تحديث مدير الراتب</h2><p id="msg">جارٍ تجهيز الإصدار ${safeVersion} على هذا الجهاز…</p><div class="bar"><i></i></div><p>لن يتم حذف بياناتك أو تسجيل خروجك من الحساب.</p></main><script>(async function(){var msg=document.getElementById('msg');var finish=function(){location.replace('/index.html?__app_shell='+Date.now()+'&__public_update=1&__updated=1')};try{if(!('serviceWorker' in navigator)){try{await fetch('/api/client-version-report',{method:'POST',credentials:'include',headers:{'x-salary-manager-app':'1'}})}catch(_){}finish();return}var script='/sw.js?__app_shell=${nonce}&__public_update=1';var reg=await navigator.serviceWorker.register(script,{scope:'/',updateViaCache:'none'});try{await reg.update()}catch(_){}var worker=reg.waiting||reg.installing;if(worker&&worker.state!=='installed'&&worker.state!=='activated'){await new Promise(function(resolve){var t=setTimeout(resolve,7000);worker.addEventListener('statechange',function(){if(worker.state==='installed'||worker.state==='activated'||worker.state==='redundant'){clearTimeout(t);resolve()}},{once:false})})}worker=reg.waiting||worker;if(worker&&worker.state==='installed'){try{worker.postMessage({type:'SKIP_WAITING'})}catch(_){}}try{await fetch('/api/client-version-report',{method:'POST',credentials:'include',headers:{'x-salary-manager-app':'1'}})}catch(_){}msg.textContent='تم تجهيز التحديث. جارٍ فتح مدير الراتب…';setTimeout(finish,700)}catch(e){msg.className='err';msg.textContent='تعذر إكمال التحديث تلقائيًا. أعد المحاولة بعد التأكد من الاتصال بالإنترنت.';setTimeout(finish,5000)}})();</script></body></html>`;
+        return new Response(html, { status:200, headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"no-store" } });
+      }
+
       const isAppShell = url.pathname === "/" || url.pathname === "" || url.pathname === "/index.html";
       const isWorkerScript = url.pathname === "/sw.js";
       if (isAppShell || isWorkerScript) {
@@ -1430,7 +1551,8 @@ export default {
         // Critical release gate: staged assets are served ONLY to a currently authenticated owner session.
         // Query-string preview tokens and stale preview cookies can never grant a normal user access.
         const shellAuth = await optionalAuth(request, env);
-        const preview = shellAuth?.user?.role === "super_admin" && !Boolean(release.currentReleaseRejected);
+        const forcePublic = url.searchParams.has("__public_update");
+        const preview = !forcePublic && shellAuth?.user?.role === "super_admin" && !Boolean(release.currentReleaseRejected);
         const publishedVersion = String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
         const rawPublishedReleaseId = String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
         // Defensive normalization: 3.8.6 can only map to its canonical archived release id.

@@ -36,7 +36,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.1-salary-balance-r1";
+      var v = "3.9.1-finance-integrity-r2";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -2433,6 +2433,15 @@
     .admin-user-main span { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; line-height: 1.65; }
     .admin-user-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 
+    .user-version-chip {
+      display:inline-flex; align-items:center; gap:5px; margin-top:5px; padding:4px 8px; border-radius:99px;
+      background:#eef1ef; color:#5d6c68; font-size:8px; font-weight:900;
+    }
+    .user-version-chip.current { background:var(--teal-soft); color:var(--teal); }
+    .user-version-chip.outdated { background:#fff0e6; color:#a35c28; }
+
+    .admin-device-versions { display:block; margin-top:5px; color:var(--muted); font-size:8px; line-height:1.7; }
+
     .reset-request {
       display: inline-flex !important;
       width: fit-content;
@@ -3296,12 +3305,12 @@
             <article class="guide-step">
               <div class="guide-step-number">3</div>
               <h3>أضف السلف والأقساط</h3>
-              <p>سجّل أي سلفة أو قسط شهري، وحدد قيمة القسط وتاريخ بدايته ونهايته ليحسب التطبيق أثره على الميزانية تلقائيًا.</p>
+              <p>سجّل أي سلفة أو قسط شهري، ويمكنك تحديده كقسط مشترك وتقسيمه على المشاركين ومتابعة حصصهم.</p>
             </article>
             <article class="guide-step">
               <div class="guide-step-number">4</div>
               <h3>أضف المدفوعات الثابتة</h3>
-              <p>أضف الفواتير والاشتراكات والمخصصات الشهرية الثابتة مثل الهاتف والإنترنت، ثم أكّد الدفع عند تنفيذها فعليًا ليتم خصمها من الرصيد. المدخرات لها قسم مستقل.</p>
+              <p>أضف الفواتير والاشتراكات والمخصصات الشهرية الثابتة، ثم أكّد الدفع عند تنفيذه فعليًا. مع نزول كل راتب تعود حالتها تلقائيًا إلى «بانتظار الدفع» لتعمل كتذكير للشهر الجديد.</p>
             </article>
             <article class="guide-step">
               <div class="guide-step-number">5</div>
@@ -3555,6 +3564,23 @@
           <div class="field">
             <label for="commitmentAmount">القسط الشهري (<span class="aed-symbol" aria-hidden="true"></span><span class="sr-only">درهم إماراتي</span>)</label>
             <input id="commitmentAmount" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required>
+          </div>
+          <div class="shared-expense-panel span-2">
+            <label class="shared-expense-toggle" for="commitmentShared">
+              <input id="commitmentShared" name="sharedCommitment" type="checkbox">
+              <span><strong>هذا القسط مشترك بين أكثر من شخص</strong><br><small>يُخصم القسط كاملًا عند نزول الراتب، ثم تضغط اسم كل مشارك عند وصول حصته ليُعاد المبلغ إلى الرصيد الحالي.</small></span>
+            </label>
+            <div class="shared-expense-fields" id="sharedCommitmentFields" hidden>
+              <div class="shared-expense-grid">
+                <div class="field">
+                  <label for="commitmentPeopleCount">عدد الأشخاص شاملًا أنت</label>
+                  <input id="commitmentPeopleCount" name="commitmentPeopleCount" type="number" min="2" max="20" step="1" inputmode="numeric" value="2">
+                </div>
+                <div class="shared-expense-summary"><span>حصتك الشهرية</span><strong id="commitmentPersonalShareAuto">0.00</strong></div>
+                <div class="shared-expense-summary"><span>المتوقع استرداده</span><strong id="commitmentExpectedRefund">0.00</strong></div>
+              </div>
+              <div class="shared-expense-grid" id="commitmentParticipantNames"></div>
+            </div>
           </div>
           <div class="field">
             <label for="commitmentStart">تاريخ بداية الخصم</label>
@@ -3843,7 +3869,10 @@
             <time datetime="2026-08-24">24 أغسطس 2026</time>
           </div>
           <ul>
-            <li>عند تعديل الراتب بعد نزوله، يتعدل الرصيد الحالي تلقائيًا بالفرق.</li>
+            <li>تحسين دقة الرصيد والحسابات عند نزول الراتب وتعديل المبالغ.</li>
+            <li>إضافة الأقساط المشتركة ومتابعة حصة كل مشارك.</li>
+            <li>إعادة المدفوعات الثابتة إلى «بانتظار الدفع» مع كل راتب جديد.</li>
+            <li>إظهار إصدار كل مستخدم للمالك مع إمكانية إرسال التحديث لمستخدم محدد.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -4445,7 +4474,7 @@
 
 
       var APP_VERSION = "3.9.1";
-      var APP_RELEASE_ID = "3.9.1-salary-balance-r1";
+      var APP_RELEASE_ID = "3.9.1-finance-integrity-r2";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -4455,6 +4484,7 @@
       var appLockFailedAttempts = 0;
       var appLockBlockedUntil = 0;
       var openParticipantEditors = new Set();
+      var openCommitmentParticipantEditors = new Set();
       var PRE_ACCOUNT_BACKUP_KEY = "monthlySalaryManager.v1.preAccountBackup";
       var API_BASE = String(window.SALARY_API_BASE || "").replace(/\/+$/, "");
       var deferredInstallPrompt = null;
@@ -4985,6 +5015,11 @@
         return Number.isFinite(number) && number >= 0 ? number : 0;
       }
 
+      function signedNumber(value) {
+        var number = Number(value);
+        return Number.isFinite(number) ? number : 0;
+      }
+
       function accountStorageKey() {
         return authState.user && authState.user.accountId ? "monthlySalaryManager.account." + authState.user.accountId : STORAGE_KEY;
       }
@@ -5024,7 +5059,11 @@
 
       async function apiFetch(path, options) {
         options = options || {};
-        var headers = Object.assign({ "x-salary-manager-app": "1" }, options.headers || {});
+        var headers = Object.assign({
+          "x-salary-manager-app": "1",
+          "x-salary-manager-version": APP_VERSION,
+          "x-salary-manager-release": APP_RELEASE_ID
+        }, options.headers || {});
         if (options.body && !headers["content-type"] && !headers["Content-Type"]) headers["content-type"] = "application/json";
         if (authState.token) headers.authorization = "Bearer " + authState.token;
         var response;
@@ -5539,11 +5578,18 @@
             var owner = user.role === "super_admin";
             var reset = user.resetRequested ? '<span class="reset-request">طلب إعادة تعيين كلمة المرور</span>' : '';
             var lockReset = user.appLockResetRequested ? '<span class="reset-request">طلب إعادة تعيين قفل التطبيق</span>' : '';
+            var versionText = String(user.currentAppVersion || "غير معروف");
+            var versionClass = user.onPublishedVersion ? " current" : (user.currentAppVersion ? " outdated" : "");
+            var versionStatusText = owner ? ' · نسخة المالك' : (user.hasKnownOutdatedDevice ? ' · يوجد جهاز قديم' : (user.onPublishedVersion ? ' · محدّث' : (user.currentAppVersion ? ' · يحتاج تحديث' : '')));
+            var versionLabel = '<span class="user-version-chip' + (owner ? ' current' : versionClass) + '">الإصدار: ' + escapeHTML(versionText) + versionStatusText + '</span>';
+            var knownDevices = Array.isArray(user.deviceVersions) ? user.deviceVersions : [];
+            var deviceVersionLine = knownDevices.length > 1 ? '<span class="admin-device-versions">الأجهزة: ' + knownDevices.slice(0,4).map(function (device) { return escapeHTML(String(device.deviceLabel || "جهاز")) + ' — ' + escapeHTML(String(device.version || "غير معروف")); }).join(' · ') + '</span>' : '';
             return '<div class="admin-user">' +
-              '<div class="admin-user-main"><strong>' + escapeHTML(user.username) + (owner ? ' · المالك' : '') + '</strong><span>' + escapeHTML(user.email) + ' · ' + (user.status === 'active' ? 'نشط' : 'موقوف') + ' · ' + Number(user.activeSessions || 0) + ' جلسة نشطة</span>' + reset + lockReset + '</div>' +
+              '<div class="admin-user-main"><strong>' + escapeHTML(user.username) + (owner ? ' · المالك' : '') + '</strong><span>' + escapeHTML(user.email) + ' · ' + (user.status === 'active' ? 'نشط' : 'موقوف') + ' · ' + Number(user.activeSessions || 0) + ' جلسة نشطة</span>' + versionLabel + deviceVersionLine + reset + lockReset + '</div>' +
               '<div class="admin-user-actions">' +
                 (!owner ? '<button class="mini-btn mark-paid" type="button" data-admin-reset="' + escapeHTML(user.id) + '">رمز إعادة تعيين</button>' : '') +
                 (!owner && user.appLockResetRequested ? '<button class="mini-btn mark-paid" type="button" data-admin-lock-reset="' + escapeHTML(user.id) + '">إلغاء رمز قفل التطبيق</button>' : '') +
+                (!owner && (!user.onPublishedVersion || user.hasKnownOutdatedDevice) ? '<button class="mini-btn mark-paid" type="button" data-admin-send-update="' + escapeHTML(user.id) + '">إرسال تحديث ' + escapeHTML(data.publishedVersion || '') + '</button>' : '') +
                 (!owner ? '<button class="mini-btn" type="button" data-admin-status="' + escapeHTML(user.id) + '" data-status="' + (user.status === 'active' ? 'suspended' : 'active') + '">' + (user.status === 'active' ? 'إيقاف الحساب' : 'تفعيل الحساب') + '</button>' : '') +
                 (!owner ? '<button class="mini-btn" type="button" data-admin-logout="' + escapeHTML(user.id) + '">تسجيل خروج من كل الأجهزة</button>' : '') +
               '</div></div>';
@@ -6025,11 +6071,26 @@
           }
         });
 
+        var targetedUpdateOpen = false;
+        try { targetedUpdateOpen = new URL(location.href).searchParams.get("targeted") === "1"; } catch (_) {}
+
         if ("serviceWorker" in navigator && location.protocol !== "file:") {
           window.addEventListener("load", async function () {
             try {
               var swUrl = new URL("./sw.js", location.href);
               registration = await navigator.serviceWorker.register(swUrl.href, { updateViaCache: "none" });
+              if (targetedUpdateOpen) {
+                try { await registration.update(); } catch (_) {}
+                setTimeout(function () {
+                  try {
+                    var cleanUrl = new URL(location.href);
+                    cleanUrl.searchParams.delete("targeted");
+                    cleanUrl.searchParams.delete("update");
+                    cleanUrl.searchParams.delete("__app_shell");
+                    history.replaceState(null, "", cleanUrl.pathname + (cleanUrl.search ? cleanUrl.search : "") + cleanUrl.hash);
+                  } catch (_) {}
+                }, 1200);
+              }
               if (registration.waiting) {
                 waitingWorker = registration.waiting;
                 checkHtmlVersion();
@@ -6066,7 +6127,7 @@
         if (!saved || typeof saved !== "object") return false;
         state.salary = safeNumber(saved.salary);
         state.salaryPayDay = Math.min(31, Math.max(0, Math.round(Number(saved.salaryPayDay) || 0)));
-        state.commitments = Array.isArray(saved.commitments) ? saved.commitments : [];
+        state.commitments = Array.isArray(saved.commitments) ? saved.commitments.map(function (item) { return normalizeCommitmentRecord(item); }) : [];
         state.recurringPayments = Array.isArray(saved.recurringPayments) ? saved.recurringPayments : [];
         state.expenses = Array.isArray(saved.expenses) ? saved.expenses.map(function (item) { return normalizeExpenseRecord(item); }) : [];
         state.deposits = Array.isArray(saved.deposits) ? saved.deposits.map(function (item) {
@@ -6086,13 +6147,15 @@
         if (walletReady) {
           state.walletLedgerVersion = 1;
           state.currentCalendarMonth = /^\d{4}-\d{2}$/.test(String(saved.currentCalendarMonth || "")) ? String(saved.currentCalendarMonth) : defaultMonth;
-          state.walletBalance = safeNumber(saved.walletBalance);
-          state.walletMonthOpeningBalance = safeNumber(saved.walletMonthOpeningBalance);
+          state.walletBalance = signedNumber(saved.walletBalance);
+          state.walletMonthOpeningBalance = signedNumber(saved.walletMonthOpeningBalance);
           state.monthOpeningBalances = saved.monthOpeningBalances && typeof saved.monthOpeningBalances === "object" ? saved.monthOpeningBalances : {};
           state.savingsBalance = Math.max(0, safeNumber(saved.savingsBalance));
           state.transactions = Array.isArray(saved.transactions) ? saved.transactions : [];
           state.statements = saved.statements && typeof saved.statements === "object" ? saved.statements : {};
           state.processedPaydays = saved.processedPaydays && typeof saved.processedPaydays === "object" ? saved.processedPaydays : {};
+          repairLegacySignedTransactions();
+          repairRecurringPaymentCycles();
           state.walletStarted = Boolean(saved.walletStarted || state.transactions.length || state.walletBalance || state.savingsBalance);
         } else {
           // ترقية آمنة من نظام 3.8.7 التجريبي: نأخذ الرصيد الظاهر للشهر الفعلي كنقطة بداية، ولا ننقل أي شهر مستقبلي.
@@ -6115,7 +6178,7 @@
           var migratedBalance = opening + salaryCredit - commitmentsTotal - recurringTotal - expensesTotal;
           state.walletLedgerVersion = 1;
           state.currentCalendarMonth = defaultMonth;
-          state.walletBalance = migratedBalance;
+          state.walletBalance = roundSignedMoney(migratedBalance);
           state.walletMonthOpeningBalance = opening;
           state.monthOpeningBalances = {};
           state.monthOpeningBalances[defaultMonth] = opening;
@@ -6138,7 +6201,7 @@
             var paid = Array.isArray(item.paidMonths) && item.paidMonths.indexOf(m) !== -1;
             if (!active || !paid) return;
             var amount = safeNumber(item.amount);
-            if (item.type === "ادخار") { state.savingsBalance += amount; addTransaction("savings_plan", -amount, item.name || "ادخار", toDateInput(dueDateForMonthKey(item,m)), item.id, { savingsDelta: amount, migrated: true }); }
+            if (item.type === "ادخار") { state.savingsBalance = roundMoney(state.savingsBalance + amount); addTransaction("savings_plan", -amount, item.name || "ادخار", toDateInput(dueDateForMonthKey(item,m)), item.id, { savingsDelta: amount, migrated: true }); }
             else addTransaction("recurring", -amount, item.name || "دفعة ثابتة", toDateInput(dueDateForMonthKey(item,m)), item.id, { migrated: true });
           });
           state.expenses.forEach(function (item) {
@@ -6250,12 +6313,121 @@
         return Math.round((safeNumber(value) + Number.EPSILON) * 100) / 100;
       }
 
+      function roundSignedMoney(value) {
+        var number = signedNumber(value);
+        var rounded = Math.round((Math.abs(number) + Number.EPSILON) * 100) / 100;
+        return number < 0 ? -rounded : rounded;
+      }
+
       function splitAmountEvenly(amount, count) {
         count = Math.max(2, Math.min(20, Math.round(Number(count) || 2)));
         var cents = Math.max(0, Math.round(roundMoney(amount) * 100));
         var base = Math.floor(cents / count);
         var remainder = cents - base * count;
         return Array.from({ length: count }, function (_, index) { return (base + (index < remainder ? 1 : 0)) / 100; });
+      }
+
+      function normalizeCommitmentRecord(item) {
+        var copy = Object.assign({}, item || {});
+        copy.amount = roundMoney(copy.amount);
+        copy.sharedCommitment = Boolean(copy.sharedCommitment);
+        copy.peopleCount = Math.max(0, Math.round(Number(copy.peopleCount) || 0));
+        copy.personalShare = roundMoney(copy.personalShare || copy.amount);
+        copy.expectedReimbursement = roundMoney(copy.expectedReimbursement);
+        copy.participants = Array.isArray(copy.participants) ? copy.participants.map(function (person, index) {
+          return Object.assign({}, person || {}, {
+            id: String(person && person.id || makeId("commitment-person")),
+            name: String(person && person.name || (index === 0 ? "أنا" : "شخص " + (index + 1))),
+            amount: roundMoney(person && person.amount),
+            isMe: Boolean(person && person.isMe || index === 0)
+          });
+        }) : [];
+        copy.sharedPayments = copy.sharedPayments && typeof copy.sharedPayments === "object" ? copy.sharedPayments : {};
+        copy.paidMonths = Array.isArray(copy.paidMonths) ? copy.paidMonths : [];
+        return copy;
+      }
+
+      function salaryCycleKeyForDate(value) {
+        var date = value instanceof Date ? new Date(value.getTime()) : new Date(String(value || "") + (String(value || "").length <= 10 ? "T12:00:00" : ""));
+        if (Number.isNaN(date.getTime())) date = new Date();
+        var payDay = Math.min(31, Math.max(0, Math.round(Number(state.salaryPayDay) || 0)));
+        if (!payDay) return toMonthKey(date);
+        var current = salaryDateFor(date.getFullYear(), date.getMonth(), payDay); current.setHours(0,0,0,0);
+        var compare = new Date(date.getFullYear(), date.getMonth(), date.getDate()); compare.setHours(0,0,0,0);
+        if (compare >= current) return toDateInput(current);
+        var previousBase = new Date(date.getFullYear(), date.getMonth() - 1, 1);
+        return toDateInput(salaryDateFor(previousBase.getFullYear(), previousBase.getMonth(), payDay));
+      }
+
+      function currentPaymentCycleKey() { return salaryCycleKeyForDate(new Date()); }
+
+      function repairRecurringPaymentCycles() {
+        (state.recurringPayments || []).forEach(function (item) {
+          if (item.type === "ادخار") return;
+          var relevant = (state.transactions || []).filter(function (tx) {
+            return (tx.type === "recurring" || tx.type === "recurring_reversal") && String(tx.refId || "") === String(item.id || "");
+          }).slice().sort(function (a,b) {
+            var at = Date.parse(a.createdAt || (String(a.date || "") + "T12:00:00")) || 0;
+            var bt = Date.parse(b.createdAt || (String(b.date || "") + "T12:00:00")) || 0;
+            return at - bt;
+          });
+          var cycles = [];
+          if (relevant.length) {
+            relevant.forEach(function (tx) {
+              var cycle = salaryCycleKeyForDate(tx.date);
+              if (!cycle) return;
+              tx.paymentCycleKey = cycle;
+              var index = cycles.indexOf(cycle);
+              if (tx.type === "recurring") {
+                if (index === -1) cycles.push(cycle);
+              } else if (index !== -1) {
+                cycles.splice(index, 1);
+              }
+            });
+          } else if (Array.isArray(item.paidMonths)) {
+            item.paidMonths.forEach(function (monthKey) {
+              if (!/^\d{4}-\d{2}$/.test(String(monthKey || ""))) return;
+              var parts = String(monthKey).split("-").map(Number);
+              var payDay = Math.min(31, Math.max(1, Math.round(Number(state.salaryPayDay) || 1)));
+              var cycle = state.salaryPayDay ? toDateInput(salaryDateFor(parts[0], parts[1]-1, payDay)) : String(monthKey);
+              if (String(monthKey) === defaultMonth && state.salaryPayDay && currentDateAtMidnight() < salaryDateFor(parts[0], parts[1]-1,payDay)) {
+                var prev = new Date(parts[0], parts[1]-2, 1);
+                cycle = toDateInput(salaryDateFor(prev.getFullYear(), prev.getMonth(), payDay));
+              }
+              if (cycles.indexOf(cycle) === -1) cycles.push(cycle);
+            });
+          }
+          item.paidCycleKeys = cycles;
+        });
+      }
+
+      function repairLegacySignedTransactions() {
+        (state.transactions || []).forEach(function (tx) {
+          if (!tx || Math.abs(Number(tx.amount || 0)) > 0.0001) return;
+          var ref = String(tx.refId || "");
+          var amount = 0;
+          if (tx.type === "commitment") {
+            var record = tx.paydayKey && state.processedPaydays && state.processedPaydays[tx.paydayKey];
+            var charged = record && Array.isArray(record.chargedCommitments) ? record.chargedCommitments.find(function (entry) { return String(entry && entry.id || "") === ref; }) : null;
+            var commitment = (state.commitments || []).find(function (item) { return String(item.id || "") === ref; });
+            amount = charged ? safeNumber(charged.amount) : safeNumber(commitment && commitment.amount);
+            if (amount > 0) tx.amount = -amount;
+          } else if (tx.type === "recurring") {
+            var recurring = (state.recurringPayments || []).find(function (item) { return String(item.id || "") === ref; });
+            amount = safeNumber(recurring && recurring.amount); if (amount > 0) tx.amount = -amount;
+          } else if (tx.type === "expense") {
+            var expense = (state.expenses || []).find(function (item) { return String(item.id || "") === ref; });
+            amount = safeNumber(expense && expense.amount); if (amount > 0) tx.amount = -amount;
+          } else if ((tx.type === "savings_plan" || tx.type === "savings_manual" || tx.type === "savings_transfer") && safeNumber(tx.savingsDelta) > 0) {
+            tx.amount = -safeNumber(tx.savingsDelta);
+          } else if (tx.type === "balance_adjustment" && Number.isFinite(Number(tx.balanceBefore)) && Number.isFinite(Number(tx.balanceAfter))) {
+            tx.amount = roundSignedMoney(Number(tx.balanceAfter) - Number(tx.balanceBefore));
+          }
+        });
+      }
+
+      function isRecurringPaidForCycle(item, cycleKey) {
+        return Array.isArray(item.paidCycleKeys) && item.paidCycleKeys.indexOf(String(cycleKey || "")) !== -1;
       }
 
       function normalizeExpenseRecord(item) {
@@ -6377,6 +6549,7 @@
       }
 
       function isRecurringPaidForMonth(item, monthKey) {
+        if (item.type !== "ادخار" && String(monthKey || "") === defaultMonth) return isRecurringPaidForCycle(item, currentPaymentCycleKey());
         return Array.isArray(item.paidMonths) && item.paidMonths.indexOf(monthKey) !== -1;
       }
 
@@ -6400,7 +6573,7 @@
 
       function sumCommitmentCharges(monthKey) {
         var tx = transactionsForMonth(monthKey).filter(function (item) { return item.type === "commitment"; });
-        return tx.reduce(function (sum, item) { return sum + Math.abs(safeNumber(item.amount)); }, 0);
+        return tx.reduce(function (sum, item) { return sum + Math.abs(signedNumber(item.amount)); }, 0);
       }
 
       function confirmedRecurringForMonth(monthKey) {
@@ -6427,7 +6600,7 @@
         var tx = Object.assign({
           id: makeId("tx"),
           type: String(type || "other"),
-          amount: safeNumber(amount),
+          amount: roundSignedMoney(amount),
           title: String(title || "عملية"),
           date: date,
           month: calendarMonthForDate(date),
@@ -6446,7 +6619,7 @@
       function monthTransactionTotal(monthKey, types, direction) {
         var wanted = Array.isArray(types) ? types : [types];
         return transactionsForMonth(monthKey).reduce(function (sum, tx) {
-          var amount = safeNumber(tx.amount);
+          var amount = signedNumber(tx.amount);
           if (wanted.indexOf(tx.type) === -1) return sum;
           if (direction === "out") return sum + (amount < 0 ? Math.abs(amount) : 0);
           if (direction === "in") return sum + (amount > 0 ? amount : 0);
@@ -6464,7 +6637,7 @@
           copy.reimbursements = Array.isArray(item.reimbursements) ? item.reimbursements.map(function (entry) { return Object.assign({}, entry); }) : [];
           return copy;
         });
-        var opening = safeNumber((state.monthOpeningBalances || {})[monthKey]);
+        var opening = signedNumber((state.monthOpeningBalances || {})[monthKey]);
         var statement = {
           month: monthKey,
           archivedAt: new Date().toISOString(),
@@ -6477,9 +6650,9 @@
           savingsTransferTotal: monthTransactionTotal(monthKey, ["savings_transfer","savings_plan"], "out"),
           expensesGrossTotal: monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0),
           expensesTotal: monthExpenses.reduce(function (sum, item) { return sum + netExpenseAmountForMonth(item, monthKey); }, 0),
-          reimbursementsReceivedTotal: Math.max(0, monthTransactionTotal(monthKey, ["expense_reimbursement","expense_reimbursement_reversal"])),
+          reimbursementsReceivedTotal: Math.max(0, monthTransactionTotal(monthKey, ["expense_reimbursement","expense_reimbursement_reversal","commitment_reimbursement","commitment_reimbursement_reversal"])),
           pendingReimbursementsAtClose: pendingReimbursementsTotal(),
-          closingBalance: safeNumber(state.walletBalance),
+          closingBalance: signedNumber(state.walletBalance),
           savingsBalanceAtClose: safeNumber(state.savingsBalance),
           transactions: tx,
           expenses: monthExpenses
@@ -6500,7 +6673,7 @@
         while (state.currentCalendarMonth < defaultMonth && guard < 240) {
           archiveMonth(state.currentCalendarMonth);
           state.currentCalendarMonth = shiftMonth(state.currentCalendarMonth, 1);
-          state.walletMonthOpeningBalance = safeNumber(state.walletBalance);
+          state.walletMonthOpeningBalance = signedNumber(state.walletBalance);
           state.monthOpeningBalances[state.currentCalendarMonth] = state.walletMonthOpeningBalance;
           changed = true;
           guard += 1;
@@ -6510,10 +6683,10 @@
         state.activeMonth = defaultMonth;
         state.managerStartMonth = defaultMonth;
         if (state.monthOpeningBalances[defaultMonth] == null) {
-          state.walletMonthOpeningBalance = safeNumber(state.walletBalance);
+          state.walletMonthOpeningBalance = signedNumber(state.walletBalance);
           state.monthOpeningBalances[defaultMonth] = state.walletMonthOpeningBalance;
         } else {
-          state.walletMonthOpeningBalance = safeNumber(state.monthOpeningBalances[defaultMonth]);
+          state.walletMonthOpeningBalance = signedNumber(state.monthOpeningBalances[defaultMonth]);
         }
         if (changed && showToast) showToast("تم حفظ كشف حساب الشهر السابق وبدء الشهر الجديد");
         return changed;
@@ -6545,40 +6718,81 @@
         if (now < payday) return false;
         var paydayKey = toDateInput(payday);
         if (state.processedPaydays[paydayKey]) return false;
-        var carry = safeNumber(state.walletBalance);
+
+        var balanceBeforePayday = roundSignedMoney(state.walletBalance);
+        var carry = balanceBeforePayday;
         var savingsBefore = safeNumber(state.savingsBalance);
         var movedToSavings = 0;
+        var salaryAdded = roundMoney(state.salary);
         var chargedCommitments = [];
+        var totalCommitments = 0;
+
+        // 1) نحسم مصير الرصيد السابق أولًا، لكن لا نخصم أي قسط بعد.
         if (choice === "savings" && carry > 0) {
-          state.walletBalance -= carry;
-          state.savingsBalance = Math.max(0, safeNumber(state.savingsBalance) + carry);
           movedToSavings = carry;
+          state.savingsBalance = roundMoney(savingsBefore + carry);
           addTransaction("savings_transfer", -carry, "ترحيل الرصيد السابق إلى المدخرات", paydayKey, "", { savingsDelta: carry, source: "payday-carry", paydayKey: paydayKey });
         }
-        var salaryAdded = safeNumber(state.salary);
-        state.walletBalance += salaryAdded;
-        addTransaction("salary", salaryAdded, "نزول الراتب", paydayKey, "", { paydayKey: paydayKey });
 
+        // 2) نسجل الراتب كاملًا أولًا. هذا الترتيب مقصود لمنع أخطاء الخصم قبل إضافة الراتب.
+        var balanceAfterCarry = choice === "savings" && carry > 0 ? 0 : carry;
+        var balanceAfterSalary = roundSignedMoney(balanceAfterCarry + salaryAdded);
+        addTransaction("salary", salaryAdded, "نزول الراتب", paydayKey, "", { paydayKey: paydayKey, balanceBefore:balanceAfterCarry, balanceAfter:balanceAfterSalary });
+
+        // 3) بعد تسجيل الراتب فقط، نحسب الأقساط والسلف النشطة مرة واحدة ثم نخصمها دفعة حسابية واحدة.
         var chargeMap = getCommitmentChargeMap(defaultMonth);
         state.commitments.forEach(function (item) {
           if (!isCommitmentActive(item, defaultMonth) || commitmentAlreadyCharged(paydayKey, item.id)) return;
-          var amount = safeNumber(item.amount);
+          var amount = roundMoney(item.amount);
           if (amount <= 0) return;
           var paidMonths = Array.isArray(item.paidMonths) ? item.paidMonths.slice() : [];
           var hadPaidMonth = paidMonths.indexOf(defaultMonth) !== -1;
-          state.walletBalance -= amount;
+          totalCommitments = roundMoney(totalCommitments + amount);
           chargeMap[item.id] = amount;
           addTransaction("commitment", -amount, item.name || "قسط أو سلفة", paydayKey, item.id, { paydayKey: paydayKey });
           if (!hadPaidMonth) paidMonths.push(defaultMonth);
           item.paidMonths = paidMonths;
+          if (item.sharedCommitment) {
+            if (!item.sharedPayments || typeof item.sharedPayments !== "object") item.sharedPayments = {};
+            if (!item.sharedPayments[paydayKey] || typeof item.sharedPayments[paydayKey] !== "object") item.sharedPayments[paydayKey] = {};
+            var sharedCycle = item.sharedPayments[paydayKey];
+            if (!sharedCycle.__snapshot) {
+              var cycleParticipants = Array.isArray(item.participants) ? item.participants.map(function (person, index) {
+                return {
+                  id:String(person && person.id || makeId("commitment-person")),
+                  name:String(person && person.name || (index === 0 ? "أنا" : "شخص " + (index + 1))),
+                  amount:roundMoney(person && person.amount),
+                  isMe:Boolean(person && person.isMe || index === 0)
+                };
+              }) : [];
+              sharedCycle.__snapshot = {
+                amount:amount,
+                peopleCount:cycleParticipants.length,
+                personalShare:roundMoney(cycleParticipants.length ? cycleParticipants[0].amount : item.personalShare),
+                expectedReimbursement:roundMoney(cycleParticipants.reduce(function (sum, person) { return sum + (!person.isMe ? safeNumber(person.amount) : 0); }, 0)),
+                participants:cycleParticipants
+              };
+            }
+          }
           chargedCommitments.push({ id: String(item.id || ""), amount: amount, hadPaidMonth: hadPaidMonth });
         });
+        state.walletBalance = roundSignedMoney(balanceAfterSalary - totalCommitments);
+
+        // دورة المدفوعات الثابتة الجديدة تبدأ الآن. paidCycleKeys تجعل الأزرار تعود تلقائيًا إلى «بانتظار الدفع» من هذه اللحظة.
+        state.recurringPayments.forEach(function (item) {
+          if (item.type !== "ادخار" && isRecurringActive(item, defaultMonth)) item.lastResetPaydayKey = paydayKey;
+        });
+
         state.processedPaydays[paydayKey] = {
           processedAt: new Date().toISOString(),
+          balanceBeforePayday: balanceBeforePayday,
+          balanceAfterSalary: balanceAfterSalary,
+          balanceAfterCommitments: state.walletBalance,
           carryBefore: carry,
           savingsBefore: savingsBefore,
           movedToSavings: movedToSavings,
           salary: salaryAdded,
+          commitmentsTotal: totalCommitments,
           chargedCommitments: chargedCommitments,
           choice: choice === "savings" ? "savings" : "keep"
         };
@@ -6595,7 +6809,7 @@
         if (now < payday) return;
         var key = toDateInput(payday);
         if (state.processedPaydays && state.processedPaydays[key]) return;
-        var carry = safeNumber(state.walletBalance);
+        var carry = signedNumber(state.walletBalance);
         if (carry > 0) {
           var dialog = $("#paydayCarryDialog");
           if (dialog && !dialog.open) {
@@ -6624,7 +6838,7 @@
         var grossExpensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0);
         var sameMonthExpenseReimbursements = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : reimbursementsInMonth(item, monthKey)); }, 0);
         var expensesTotal = monthExpenses.reduce(function (sum, item) { return sum + netExpenseAmountForMonth(item, monthKey); }, 0);
-        var reimbursementsReceivedTotal = Math.max(0, monthTransactionTotal(monthKey, ["expense_reimbursement","expense_reimbursement_reversal"]));
+        var reimbursementsReceivedTotal = Math.max(0, monthTransactionTotal(monthKey, ["expense_reimbursement","expense_reimbursement_reversal","commitment_reimbursement","commitment_reimbursement_reversal"]));
         var pendingReimbursements = pendingReimbursementsTotal();
         var excludedExpensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? safeNumber(item.amount) : 0); }, 0);
         var salaryDeposits = monthTransactionTotal(monthKey, ["salary","initial_salary"], "in");
@@ -6633,8 +6847,8 @@
         var balanceAdjustmentIn = monthTransactionTotal(monthKey, "balance_adjustment", "in");
         var balanceAdjustmentOut = monthTransactionTotal(monthKey, "balance_adjustment", "out");
         var balanceAdjustmentNet = monthTransactionTotal(monthKey, "balance_adjustment");
-        var opening = safeNumber(state.walletMonthOpeningBalance);
-        var balance = safeNumber(state.walletBalance);
+        var opening = signedNumber(state.walletMonthOpeningBalance);
+        var balance = signedNumber(state.walletBalance);
         // الرصيد المتاح المرجعي يجب أن يبقى صحيحًا أيضًا للحسابات التي انتقلت من البنايات التجريبية السابقة
         // والتي قد لا تحتوي على عملية راتب افتتاحية في سجل المعاملات.
         var ledgerAvailableBase = Math.max(0, opening) + salaryDeposits + manualDeposits + balanceAdjustmentIn;
@@ -6909,6 +7123,14 @@
           var autoCharged = Boolean(getCommitmentChargeMap(defaultMonth)[item.id] != null);
           var statusLabel = active ? (false ? "بانتظار تفعيل الشهر" : (autoCharged ? "مخصوم تلقائيًا" : "غير مخصوم")) : (endMonth < defaultMonth ? "منتهٍ" : "يبدأ لاحقًا");
           var notes = item.notes ? ' · ' + escapeHTML(item.notes) : "";
+          var sharedMeta = "";
+          if (item.sharedCommitment && Array.isArray(item.participants) && item.participants.length > 1) {
+            var sharedPayday = latestCommitmentPaydayKey(item);
+            var sharedCycleInfo = sharedCommitmentCycleInfo(item, sharedPayday);
+            var sharedReceived = sharedCommitmentReceived(item, sharedPayday);
+            var sharedPending = Math.max(0, roundMoney(safeNumber(sharedCycleInfo.expectedReimbursement) - sharedReceived));
+            sharedMeta = '<span class="expense-shared-tag">قسط مشترك</span><div class="expense-shared-meta">حصتي ' + formatMoney(sharedCycleInfo.personalShare) + ' · تم استرداده ' + formatMoney(sharedReceived) + ' · متبقي ' + formatMoney(sharedPending) + '</div>' + commitmentParticipantPaymentHTML(item);
+          }
 
           return '<article class="commitment-card">' +
             '<div class="category-mark" style="--category-color:' + style.color + ';--category-bg:' + style.background + '">' + style.symbol + '</div>' +
@@ -6919,7 +7141,7 @@
                 '<span>الخصم يوم ' + escapeHTML(item.dueDay || 1) + '</span>' +
                 '<span>ينتهي ' + escapeHTML(formatDate(item.endDate)) + '</span>' +
                 '<span>' + remainingMonths + ' شهر متبقٍ</span>' + notes +
-              '</div>' +
+              '</div>' + sharedMeta +
             '</div>' +
             '<div class="commitment-actions">' +
               '<strong class="commitment-amount">' + moneyHTML(item.amount) + ' / شهر</strong>' +
@@ -6956,7 +7178,7 @@
         root.innerHTML = sorted.map(function (item) {
           var style = recurringStyle[item.type] || recurringStyle["أخرى"];
           var active = isRecurringActive(item, state.selectedMonth);
-          var paid = Array.isArray(item.paidMonths) && item.paidMonths.indexOf(state.selectedMonth) !== -1;
+          var paid = isRecurringPaidForCycle(item, currentPaymentCycleKey());
           var startMonth = String(item.startDate || "").slice(0, 7);
           var endMonth = String(item.endDate || "").slice(0, 7);
           var statusLabel = item.isPaused ? "متوقفة مؤقتًا" : active ? (paid ? "تم الدفع والخصم" : "بانتظار تأكيد الدفع") : (endMonth && endMonth < defaultMonth ? "منتهية" : startMonth > defaultMonth ? "تبدأ لاحقًا" : "غير نشطة");
@@ -7014,7 +7236,7 @@
           var savingsTx = (state.transactions || []).filter(function (tx) { return tx.type === "savings_transfer" || tx.type === "savings_plan" || tx.type === "savings_withdrawal" || tx.type === "savings_manual" || tx.type === "savings_reversal"; }).slice().sort(function (a,b) { return String(b.createdAt).localeCompare(String(a.createdAt)); }).slice(0,30);
           if (!savingsTx.length) historyRoot.innerHTML = emptyState("د", "لا توجد حركة مدخرات بعد", "ستظهر هنا التحويلات إلى المدخرات وعمليات السحب.");
           else historyRoot.innerHTML = savingsTx.map(function (tx) {
-            var delta = safeNumber(tx.savingsDelta);
+            var delta = signedNumber(tx.savingsDelta);
             var cls = delta >= 0 ? "savings-history-positive" : "savings-history-negative";
             return '<div class="expense-item"><div class="expense-category">د</div><div><p class="item-title">' + escapeHTML(tx.title) + '</p><p class="item-meta">' + escapeHTML(formatDate(tx.date)) + '</p></div><strong class="item-amount ' + cls + '">' + (delta >= 0 ? '+' : '-') + moneyHTML(Math.abs(delta)) + '</strong></div>';
           }).join("");
@@ -7034,7 +7256,7 @@
           var st = statements[key] || {};
           var tx = Array.isArray(st.transactions) ? st.transactions : [];
           var txHtml = tx.length ? tx.slice().sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); }).map(function (item) {
-            var amount = safeNumber(item.amount);
+            var amount = signedNumber(item.amount);
             var cls = amount >= 0 ? "statement-amount-in" : "statement-amount-out";
             return '<div class="statement-transaction"><div><strong>' + escapeHTML(item.title || 'عملية') + '</strong><small class="item-meta">' + escapeHTML(formatDate(item.date)) + '</small></div><strong class="' + cls + '">' + (amount >= 0 ? '+' : '-') + moneyHTML(Math.abs(amount)) + '</strong></div>';
           }).join('') : '<p class="item-meta">لا توجد حركات مالية مسجلة في هذا الشهر.</p>';
@@ -7185,7 +7407,7 @@
 
       function openCurrentBalanceDialog() {
         ensureWalletCalendarCurrent(false);
-        var current = safeNumber(state.walletBalance);
+        var current = signedNumber(state.walletBalance);
         setMoney("#currentBalanceBefore", current);
         $("#currentBalanceInput").value = current.toFixed(2);
         $("#currentBalanceNote").value = "";
@@ -7201,7 +7423,7 @@
         var target = Number(raw);
         if (!Number.isFinite(target)) { showToast("أدخل مبلغًا صحيحًا", true); return; }
         target = Math.round(target * 100) / 100;
-        var before = safeNumber(state.walletBalance);
+        var before = signedNumber(state.walletBalance);
         var difference = Math.round((target - before) * 100) / 100;
         var note = String($("#currentBalanceNote").value || "").trim();
         var wasStarted = Boolean(state.walletStarted);
@@ -7230,6 +7452,142 @@
         showToast("تم تحديث الرصيد الحالي");
       }
 
+      function renderSharedCommitmentParticipantInputs(count, participants) {
+        var root = $("#commitmentParticipantNames");
+        if (!root) return;
+        count = Math.max(2, Math.min(20, Math.round(Number(count) || 2)));
+        participants = Array.isArray(participants) ? participants : [];
+        var existing = {};
+        $all('#commitmentParticipantNames input[data-commitment-person-index]').forEach(function (input) { existing[Number(input.dataset.commitmentPersonIndex)] = input.value; });
+        root.dataset.count = String(count);
+        root.innerHTML = Array.from({ length: count }, function (_, index) {
+          if (index === 0) return '<div class="field me-name"><label>أنت</label><input type="text" value="أنا" readonly tabindex="-1"></div>';
+          var value = existing[index] || (participants[index] && participants[index].name) || '';
+          return '<div class="field"><label>الشخص ' + (index + 1) + '</label><input type="text" name="commitmentParticipantName_' + index + '" data-commitment-person-index="' + index + '" maxlength="40" value="' + escapeHTML(value) + '" placeholder="اكتب الاسم"></div>';
+        }).join('');
+      }
+
+      function updateSharedCommitmentForm(participants) {
+        var enabled = Boolean($("#commitmentShared") && $("#commitmentShared").checked);
+        var fields = $("#sharedCommitmentFields"); if (fields) fields.hidden = !enabled;
+        var amount = roundMoney($("#commitmentAmount") && $("#commitmentAmount").value);
+        var people = Math.max(2, Math.min(20, Math.round(Number($("#commitmentPeopleCount") && $("#commitmentPeopleCount").value) || 2)));
+        if ($("#commitmentPeopleCount")) $("#commitmentPeopleCount").value = people;
+        if (enabled) renderSharedCommitmentParticipantInputs(people, participants);
+        var splits = enabled && amount > 0 ? splitAmountEvenly(amount, people) : [];
+        var personal = splits.length ? splits[0] : 0;
+        var expected = splits.length ? roundMoney(splits.slice(1).reduce(function (sum, value) { return sum + value; }, 0)) : 0;
+        setMoney("#commitmentPersonalShareAuto", personal);
+        setMoney("#commitmentExpectedRefund", expected);
+      }
+
+      function sharedCommitmentValues(data, amount, existing) {
+        var shared = data.get("sharedCommitment") === "on";
+        if (!shared) return { sharedCommitment:false, peopleCount:0, personalShare:amount, expectedReimbursement:0, participants:[], sharedPayments:existing && existing.sharedPayments && typeof existing.sharedPayments === "object" ? existing.sharedPayments : {} };
+        var count = Math.max(2, Math.min(20, Math.round(Number(data.get("commitmentPeopleCount")) || 2)));
+        var splits = splitAmountEvenly(amount, count);
+        var oldParticipants = existing && Array.isArray(existing.participants) ? existing.participants : [];
+        var participants = splits.map(function (share, index) {
+          var old = oldParticipants[index];
+          var name = index === 0 ? "أنا" : String(data.get("commitmentParticipantName_" + index) || "").trim();
+          return { id:String(old && old.id || makeId("commitment-person")), name:name || String(old && old.name || "شخص " + (index + 1)), amount:roundMoney(share), isMe:index === 0 };
+        });
+        return {
+          sharedCommitment:true,
+          peopleCount:count,
+          personalShare:roundMoney(participants[0].amount),
+          expectedReimbursement:roundMoney(participants.slice(1).reduce(function (sum,p) { return sum + safeNumber(p.amount); },0)),
+          participants:participants,
+          sharedPayments:existing && existing.sharedPayments && typeof existing.sharedPayments === "object" ? existing.sharedPayments : {}
+        };
+      }
+
+      function latestCommitmentPaydayKey(item) {
+        var tx = (state.transactions || []).filter(function (entry) { return entry.type === "commitment" && String(entry.refId || "") === String(item && item.id || "") && entry.paydayKey; })
+          .slice().sort(function (a,b) { return String(b.paydayKey || b.date || "").localeCompare(String(a.paydayKey || a.date || "")); });
+        return tx.length ? String(tx[0].paydayKey || "") : "";
+      }
+
+      function sharedCommitmentCycleInfo(item, paydayKey) {
+        var cycle = item && paydayKey && item.sharedPayments && typeof item.sharedPayments === "object" ? item.sharedPayments[paydayKey] : null;
+        var snap = cycle && cycle.__snapshot && typeof cycle.__snapshot === "object" ? cycle.__snapshot : null;
+        var participants = snap && Array.isArray(snap.participants) ? snap.participants.map(function (person, index) {
+          return {
+            id:String(person && person.id || makeId("commitment-person")),
+            name:String(person && person.name || (index === 0 ? "أنا" : "شخص " + (index + 1))),
+            amount:roundMoney(person && person.amount),
+            isMe:Boolean(person && person.isMe || index === 0)
+          };
+        }) : (Array.isArray(item && item.participants) ? item.participants : []);
+        return {
+          payments:cycle || {},
+          participants:participants,
+          amount:roundMoney(snap && snap.amount != null ? snap.amount : item && item.amount),
+          personalShare:roundMoney(snap && snap.personalShare != null ? snap.personalShare : item && item.personalShare),
+          expectedReimbursement:roundMoney(snap && snap.expectedReimbursement != null ? snap.expectedReimbursement : item && item.expectedReimbursement)
+        };
+      }
+
+      function sharedCommitmentReceived(item, paydayKey) {
+        if (!item || !paydayKey || !item.sharedPayments || typeof item.sharedPayments !== "object") return 0;
+        var cycle = item.sharedPayments[paydayKey] || {};
+        return roundMoney(Object.keys(cycle).reduce(function (sum,id) { if (id === "__snapshot") return sum; var rec=cycle[id]; return sum + (rec && rec.paid ? safeNumber(rec.amount) : 0); },0));
+      }
+
+      function commitmentParticipantPaymentHTML(item) {
+        if (!item || !item.sharedCommitment) return "";
+        var paydayKey = latestCommitmentPaydayKey(item);
+        var cycleInfo = sharedCommitmentCycleInfo(item, paydayKey);
+        if (!Array.isArray(cycleInfo.participants) || cycleInfo.participants.length < 2) return "";
+        var open = openCommitmentParticipantEditors.has(String(item.id));
+        var payments = cycleInfo.payments || {};
+        var grid = '<div class="participant-payment-grid">' + cycleInfo.participants.map(function (person) {
+          var record = payments[String(person.id || "")] || {};
+          var paid = Boolean(person.isMe || record.paid);
+          var cls = 'participant-pay-chip' + (paid ? ' paid' : '') + (person.isMe ? ' me' : '');
+          var disabled = person.isMe || !paydayKey;
+          var attrs = disabled ? ' disabled aria-disabled="true"' : ' data-toggle-commitment-participant="' + escapeHTML(item.id) + '" data-commitment-participant-id="' + escapeHTML(person.id) + '"';
+          return '<button class="' + cls + '" type="button"' + attrs + '><span class="participant-circle">' + (paid ? '✓' : '○') + '</span><strong>' + escapeHTML(person.name || (person.isMe ? 'أنا' : 'مشارك')) + '</strong><small>' + escapeHTML(formatMoney(person.amount)) + '</small></button>';
+        }).join('') + '</div>' + (!paydayKey ? '<p class="participant-payment-hint">سيبدأ تسجيل حصص المشاركين بعد خصم القسط في يوم الراتب.</p>' : '<p class="participant-payment-hint">اضغط اسم المشارك عند وصول حصته. اضغط مرة أخرى للتراجع إذا تم التحديد بالخطأ.</p>');
+        return '<div class="participant-editor"><button class="participant-editor-toggle" type="button" data-toggle-commitment-participant-editor="' + escapeHTML(item.id) + '" aria-expanded="' + (open ? 'true':'false') + '">' + (open ? '✓ إخفاء المشاركين' : '✎ تعديل المشاركين') + '</button><div class="participant-editor-body"' + (open ? '' : ' hidden') + '>' + grid + '</div></div>';
+      }
+
+      function toggleCommitmentParticipantEditor(id) {
+        id=String(id||""); if(!id) return;
+        if (openCommitmentParticipantEditors.has(id)) openCommitmentParticipantEditors.delete(id); else openCommitmentParticipantEditors.add(id);
+        renderCommitments();
+      }
+
+      function toggleCommitmentParticipantPayment(commitmentId, participantId) {
+        ensureWalletCalendarCurrent(false);
+        var item = state.commitments.find(function (entry) { return String(entry.id) === String(commitmentId); });
+        if (!item || !item.sharedCommitment) return;
+        var paydayKey = latestCommitmentPaydayKey(item);
+        if (!paydayKey) { showToast("لم يتم خصم هذا القسط في دورة راتب بعد", true); return; }
+        var cycleInfo = sharedCommitmentCycleInfo(item, paydayKey);
+        var person = (cycleInfo.participants || []).find(function (entry) { return String(entry.id) === String(participantId); });
+        if (!person || person.isMe) return;
+        if (!item.sharedPayments || typeof item.sharedPayments !== "object") item.sharedPayments = {};
+        if (!item.sharedPayments[paydayKey] || typeof item.sharedPayments[paydayKey] !== "object") item.sharedPayments[paydayKey] = {};
+        var cycle = item.sharedPayments[paydayKey];
+        var record = cycle[String(person.id)] || {};
+        var amount = roundMoney(person.amount);
+        var todayValue = toDateInput(new Date());
+        if (!record.paid) {
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + amount);
+          var tx = addTransaction("commitment_reimbursement", amount, "استرداد حصة " + (person.name || "مشارك") + " — " + (item.name || "قسط مشترك"), todayValue, item.id, { commitmentId:item.id, participantId:person.id, paydayKey:paydayKey });
+          cycle[String(person.id)] = { paid:true, amount:amount, paidAt:todayValue, txId:tx.id };
+          showToast("تمت إضافة حصة " + (person.name || "المشارك") + " إلى الرصيد الحالي");
+        } else {
+          if (record.paidAt && calendarMonthForDate(record.paidAt) !== defaultMonth) { showToast("لا يمكن التراجع عن استرداد محفوظ في كشف شهر سابق.", true); return; }
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - safeNumber(record.amount || amount));
+          addTransaction("commitment_reimbursement_reversal", -safeNumber(record.amount || amount), "تراجع عن استرداد حصة " + (person.name || "مشارك") + " — " + (item.name || "قسط مشترك"), todayValue, item.id, { commitmentId:item.id, participantId:person.id, paydayKey:paydayKey, reversedTxId:String(record.txId || "") });
+          cycle[String(person.id)] = { paid:false, amount:amount, paidAt:"", txId:"" };
+          showToast("تمت إعادة " + (person.name || "المشارك") + " إلى بانتظار التحويل");
+        }
+        render();
+      }
+
       function openCommitmentDialog(item) {
         var form = $("#commitmentForm");
         form.reset();
@@ -7240,6 +7598,9 @@
         $("#commitmentStart").value = startDefault;
         $("#commitmentEnd").value = endDefault;
         $("#commitmentDueDay").value = 1;
+        $("#commitmentShared").checked = false;
+        $("#commitmentPeopleCount").value = 2;
+        updateSharedCommitmentForm();
 
         if (item) {
           $("#commitmentId").value = item.id;
@@ -7251,6 +7612,9 @@
           $("#commitmentDueDay").value = item.dueDay || 1;
           $("#commitmentTotal").value = item.remainingTotal || "";
           $("#commitmentNotes").value = item.notes || "";
+          $("#commitmentShared").checked = Boolean(item.sharedCommitment);
+          $("#commitmentPeopleCount").value = Math.max(2, Number(item.peopleCount || (item.participants || []).length || 2));
+          updateSharedCommitmentForm(item.participants || []);
         }
 
         $("#commitmentDialog").showModal();
@@ -7315,12 +7679,15 @@
         var transactions = Array.isArray(state.transactions) ? state.transactions : [];
         var paydayTransactions = transactions.filter(function (tx) {
           return String(tx.paydayKey || "") === paydayKey &&
-            (tx.type === "salary" || tx.type === "commitment" || tx.type === "savings_transfer");
+            (tx.type === "salary" || tx.type === "commitment" || tx.type === "savings_transfer" || tx.type === "commitment_reimbursement" || tx.type === "commitment_reimbursement_reversal");
         });
 
         var commitmentTransactions = paydayTransactions.filter(function (tx) { return tx.type === "commitment"; });
+        var commitmentReimbursementNet = paydayTransactions.reduce(function (sum, tx) {
+          return sum + ((tx.type === "commitment_reimbursement" || tx.type === "commitment_reimbursement_reversal") ? signedNumber(tx.amount) : 0);
+        }, 0);
         var chargedTotalFromTransactions = commitmentTransactions.reduce(function (sum, tx) {
-          return sum + Math.abs(safeNumber(tx.amount));
+          return sum + Math.abs(signedNumber(tx.amount));
         }, 0);
         var chargedTotalFromRecord = Array.isArray(record.chargedCommitments) ? record.chargedCommitments.reduce(function (sum, item) {
           return sum + Math.abs(safeNumber(item && item.amount));
@@ -7329,21 +7696,21 @@
         var salaryAdded = safeNumber(record.salary);
         if (!salaryAdded) {
           salaryAdded = paydayTransactions.filter(function (tx) { return tx.type === "salary"; }).reduce(function (sum, tx) {
-            return sum + Math.max(0, safeNumber(tx.amount));
+            return sum + Math.max(0, signedNumber(tx.amount));
           }, 0);
         }
         var movedToSavings = Math.max(0, safeNumber(record.movedToSavings));
         if (!movedToSavings) {
           movedToSavings = paydayTransactions.filter(function (tx) { return tx.type === "savings_transfer"; }).reduce(function (sum, tx) {
-            var delta = safeNumber(tx.savingsDelta);
-            return sum + (delta > 0 ? delta : Math.abs(Math.min(0, safeNumber(tx.amount))));
+            var delta = signedNumber(tx.savingsDelta);
+            return sum + (delta > 0 ? delta : Math.abs(Math.min(0, signedNumber(tx.amount))));
           }, 0);
         }
 
         // نعكس عملية يوم الراتب فقط، مع الحفاظ على أي مصروفات أو حركات أخرى حدثت بعدها.
         // المعادلة المباشرة تمنع ضياع الرصيد السابق عند اختيار تحويله إلى المدخرات ثم تصحيح موعد الراتب.
-        state.walletBalance = safeNumber(state.walletBalance) - salaryAdded + chargedTotal + movedToSavings;
-        if (movedToSavings > 0) state.savingsBalance = Math.max(0, safeNumber(state.savingsBalance) - movedToSavings);
+        state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - salaryAdded + chargedTotal + movedToSavings - commitmentReimbursementNet);
+        if (movedToSavings > 0) state.savingsBalance = roundMoney(Math.max(0, safeNumber(state.savingsBalance) - movedToSavings));
 
         var monthKey = paydayKey.slice(0, 7);
         var chargeMap = getCommitmentChargeMap(monthKey);
@@ -7358,7 +7725,7 @@
 
         state.transactions = transactions.filter(function (tx) {
           return !(String(tx.paydayKey || "") === paydayKey &&
-            (tx.type === "salary" || tx.type === "commitment" || tx.type === "savings_transfer"));
+            (tx.type === "salary" || tx.type === "commitment" || tx.type === "savings_transfer" || tx.type === "commitment_reimbursement" || tx.type === "commitment_reimbursement_reversal"));
         });
 
         Object.keys(affectedCommitments).forEach(function (commitmentId) {
@@ -7371,9 +7738,35 @@
           if (hadPaidMonth && idx === -1) paidMonths.push(monthKey);
           if (!hadPaidMonth && idx !== -1) paidMonths.splice(idx, 1);
           item.paidMonths = paidMonths;
+          if (item.sharedPayments && typeof item.sharedPayments === "object" && item.sharedPayments[paydayKey]) delete item.sharedPayments[paydayKey];
         });
 
         delete state.processedPaydays[paydayKey];
+        return true;
+      }
+
+      function rekeyProcessedPayday(oldKey, newKey) {
+        oldKey = String(oldKey || ""); newKey = String(newKey || "");
+        if (!oldKey || !newKey || oldKey === newKey || !state.processedPaydays || !state.processedPaydays[oldKey]) return false;
+        if (state.processedPaydays[newKey]) return false;
+        var record = state.processedPaydays[oldKey];
+        state.processedPaydays[newKey] = record;
+        delete state.processedPaydays[oldKey];
+        record.paydayKey = newKey;
+        record.paydayDateCorrectedAt = new Date().toISOString();
+        (state.transactions || []).forEach(function (tx) {
+          if (String(tx.paydayKey || "") !== oldKey) return;
+          tx.paydayKey = newKey;
+          if (String(tx.date || "") === oldKey) {
+            tx.date = newKey;
+            tx.month = calendarMonthForDate(newKey);
+          }
+        });
+        (state.commitments || []).forEach(function (item) {
+          if (!item.sharedPayments || typeof item.sharedPayments !== "object" || !item.sharedPayments[oldKey]) return;
+          if (!item.sharedPayments[newKey]) item.sharedPayments[newKey] = item.sharedPayments[oldKey];
+          delete item.sharedPayments[oldKey];
+        });
         return true;
       }
 
@@ -7413,23 +7806,26 @@
         if (!target) return { adjusted: false, delta: 0 };
 
         var previousAppliedSalary = roundMoney(target.amount);
-        var delta = roundMoney(newSalary - previousAppliedSalary);
+        var delta = roundSignedMoney(newSalary - previousAppliedSalary);
         target.amount = newSalary;
         target.salaryEditedAt = new Date().toISOString();
-        state.walletBalance = roundMoney(safeNumber(state.walletBalance) + delta);
+        state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + delta);
 
         var linkedKey = String(target.paydayKey || preferredPaydayKey || "");
         if (linkedKey && state.processedPaydays && state.processedPaydays[linkedKey]) {
-          state.processedPaydays[linkedKey].salary = newSalary;
-          state.processedPaydays[linkedKey].salaryEditedAt = new Date().toISOString();
+          var paydayRecord = state.processedPaydays[linkedKey];
+          paydayRecord.salary = newSalary;
+          if (Number.isFinite(Number(paydayRecord.balanceAfterSalary))) paydayRecord.balanceAfterSalary = roundSignedMoney(Number(paydayRecord.balanceAfterSalary) + delta);
+          if (Number.isFinite(Number(paydayRecord.balanceAfterCommitments))) paydayRecord.balanceAfterCommitments = roundSignedMoney(Number(paydayRecord.balanceAfterCommitments) + delta);
+          paydayRecord.salaryEditedAt = new Date().toISOString();
         }
 
         // في الحسابات القديمة كان رصيد افتتاح الشهر قد يُحفظ بعد إضافة initial_salary؛
         // نحركه بنفس الفرق حتى يبقى كشف الشهر والرصيد متوافقين مع القيمة المصححة.
         if (target.type === "initial_salary" && state.monthOpeningBalances && state.monthOpeningBalances[monthKey] != null) {
-          state.monthOpeningBalances[monthKey] = roundMoney(safeNumber(state.monthOpeningBalances[monthKey]) + delta);
+          state.monthOpeningBalances[monthKey] = roundSignedMoney(signedNumber(state.monthOpeningBalances[monthKey]) + delta);
           if (String(state.currentCalendarMonth || "") === monthKey) {
-            state.walletMonthOpeningBalance = roundMoney(safeNumber(state.walletMonthOpeningBalance) + delta);
+            state.walletMonthOpeningBalance = roundSignedMoney(signedNumber(state.walletMonthOpeningBalance) + delta);
           }
         }
         return { adjusted: true, delta: delta, transactionId: target.id };
@@ -7442,6 +7838,7 @@
         var oldPayDay = Math.min(31, Math.max(0, Math.round(Number(state.salaryPayDay) || 0)));
         var todayMidnight = currentDateAtMidnight();
         var rolledBackPayday = false;
+        var rekeyedPayday = false;
 
         // إذا كان راتب هذا الشهر أضيف بسبب تاريخ قديم أصبح اليوم/الماضي، ثم صحح المستخدم
         // الموعد إلى يوم لم يصل بعد في الشهر نفسه، نلغي تلقائيًا راتب الموعد الخاطئ وما تبعه
@@ -7452,17 +7849,19 @@
           oldDate.setHours(0,0,0,0);
           newDate.setHours(0,0,0,0);
           var oldKey = toDateInput(oldDate);
-          if (oldDate <= todayMidnight && newDate > todayMidnight && state.processedPaydays && state.processedPaydays[oldKey]) {
-            rolledBackPayday = rollbackProcessedPayday(oldKey);
+          if (oldDate <= todayMidnight && state.processedPaydays && state.processedPaydays[oldKey]) {
+            if (newDate > todayMidnight) rolledBackPayday = rollbackProcessedPayday(oldKey);
+            else rekeyedPayday = rekeyProcessedPayday(oldKey, toDateInput(newDate));
           }
         }
 
         var salaryAdjustment = adjustAppliedSalaryCredit(value, oldPayDay, rolledBackPayday);
         state.salary = value;
         state.salaryPayDay = payDay;
+        if (oldPayDay !== payDay) repairRecurringPaymentCycles();
         ensureWalletCalendarCurrent(false);
         if (!payDay && !state.walletStarted && value > 0) {
-          state.walletBalance += value;
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + value);
           addTransaction("initial_salary", value, "رصيد بداية مدير الراتب", toDateInput(new Date()));
           state.walletStarted = true;
           state.walletMonthOpeningBalance = state.walletBalance;
@@ -7470,7 +7869,7 @@
         }
         closeDialog("salaryDialog");
         render();
-        showToast(rolledBackPayday ? "تم تصحيح موعد الراتب وإلغاء إضافة الراتب التي تمت بالموعد السابق" : (salaryAdjustment.adjusted && salaryAdjustment.delta !== 0 ? "تم تعديل الراتب وتحديث الرصيد الحالي بالفرق" : "تم حفظ الراتب وموعد النزول"));
+        showToast(rolledBackPayday ? "تم تصحيح موعد الراتب وإلغاء إضافة الراتب التي تمت بالموعد السابق" : (rekeyedPayday ? "تم تصحيح موعد الراتب دون تكرار إضافة الراتب أو خصم الأقساط" : (salaryAdjustment.adjusted && salaryAdjustment.delta !== 0 ? "تم تعديل الراتب وتحديث الرصيد الحالي بالفرق" : "تم حفظ الراتب وموعد النزول")));
       }
 
       function submitCommitment(event) {
@@ -7478,39 +7877,49 @@
         var data = new FormData(event.currentTarget);
         var startDate = String(data.get("startDate") || "");
         var endDate = String(data.get("endDate") || "");
-        if (endDate < startDate) {
-          showToast("تاريخ النهاية يجب أن يكون بعد تاريخ بداية الخصم", true);
-          return;
+        if (endDate < startDate) { showToast("تاريخ النهاية يجب أن يكون بعد تاريخ بداية الخصم", true); return; }
+        var existingId = String(data.get("id") || "");
+        var existing = state.commitments.find(function (entry) { return entry.id === existingId; });
+        var amount = roundMoney(data.get("amount"));
+        var shared = sharedCommitmentValues(data, amount, existing);
+        if (data.get("sharedCommitment") === "on" && (!shared || shared.peopleCount < 2)) { showToast("حدد عدد المشاركين في القسط المشترك", true); return; }
+
+        if (existing && existing.sharedCommitment) {
+          var currentCycle = latestCommitmentPaydayKey(existing);
+          var received = sharedCommitmentReceived(existing, currentCycle);
+          var oldCount = Number(existing.peopleCount || (existing.participants || []).length || 0);
+          var newCount = Number(shared.peopleCount || 0);
+          if (received > 0 && (Math.abs(amount - safeNumber(existing.amount)) > 0.001 || Boolean(shared.sharedCommitment) !== Boolean(existing.sharedCommitment) || oldCount !== newCount)) {
+            showToast("قبل تعديل مبلغ أو عدد المشاركين، أعد المشاركين الذين دفعوا إلى حالة انتظار التحويل أولًا.", true); return;
+          }
         }
 
-        var existingId = String(data.get("id") || "");
-        var existing = state.commitments.find(function (item) { return item.id === existingId; });
         var item = {
           id: existingId || makeId("commitment"),
           name: String(data.get("name") || "").trim(),
           category: String(data.get("category") || "أخرى"),
-          amount: safeNumber(data.get("amount")),
+          amount: amount,
           startDate: startDate,
           endDate: endDate,
           dueDay: Math.min(31, Math.max(1, Number(data.get("dueDay")) || 1)),
           remainingTotal: safeNumber(data.get("remainingTotal")),
           notes: String(data.get("notes") || "").trim(),
           paidMonths: existing && Array.isArray(existing.paidMonths) ? existing.paidMonths : [],
+          sharedCommitment:Boolean(shared.sharedCommitment),
+          peopleCount:Number(shared.peopleCount || 0),
+          personalShare:roundMoney(shared.personalShare || amount),
+          expectedReimbursement:roundMoney(shared.expectedReimbursement || 0),
+          participants:Array.isArray(shared.participants) ? shared.participants : [],
+          sharedPayments:shared.sharedPayments || {},
           createdAt: existing && existing.createdAt ? existing.createdAt : new Date().toISOString()
         };
-
-        if (existing) {
-          state.commitments = state.commitments.map(function (current) {
-            return current.id === existingId ? item : current;
-          });
-        } else {
-          state.commitments.push(item);
-        }
+        if (!item.name || item.amount <= 0 || !item.startDate || !item.endDate) { showToast("أكمل بيانات القسط أو السلفة", true); return; }
+        if (existing) state.commitments = state.commitments.map(function (current) { return current.id === existingId ? item : current; });
+        else state.commitments.push(item);
         syncActiveCommitmentCharge(item);
-
         closeDialog("commitmentDialog");
         render();
-        showToast(existing ? "تم تحديث بيانات الالتزام" : "تمت إضافة الالتزام بنجاح");
+        showToast(existing ? "تم تحديث بيانات الالتزام" : (item.sharedCommitment ? "تمت إضافة القسط المشترك" : "تمت إضافة الالتزام بنجاح"));
       }
 
       function submitRecurring(event) {
@@ -7535,6 +7944,7 @@
           endDate: endDate,
           notes: String(data.get("notes") || "").trim(),
           paidMonths: existing && Array.isArray(existing.paidMonths) ? existing.paidMonths : [],
+          paidCycleKeys: existing && Array.isArray(existing.paidCycleKeys) ? existing.paidCycleKeys : [],
           isPaused: existing ? Boolean(existing.isPaused) : false,
           createdAt: existing && existing.createdAt ? existing.createdAt : new Date().toISOString()
         };
@@ -7635,7 +8045,7 @@
           person.reimbursementId = reimbursement.id;
           item.reimbursements = Array.isArray(item.reimbursements) ? item.reimbursements : [];
           item.reimbursements.push(reimbursement);
-          state.walletBalance += amount;
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + amount);
           state.walletStarted = true;
           addTransaction("expense_reimbursement", amount, "استرداد من " + (person.name || "مشارك") + " — " + (item.title || "مصروف مشترك"), todayValue, item.id, { expenseId:item.id, participantId:person.id, reimbursementId:reimbursement.id, originalExpenseMonth:expenseMonth(item) });
           render();
@@ -7654,7 +8064,7 @@
           if (reimbursementId) return String(entry.id || "") !== reimbursementId;
           return String(entry.participantId || "") !== String(person.id);
         });
-        state.walletBalance -= amount;
+        state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - amount);
         state.walletStarted = true;
         addTransaction("expense_reimbursement_reversal", -amount, "تراجع عن استرداد " + (person.name || "مشارك") + " — " + (item.title || "مصروف مشترك"), todayValue, item.id, { expenseId:item.id, participantId:person.id, reversedReimbursementId:reimbursementId, originalExpenseMonth:expenseMonth(item) });
         render();
@@ -7707,7 +8117,7 @@
           createdAt: new Date().toISOString()
         };
         item.reimbursements.push(reimbursement);
-        state.walletBalance += amount;
+        state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + amount);
         state.walletStarted = true;
         addTransaction("expense_reimbursement", amount, "استرداد مصروف — " + (item.title || "مصروف مشترك"), date, item.id, {
           expenseId: item.id,
@@ -7859,7 +8269,7 @@
           target.participants = nextShared.participants;
           target.updatedAt = new Date().toISOString();
 
-          state.walletBalance += roundMoney(oldImpact - newImpact);
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + roundSignedMoney(oldImpact - newImpact));
           if (oldImpact !== newImpact) state.walletStarted = true;
           updateExpenseTransaction(target);
           resetExpenseForm();
@@ -7880,7 +8290,7 @@
         item.accountMonth = defaultMonth;
         state.expenses.push(item);
         if (!item.excludeFromBudget) {
-          state.walletBalance -= item.amount;
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - item.amount);
           addTransaction("expense", -item.amount, item.title, item.date, item.id);
           state.walletStarted = true;
         }
@@ -7955,7 +8365,7 @@
           item.amount = amount;
           item.date = date;
           item.updatedAt = new Date().toISOString();
-          state.walletBalance += roundMoney(amount - oldAmount);
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + roundSignedMoney(amount - oldAmount));
           state.walletStarted = true;
           updateDepositTransaction(item);
           resetDepositForm();
@@ -7966,7 +8376,7 @@
 
         var item = { id:makeId("deposit"), title:title, source:source, amount:amount, date:date, createdAt:new Date().toISOString() };
         state.deposits.push(item);
-        state.walletBalance += amount;
+        state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + amount);
         state.walletStarted = true;
         addTransaction("deposit", amount, "إيداع — " + title, date, item.id, { depositId:item.id, source:source });
         resetDepositForm();
@@ -7981,7 +8391,7 @@
         if (!localizedConfirm('حذف الإيداع "' + item.title + '"؟ سيتم خصم قيمته من الرصيد الحالي.')) return;
         state.deposits = state.deposits.filter(function (current) { return current.id !== id; });
         if ($("#depositId") && $("#depositId").value === id) resetDepositForm();
-        state.walletBalance -= safeNumber(item.amount);
+        state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - safeNumber(item.amount));
         addTransaction("deposit_reversal", -safeNumber(item.amount), "إلغاء إيداع — " + item.title, toDateInput(new Date()), item.id, { depositId:item.id });
         render();
         showToast("تم حذف الإيداع وتحديث الرصيد");
@@ -8004,21 +8414,30 @@
         ensureWalletCalendarCurrent(false);
         var item = state.recurringPayments.find(function (current) { return current.id === id; });
         if (!item || item.type === "ادخار") return;
+        var cycleKey = currentPaymentCycleKey();
+        var paidCycles = Array.isArray(item.paidCycleKeys) ? item.paidCycleKeys.slice() : [];
+        var index = paidCycles.indexOf(cycleKey);
         var paidMonths = Array.isArray(item.paidMonths) ? item.paidMonths.slice() : [];
-        var index = paidMonths.indexOf(defaultMonth);
+        var amount = safeNumber(item.amount);
         if (index === -1) {
-          var amount = safeNumber(item.amount);
-          state.walletBalance -= amount;
-          addTransaction("recurring", -amount, item.name || "دفعة ثابتة", toDateInput(new Date()), item.id);
-          paidMonths.push(defaultMonth);
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - amount);
+          addTransaction("recurring", -amount, item.name || "دفعة ثابتة", toDateInput(new Date()), item.id, { paymentCycleKey:cycleKey });
+          paidCycles.push(cycleKey);
+          if (paidMonths.indexOf(defaultMonth) === -1) paidMonths.push(defaultMonth);
           showToast("تم تأكيد الدفع وخصم المبلغ من الرصيد");
         } else {
-          var amountBack = safeNumber(item.amount);
-          state.walletBalance += amountBack;
-          addTransaction("recurring_reversal", amountBack, "إلغاء دفع " + (item.name || "دفعة ثابتة"), toDateInput(new Date()), item.id);
-          paidMonths.splice(index, 1);
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + amount);
+          addTransaction("recurring_reversal", amount, "إلغاء دفع " + (item.name || "دفعة ثابتة"), toDateInput(new Date()), item.id, { paymentCycleKey:cycleKey });
+          paidCycles.splice(index, 1);
+          var stillPaidThisMonth = (state.transactions || []).some(function (tx) {
+            return tx.type === "recurring" && String(tx.refId || "") === String(item.id || "") && String(tx.month || calendarMonthForDate(tx.date)) === defaultMonth && String(tx.paymentCycleKey || "") !== cycleKey;
+          });
+          if (!stillPaidThisMonth) {
+            var monthIndex = paidMonths.indexOf(defaultMonth); if (monthIndex !== -1) paidMonths.splice(monthIndex,1);
+          }
           showToast("تم إلغاء علامة الدفع وإعادة المبلغ إلى الرصيد");
         }
+        item.paidCycleKeys = paidCycles;
         item.paidMonths = paidMonths;
         render();
       }
@@ -8032,15 +8451,15 @@
         var amount = safeNumber(item.amount);
         if (index === -1) {
           if (amount > state.walletBalance) { showToast("الرصيد المتاح لا يكفي لتحويل مبلغ الادخار", true); return; }
-          state.walletBalance -= amount;
-          state.savingsBalance += amount;
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - amount);
+          state.savingsBalance = roundMoney(state.savingsBalance + amount);
           addTransaction("savings_plan", -amount, item.name || "خطة ادخار", toDateInput(new Date()), item.id, { savingsDelta: amount });
           paidMonths.push(defaultMonth);
           showToast("تم تحويل المبلغ إلى المدخرات");
         } else {
           if (amount > state.savingsBalance) { showToast("رصيد المدخرات الحالي لا يكفي لإلغاء هذا التحويل", true); return; }
-          state.walletBalance += amount;
-          state.savingsBalance -= amount;
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + amount);
+          state.savingsBalance = roundMoney(state.savingsBalance - amount);
           addTransaction("savings_reversal", amount, "إلغاء تحويل " + (item.name || "خطة ادخار"), toDateInput(new Date()), item.id, { savingsDelta: -amount });
           paidMonths.splice(index, 1);
           showToast("تم إلغاء التحويل وإعادة المبلغ إلى الرصيد المتاح");
@@ -8068,14 +8487,14 @@
         if (amount <= 0) { showToast("أدخل مبلغًا صحيحًا", true); return; }
         if (mode === "withdraw") {
           if (amount > state.savingsBalance) { showToast("المبلغ أكبر من رصيد المدخرات", true); return; }
-          state.savingsBalance -= amount;
-          state.walletBalance += amount;
+          state.savingsBalance = roundMoney(state.savingsBalance - amount);
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + amount);
           addTransaction("savings_withdrawal", amount, note || "سحب من المدخرات", toDateInput(new Date()), "", { savingsDelta: -amount });
           showToast("تم سحب المبلغ من المدخرات وإضافته إلى الرصيد المتاح");
         } else {
           if (amount > state.walletBalance) { showToast("المبلغ أكبر من الرصيد المتاح", true); return; }
-          state.walletBalance -= amount;
-          state.savingsBalance += amount;
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - amount);
+          state.savingsBalance = roundMoney(state.savingsBalance + amount);
           addTransaction("savings_manual", -amount, note || "إضافة إلى المدخرات", toDateInput(new Date()), "", { savingsDelta: amount });
           showToast("تمت إضافة المبلغ إلى المدخرات");
         }
@@ -8108,9 +8527,9 @@
         if (isRecurringPaidForMonth(item, defaultMonth)) {
           if (item.type === "ادخار") {
             var amount = safeNumber(item.amount);
-            if (state.savingsBalance >= amount) { state.savingsBalance -= amount; state.walletBalance += amount; addTransaction("savings_reversal", amount, "إلغاء " + item.name, toDateInput(new Date()), item.id, { savingsDelta: -amount }); }
+            if (state.savingsBalance >= amount) { state.savingsBalance = roundMoney(state.savingsBalance - amount); state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + amount); addTransaction("savings_reversal", amount, "إلغاء " + item.name, toDateInput(new Date()), item.id, { savingsDelta: -amount }); }
           } else {
-            state.walletBalance += safeNumber(item.amount);
+            state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + safeNumber(item.amount));
             addTransaction("recurring_reversal", safeNumber(item.amount), "إلغاء " + item.name, toDateInput(new Date()), item.id);
           }
         }
@@ -8128,11 +8547,11 @@
         state.expenses = state.expenses.filter(function (current) { return current.id !== id; });
         if ($("#expenseId") && $("#expenseId").value === id) resetExpenseForm();
         if (!item.excludeFromBudget) {
-          state.walletBalance += safeNumber(item.amount);
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + safeNumber(item.amount));
           addTransaction("expense_reversal", safeNumber(item.amount), "إلغاء مصروف " + item.title, toDateInput(new Date()), item.id);
         }
         if (receivedReimbursements > 0) {
-          state.walletBalance -= receivedReimbursements;
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - receivedReimbursements);
           addTransaction("expense_reimbursement_reversal", -receivedReimbursements, "إلغاء استردادات مصروف " + item.title, toDateInput(new Date()), item.id);
         }
         render();
@@ -8205,6 +8624,9 @@
         $("#salaryForm").addEventListener("submit", submitSalary);
         $("#currentBalanceForm").addEventListener("submit", submitCurrentBalance);
         $("#commitmentForm").addEventListener("submit", submitCommitment);
+        $("#commitmentShared").addEventListener("change", function () { updateSharedCommitmentForm(); });
+        $("#commitmentAmount").addEventListener("input", function () { updateSharedCommitmentForm(); });
+        $("#commitmentPeopleCount").addEventListener("input", function () { updateSharedCommitmentForm(); });
         $("#recurringForm").addEventListener("submit", submitRecurring);
         $("#expenseForm").addEventListener("submit", submitExpense);
         $("#expenseCancelEditButton").addEventListener("click", resetExpenseForm);
@@ -8389,6 +8811,7 @@
         $("#adminUserList").addEventListener("click", async function (event) {
           var reset = event.target.closest("[data-admin-reset]");
           var lockReset = event.target.closest("[data-admin-lock-reset]");
+          var sendUpdate = event.target.closest("[data-admin-send-update]");
           var status = event.target.closest("[data-admin-status]");
           var logout = event.target.closest("[data-admin-logout]");
           if (reset) generateResetCode(reset.dataset.adminReset);
@@ -8396,6 +8819,19 @@
             try {
               await apiFetch("/api/admin/reset-app-lock", { method: "POST", body: JSON.stringify({ userId: lockReset.dataset.adminLockReset }) });
               showToast("تم إلغاء رمز قفل التطبيق للمستخدم. سيُطلب منه إنشاء رمز جديد.");
+              renderAdminUsers();
+            } catch (error) { showToast(apiErrorMessage(error.code), true); }
+          }
+          if (sendUpdate) {
+            try {
+              var result = await apiFetch("/api/admin/send-user-update", { method:"POST", body:JSON.stringify({ userId:sendUpdate.dataset.adminSendUpdate }) });
+              if (Number(result.sent || 0) > 0) {
+                showToast("تم إرسال إشعار التحديث للمستخدم");
+              } else {
+                var copied = false;
+                try { if (result.manualUpdateUrl && navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(result.manualUpdateUrl); copied = true; } } catch (_) {}
+                showToast(copied ? "لا توجد إشعارات مفعلة لهذا المستخدم؛ تم نسخ رابط التحديث لتشاركه معه" : "لا توجد إشعارات مفعلة لهذا المستخدم. يمكنك إعادة المحاولة بعد تفعيل الإشعارات.", true);
+              }
               renderAdminUsers();
             } catch (error) { showToast(apiErrorMessage(error.code), true); }
           }
@@ -8432,8 +8868,12 @@
 
         $("#commitmentList").addEventListener("click", function (event) {
           var paidButton = event.target.closest("[data-toggle-paid]");
+          var sharedEditor = event.target.closest("[data-toggle-commitment-participant-editor]");
+          var sharedParticipant = event.target.closest("[data-toggle-commitment-participant]");
           var editButton = event.target.closest("[data-edit-commitment]");
           var deleteButton = event.target.closest("[data-delete-commitment]");
+          if (sharedEditor) { toggleCommitmentParticipantEditor(sharedEditor.dataset.toggleCommitmentParticipantEditor); return; }
+          if (sharedParticipant) { toggleCommitmentParticipantPayment(sharedParticipant.dataset.toggleCommitmentParticipant, sharedParticipant.dataset.commitmentParticipantId); return; }
           if (paidButton) togglePaid(paidButton.dataset.togglePaid);
           if (editButton) {
             var item = state.commitments.find(function (current) { return current.id === editButton.dataset.editCommitment; });
@@ -8566,6 +9006,7 @@
       installZoomLock();
       bindEvents();
       updateSharedExpenseForm();
+      updateSharedCommitmentForm();
       protectIconPreviews();
       initPWA();
       render();

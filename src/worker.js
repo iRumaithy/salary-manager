@@ -1,9 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.9.0";
-const RELEASE_ID = "3.9.0-refresh-bypass-r4";
-const UPDATE_SIGNAL_VERSION = "3.9.0\u200B";
+const VERSION = "3.9.1";
+const RELEASE_ID = "3.9.1-salary-balance-r1";
+const UPDATE_SIGNAL_VERSION = "3.9.1\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
 const PREVIOUS_RELEASE_ID = "3.8.6";
 const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
@@ -33,7 +33,8 @@ const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
   "3.8.9-header-time-r7",
   "3.9.0-expense-sign-r1",
   "3.9.0-expense-sign-r2",
-  "3.9.0-expense-edit-r3"
+  "3.9.0-expense-edit-r3",
+  "3.9.0-refresh-bypass-r4"
 ]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;

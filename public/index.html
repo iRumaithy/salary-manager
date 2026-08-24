@@ -36,7 +36,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.0-refresh-bypass-r4";
+      var v = "3.9.1-salary-balance-r1";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -3386,7 +3386,7 @@
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.9.0" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.9.1" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
         <span class="version-badge">الإصدار <b id="appVersion">3.8.2</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
@@ -3838,6 +3838,15 @@
     <div class="modal-body">
       <div class="changelog-list">
         <section class="changelog-entry current">
+          <div class="changelog-version">
+            <strong>الإصدار 3.9.1</strong>
+            <time datetime="2026-08-24">24 أغسطس 2026</time>
+          </div>
+          <ul>
+            <li>عند تعديل الراتب بعد نزوله، يتعدل الرصيد الحالي تلقائيًا بالفرق.</li>
+          </ul>
+        </section>
+        <section class="changelog-entry">
           <div class="changelog-version">
             <strong>الإصدار 3.9.0</strong>
             <time datetime="2026-08-23">23 أغسطس 2026</time>
@@ -4435,8 +4444,8 @@
       }
 
 
-      var APP_VERSION = "3.9.0";
-      var APP_RELEASE_ID = "3.9.0-refresh-bypass-r4";
+      var APP_VERSION = "3.9.1";
+      var APP_RELEASE_ID = "3.9.1-salary-balance-r1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -7368,6 +7377,64 @@
         return true;
       }
 
+      function adjustAppliedSalaryCredit(newSalary, oldPayDay, rolledBackPayday) {
+        if (rolledBackPayday) return { adjusted: false, delta: 0 };
+        newSalary = roundMoney(newSalary);
+        var monthKey = defaultMonth;
+        var transactions = Array.isArray(state.transactions) ? state.transactions : [];
+        var candidates = transactions.filter(function (tx) {
+          return (tx.type === "salary" || tx.type === "initial_salary") &&
+            String(tx.month || calendarMonthForDate(tx.date)) === monthKey &&
+            safeNumber(tx.amount) >= 0;
+        });
+        if (!candidates.length) return { adjusted: false, delta: 0 };
+
+        var target = null;
+        var preferredPaydayKey = "";
+        if (oldPayDay) {
+          var now = currentDateAtMidnight();
+          preferredPaydayKey = toDateInput(salaryDateFor(now.getFullYear(), now.getMonth(), oldPayDay));
+          if (state.processedPaydays && state.processedPaydays[preferredPaydayKey]) {
+            target = candidates.find(function (tx) {
+              return tx.type === "salary" && String(tx.paydayKey || "") === preferredPaydayKey;
+            }) || null;
+          }
+        }
+
+        // إذا لم نجد عملية مرتبطة مباشرة بموعد الراتب، نستخدم أحدث راتب طُبق فعليًا في الشهر الحالي.
+        // هذا يغطي الحسابات التي بدأت قبل تفعيل يوم نزول الراتب وكان لديها initial_salary.
+        if (!target) {
+          target = candidates.slice().sort(function (a, b) {
+            var at = Date.parse(a.createdAt || a.date || 0) || 0;
+            var bt = Date.parse(b.createdAt || b.date || 0) || 0;
+            return bt - at;
+          })[0] || null;
+        }
+        if (!target) return { adjusted: false, delta: 0 };
+
+        var previousAppliedSalary = roundMoney(target.amount);
+        var delta = roundMoney(newSalary - previousAppliedSalary);
+        target.amount = newSalary;
+        target.salaryEditedAt = new Date().toISOString();
+        state.walletBalance = roundMoney(safeNumber(state.walletBalance) + delta);
+
+        var linkedKey = String(target.paydayKey || preferredPaydayKey || "");
+        if (linkedKey && state.processedPaydays && state.processedPaydays[linkedKey]) {
+          state.processedPaydays[linkedKey].salary = newSalary;
+          state.processedPaydays[linkedKey].salaryEditedAt = new Date().toISOString();
+        }
+
+        // في الحسابات القديمة كان رصيد افتتاح الشهر قد يُحفظ بعد إضافة initial_salary؛
+        // نحركه بنفس الفرق حتى يبقى كشف الشهر والرصيد متوافقين مع القيمة المصححة.
+        if (target.type === "initial_salary" && state.monthOpeningBalances && state.monthOpeningBalances[monthKey] != null) {
+          state.monthOpeningBalances[monthKey] = roundMoney(safeNumber(state.monthOpeningBalances[monthKey]) + delta);
+          if (String(state.currentCalendarMonth || "") === monthKey) {
+            state.walletMonthOpeningBalance = roundMoney(safeNumber(state.walletMonthOpeningBalance) + delta);
+          }
+        }
+        return { adjusted: true, delta: delta, transactionId: target.id };
+      }
+
       function submitSalary(event) {
         event.preventDefault();
         var value = safeNumber($("#salaryInput").value);
@@ -7390,6 +7457,7 @@
           }
         }
 
+        var salaryAdjustment = adjustAppliedSalaryCredit(value, oldPayDay, rolledBackPayday);
         state.salary = value;
         state.salaryPayDay = payDay;
         ensureWalletCalendarCurrent(false);
@@ -7402,7 +7470,7 @@
         }
         closeDialog("salaryDialog");
         render();
-        showToast(rolledBackPayday ? "تم تصحيح موعد الراتب وإلغاء إضافة الراتب التي تمت بالموعد السابق" : "تم حفظ الراتب وموعد النزول");
+        showToast(rolledBackPayday ? "تم تصحيح موعد الراتب وإلغاء إضافة الراتب التي تمت بالموعد السابق" : (salaryAdjustment.adjusted && salaryAdjustment.delta !== 0 ? "تم تعديل الراتب وتحديث الرصيد الحالي بالفرق" : "تم حفظ الراتب وموعد النزول"));
       }
 
       function submitCommitment(event) {

@@ -9,3 +9,7 @@
     window.SALARY_API_BASE = "";
   }
 })();
+
+// Salary Manager official iCloud Shortcut templates (3.9.3 r5)
+window.SALARY_BANK_SHORTCUT_URL = "https://www.icloud.com/shortcuts/4fb8157133ba4255b689afa883cb3a3c";
+window.SALARY_WALLET_SHORTCUT_URL = "https://www.icloud.com/shortcuts/503d528339174d3dbf69cc09eb61169a";

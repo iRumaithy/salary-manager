@@ -36,7 +36,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.3-targeted-preview-statement-r4";
+      var v = "3.9.3-shortcuts-merchant-preview-r5";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -4324,7 +4324,7 @@
     <div class="modal-body automation-grid">
       <div class="automation-connect-card">
         <strong>إعداد أسرع للاختصارات</strong>
-        <p>استخرج رمزك الخاص مرة واحدة، ثم استخدم الزر المناسب لفتح تطبيق Shortcuts. سيُنسخ رمز الربط تلقائيًا؛ ضعه في خانة <b>shortcutToken</b>. بعد إكمال الربط مرة واحدة سيبقى ثابتًا ولا تحتاج لإعادته مع كل عملية.</p>
+        <p>اختر نوع الربط وسيتم نسخ رمز حسابك وفتح القالب الرسمي الجاهز تلقائيًا. أثناء تثبيت القالب ألصق الرمز فقط؛ الرابط وPOST وJSON معدّة مسبقًا. بعد ذلك أنشئ Personal Automation واختر مرسل البنك أو بطاقتك فقط.</p>
         <div class="automation-setup-actions">
           <button class="automation-setup-btn" id="prepareBankShortcutButton" type="button"><span class="setup-symbol">✉</span><span>رسائل البنك</span></button>
           <button class="automation-setup-btn" id="prepareWalletShortcutButton" type="button"><span class="setup-symbol">◈</span><span>Apple Wallet</span></button>
@@ -5090,7 +5090,7 @@
 
 
       var APP_VERSION = "3.9.3";
-      var APP_RELEASE_ID = "3.9.3-targeted-preview-statement-r4";
+      var APP_RELEASE_ID = "3.9.3-shortcuts-merchant-preview-r5";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -6264,8 +6264,8 @@
         if (!authState.authenticated) return null;
         try {
           var data = await apiFetch("/api/automation/templates?ts=" + Date.now());
-          automationBankShortcutUrl = String(data.bankUrl || "");
-          automationWalletShortcutUrl = String(data.walletUrl || "");
+          automationBankShortcutUrl = String(data.bankUrl || window.SALARY_BANK_SHORTCUT_URL || "");
+          automationWalletShortcutUrl = String(data.walletUrl || window.SALARY_WALLET_SHORTCUT_URL || "");
           var ownerCard = $("#automationTemplateAdminCard");
           if (ownerCard) ownerCard.hidden = authState.user?.role !== "super_admin";
           if ($("#automationBankTemplateUrl")) $("#automationBankTemplateUrl").value = automationBankShortcutUrl;
@@ -6333,7 +6333,9 @@
           var connection = $("#automationConnectionStatus");
           if (connection) {
             connection.classList.toggle("on", Boolean(status.enabled));
-            connection.textContent = status.enabled ? "الربط مفعّل لهذا الحساب ولا يحتاج إعادة ربط" + (status.lastUsedAt ? " · آخر استقبال " + formatDateTimeCompact(status.lastUsedAt) : "") : "الربط غير مفعّل. استخرج رمز ربط أولًا.";
+            connection.textContent = status.enabled
+              ? (status.lastUsedAt ? "الربط يعمل ✓ · آخر استقبال " + formatDateTimeCompact(status.lastUsedAt) : "تم إنشاء رمز الربط · بانتظار أول عملية للتأكد من الاتصال")
+              : "الربط غير مفعّل. استخرج رمز ربط أولًا.";
           }
           var count = $("#automationPendingCount");
           if (count) count.textContent = String(Number(status.pendingCount || 0));
@@ -6393,18 +6395,24 @@
           if (!token) return;
         }
         var source = type === "wallet" ? "wallet" : "bank_message";
+        var configured = automationConfiguredShortcutUrl(type);
+        if (!configured) {
+          showToast("القالب الرسمي غير متوفر حاليًا. حاول مرة أخرى بعد تحديث الصفحة.", true);
+          return;
+        }
         var hint = $("#automationSetupHint");
         if (hint) {
           hint.classList.add("on");
-          hint.innerHTML = 'تم نسخ رمزك. في Shortcuts ضعه في خانة <b>shortcutToken</b>، واجعل <b>source = ' + source + '</b>. الربط يتم مرة واحدة فقط.';
+          hint.innerHTML = type === "wallet"
+            ? '<b>Apple Wallet:</b> ثبّت القالب وألصق رمز الربط المنسوخ عند السؤال. بعدها: Shortcuts ← Automation ← Transaction ← اختر بطاقتك ← Run Immediately. داخل الأتمتة أنشئ Text يحتوي <b>amount:</b> ثم Amount و<b>merchant:</b> ثم Merchant، وبعده Run Shortcut واختر قالب مدير الراتب ومرّر له الـText.'
+            : '<b>رسائل البنك:</b> ثبّت القالب وألصق رمز الربط المنسوخ عند السؤال. بعدها: Shortcuts ← Automation ← Message ← اختر Sender الخاص بالبنك ← Run Immediately ← Run Shortcut واختر قالب مدير الراتب، ومرّر نص الرسالة كـInput.';
         }
         try { await navigator.clipboard.writeText(automationShortcutToken); }
         catch (_) { showToast("تعذر نسخ الرمز تلقائيًا؛ انسخه من الحقل قبل المتابعة.", true); return; }
-        var configured = automationConfiguredShortcutUrl(type);
-        showToast(configured ? "تم نسخ رمزك · جارٍ فتح الاختصار الجاهز" : "تم نسخ رمزك · جارٍ فتح Shortcuts");
+        showToast("تم نسخ رمزك · جارٍ فتح القالب الرسمي الجاهز");
         setTimeout(function () {
-          try { window.location.href = configured || "shortcuts://create-shortcut"; }
-          catch (_) { window.open(configured || "shortcuts://", "_blank"); }
+          try { window.location.href = configured; }
+          catch (_) { window.open(configured, "_blank"); }
         }, 350);
       }
 

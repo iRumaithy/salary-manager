@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
 const VERSION = "3.9.3";
-const RELEASE_ID = "3.9.3-targeted-preview-statement-r4";
+const RELEASE_ID = "3.9.3-shortcuts-merchant-preview-r5";
 const UPDATE_SIGNAL_VERSION = "3.9.3\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
 const PREVIOUS_RELEASE_ID = "3.8.6";
@@ -43,7 +43,8 @@ const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
   "3.9.2-statement-pdf-r3",
   "3.9.3-wallet-bank-automation-r1",
   "3.9.3-automation-assistant-r2",
-  "3.9.3-commitment-bank-match-r3"
+  "3.9.3-commitment-bank-match-r3",
+  "3.9.3-targeted-preview-statement-r4"
 ]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -118,9 +119,10 @@ function normalizeAutomationText(value) {
 function automationAmountFromText(value) {
   const text = normalizeAutomationText(value);
   const currency = String.raw`(?:AED|DHS?|د\s*[.٫]?\s*[إا]|درهم(?:اً|ا|ين)?|دراهم)`;
+  const labeled = new RegExp(String.raw`(?:^|\s)(?:amount|المبلغ)\s*[:=\-]\s*(?:` + currency + String.raw`\s*)?([0-9]{1,9}(?:[,][0-9]{3})*(?:\.[0-9]{1,2})?)(?:\s*` + currency + String.raw`)?(?=\s|$)`, "i").exec(text);
   const before = new RegExp(currency + String.raw`\s*[:\-]?\s*([0-9]{1,9}(?:[,][0-9]{3})*(?:\.[0-9]{1,2})?)`, "i").exec(text);
   const after = new RegExp(String.raw`([0-9]{1,9}(?:[,][0-9]{3})*(?:\.[0-9]{1,2})?)\s*` + currency, "i").exec(text);
-  const raw = before?.[1] || after?.[1] || "";
+  const raw = labeled?.[1] || before?.[1] || after?.[1] || "";
   const amount = Number(raw.replace(/,/g, ""));
   return Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) / 100 : 0;
 }
@@ -155,12 +157,25 @@ function automationCategoryFromText(value) {
   for (const [category, words] of rules) if (words.some(word => text.includes(word.toLowerCase()))) return category;
   return "أخرى";
 }
+function cleanAutomationMerchant(value) {
+  let text = normalizeAutomationText(value);
+  if (!text) return "";
+  text = text
+    .replace(/^(?:your\s+)?(?:a\/c|account|acct|card)\s*(?:no\.?\s*)?[*xX•\-\s]*\d{2,12}\s+(?:at|to)\s+/i, "")
+    .replace(/^(?:merchant|store|at|to|from)\s*[:=\-]?\s*/i, "")
+    .replace(/\s+(?:(?:AB\s*U?\s*DHABI|ABU\s+DHABI|AL\s+AIN|DUBAI|SHARJAH|AJMAN|RAS\s+AL\s+KHAIMAH|FUJAIRAH|UMM\s+AL\s+QUWAIN)\s+)?(?:AE|UAE)$/i, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+  return text.slice(0, 100);
+}
 function automationMerchantFromText(value) {
   const text = normalizeAutomationText(value);
-  const english = /\b(?:at|to|from)\s+([^\n,;]{2,70}?)(?=\s+(?:on|using|with|ref|reference|card|ending|dated)\b|[.;,]|$)/i.exec(text);
-  if (english?.[1]) return english[1].trim();
-  const arabic = /(?:لدى|عند)\s+([^،.;]{2,70}?)(?=\s+(?:بتاريخ|بواسطة|مرجع)|[،.;]|$)/.exec(text);
-  if (arabic?.[1]) return arabic[1].trim();
+  const labeled = /(?:^|\s)(?:merchant|store|المتجر|التاجر)\s*[:=\-]\s*(.+?)(?=\s+(?:amount|المبلغ|reference|ref|card|date|source)\s*[:=\-]|$)/i.exec(text);
+  if (labeled?.[1]) return cleanAutomationMerchant(labeled[1]);
+  const english = /\b(?:at|to|from)\s+([^\n,;]{2,100}?)(?=\s+(?:on|using|with|ref|reference|card|ending|dated)\b|[.;,]|$)/i.exec(text);
+  if (english?.[1]) return cleanAutomationMerchant(english[1]);
+  const arabic = /(?:لدى|عند)\s+([^،.;]{2,100}?)(?=\s+(?:بتاريخ|بواسطة|مرجع)|[،.;]|$)/.exec(text);
+  if (arabic?.[1]) return cleanAutomationMerchant(arabic[1]);
   return "";
 }
 function automationSensitiveReason(value) {
@@ -241,7 +256,7 @@ function normalizeAutomationPayload(payload = {}) {
   const explicitAmount = Number(String(payload.amount ?? "").replace(/,/g, ""));
   const hasExplicitAmount = Number.isFinite(explicitAmount) && explicitAmount > 0;
   const amount = hasExplicitAmount ? Math.round(explicitAmount * 100) / 100 : automationAmountFromText(rawText);
-  const merchant = normalizeAutomationText(payload.merchant || payload.store || automationMerchantFromText(rawText)).slice(0, 100);
+  const merchant = cleanAutomationMerchant(payload.merchant || payload.store || automationMerchantFromText(rawText));
   const sourceRaw = String(payload.source || "bank_message").toLowerCase();
   const source = sourceRaw.includes("wallet") ? "wallet" : sourceRaw.includes("message") || sourceRaw.includes("sms") || sourceRaw.includes("bank") || sourceRaw.includes("notification") ? "bank_message" : "shortcut";
   let kind = automationKindFromText((merchant + " " + rawText).trim(), payload.type || payload.kind || payload.direction);
@@ -620,13 +635,25 @@ async function handleApi(request, env, url) {
       ? PREVIOUS_RELEASE_ID
       : rawPublicReleaseId;
     const ownerCanPreview = isOwner && !Boolean(release.currentReleaseRejected);
-    const displayTargetVersion = ownerCanPreview ? String(release.stagedVersion || VERSION) : publicPublishedVersion;
-    const targetReleaseId = ownerCanPreview ? String(release.stagedReleaseId || RELEASE_ID) : publicPublishedReleaseId;
-    // البنايات القديمة من 3.8.7 كانت تقارن رقم الإصدار فقط. محرف غير مرئي يجعلها ترى تحديثًا جديدًا مع بقاء الرقم ظاهرًا 3.8.7.
+    const stagedVersion = String(release.stagedVersion || VERSION);
+    const stagedReleaseId = String(release.stagedReleaseId || RELEASE_ID);
+    const targetedPreview = Boolean(
+      auth?.user &&
+      !isOwner &&
+      String(auth.user.targetedPreviewReleaseId || "") === stagedReleaseId &&
+      (!String(auth.user.targetedPreviewVersion || "") || String(auth.user.targetedPreviewVersion || "") === stagedVersion) &&
+      !Boolean(release.currentReleaseRejected)
+    );
+    const previewEligible = ownerCanPreview || targetedPreview;
+    const displayTargetVersion = previewEligible ? stagedVersion : publicPublishedVersion;
+    const targetReleaseId = previewEligible ? stagedReleaseId : publicPublishedReleaseId;
+    // Older clients may compare only the visible version. The invisible marker
+    // makes a privately-authorized 3.9.2 user reliably notice the staged 3.9.3 build.
     const targetVersion = targetReleaseId === RELEASE_ID ? UPDATE_SIGNAL_VERSION : displayTargetVersion;
     return apiJson(request, env, {
       ok: true,
-      role: isOwner ? "owner" : "user",
+      role: isOwner ? "owner" : targetedPreview ? "targeted_preview" : "user",
+      targetedPreview,
       targetVersion,
       targetReleaseId,
       stagedVersion: String(release.stagedVersion || VERSION),

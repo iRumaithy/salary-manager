@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
 const VERSION = "3.9.3";
-const RELEASE_ID = "3.9.3-shortcuts-merchant-preview-r5";
+const RELEASE_ID = "3.9.3-expense-insights-voice-wallet-r6";
 const UPDATE_SIGNAL_VERSION = "3.9.3\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
 const PREVIOUS_RELEASE_ID = "3.8.6";
@@ -44,7 +44,8 @@ const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
   "3.9.3-wallet-bank-automation-r1",
   "3.9.3-automation-assistant-r2",
   "3.9.3-commitment-bank-match-r3",
-  "3.9.3-targeted-preview-statement-r4"
+  "3.9.3-targeted-preview-statement-r4",
+  "3.9.3-shortcuts-merchant-preview-r5"
 ]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -140,6 +141,14 @@ function automationKindFromText(value, explicitType) {
 function automationCategoryFromText(value) {
   const text = normalizeAutomationText(value).toLowerCase();
   const rules = [
+    ["مغسلة ملابس", ["laundry","laundromat","dry clean","dryclean","laundry service","مغسلة","مغسله","غسيل ملابس","دراي كلين"]],
+    ["صيانة سيارة", ["garage","auto service","car service","car wash","tyre","tire","oil change","ورشة","ورشه","كراج","غسيل سيارات","غسيل سيارة","اطارات","إطارات","تغيير زيت"]],
+    ["عناية شخصية", ["barber","salon","spa","beauty","صالون","حلاق","سبا","مناكير","بديكير"]],
+    ["خدمات منزلية", ["cleaning service","home cleaning","plumber","electrician","pest control","تنظيف منزل","سباك","كهربائي","مكافحة حشرات"]],
+    ["توصيل", ["delivery","courier","local delivery","توصيل","مندوب"]],
+    ["أطفال وعائلة", ["baby","kids","nursery","toys","اطفال","أطفال","حضانة","حضانه","العاب اطفال"]],
+    ["حيوانات أليفة", ["pet shop","pets","veterinary","vet","بيطري","حيوانات أليفة","حيوانات اليفة"]],
+    ["مناسبات", ["flowers","flower shop","party","event","wedding","ورد","زهور","حفلة","حفله","عرس","زفاف","مناسبة"]],
     ["قهوة", ["coffee","cafe","café","starbucks","كوفي","كافيه","قهوة","لاتيه","espresso","اسبريسو"]],
     ["مواصلات", ["adnoc","enoc","fuel","petrol","gas station","uber","careem","taxi","parking","salik","ادنوك","اينوك","بترول","بنزين","وقود","تاكسي","كريم","اوبر","مواقف","سالك"]],
     ["مشتريات", ["carrefour","lulu","supermarket","grocery","coop","amazon","noon","بقالة","بقاله","سوبرماركت","جمعية","جمعيه","كارفور","لولو","مقاضي"]],

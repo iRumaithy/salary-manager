@@ -36,7 +36,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.3-shortcuts-merchant-preview-r5";
+      var v = "3.9.3-expense-insights-voice-wallet-r6";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -3289,6 +3289,69 @@
     /* 3.8.7 r16: keep the hero focused on salary/date/current balance; percentage usage caused confusion. */
     .salary-card .salary-foot { display: none !important; }
 
+
+    /* 3.9.3 r6 — category infographic and simplified Shortcut guide */
+    .automation-mini-guide { line-height:1.85; color:var(--ink); }
+    .automation-mini-guide > b { display:block; margin-bottom:7px; color:var(--forest); font-size:12px; }
+    .automation-mini-guide ol { margin:7px 0 0; padding-inline-start:22px; }
+    .automation-mini-guide li { margin:6px 0; color:#4f625e; }
+    .automation-mini-guide small { display:block; margin-top:8px; color:var(--teal); font-weight:800; }
+
+    .expense-category-overview-panel { grid-column:1; grid-row:2; }
+    .upcoming-overview-panel { grid-column:2; grid-row:1 / span 2; align-self:start; }
+    .expense-category-infographic {
+      display:grid;
+      grid-template-columns:minmax(160px,.72fr) minmax(0,1.28fr);
+      gap:18px;
+      align-items:center;
+    }
+    .expense-category-donut-wrap { display:grid; place-items:center; min-height:190px; }
+    .expense-category-donut {
+      width:170px; height:170px; border-radius:50%; position:relative;
+      box-shadow:inset 0 0 0 1px rgba(23,51,49,.06),0 16px 34px rgba(21,49,46,.08);
+    }
+    .expense-category-donut::after {
+      content:""; position:absolute; inset:25px; border-radius:50%;
+      background:var(--paper); box-shadow:0 0 0 1px rgba(23,51,49,.06);
+    }
+    .expense-category-donut-center {
+      position:absolute; inset:0; z-index:2; display:grid; place-items:center;
+      text-align:center; padding:38px;
+    }
+    .expense-category-donut-center strong { display:block; color:var(--forest); font-size:15px; white-space:nowrap; }
+    .expense-category-donut-center span { display:block; margin-top:5px; color:var(--muted); font-size:8px; line-height:1.45; }
+    .expense-category-legend { display:grid; gap:8px; }
+    .expense-category-row {
+      display:grid; grid-template-columns:36px minmax(0,1fr) auto; gap:9px; align-items:center;
+      min-height:48px; padding:7px 9px; border:1px solid rgba(23,51,49,.07);
+      border-radius:14px; background:#fffefa;
+    }
+    .expense-category-logo {
+      width:34px; height:34px; display:grid; place-items:center; border-radius:11px;
+      background:var(--cat-soft); color:var(--cat-color); font-size:17px; line-height:1;
+    }
+    .expense-category-row-copy { min-width:0; }
+    .expense-category-row-copy strong { display:block; font-size:10px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .expense-category-row-copy span { display:block; margin-top:3px; font-size:8px; color:var(--muted); }
+    .expense-category-row-amount { text-align:end; }
+    .expense-category-row-amount strong { display:block; font-size:10px; color:var(--ink); white-space:nowrap; }
+    .expense-category-row-amount span { display:block; margin-top:3px; font-size:8px; font-weight:900; color:var(--cat-color); }
+    .expense-category-empty {
+      padding:18px; border:1px dashed #d8ddd9; border-radius:16px; color:var(--muted);
+      text-align:center; font-size:10px; line-height:1.7; background:#fffefa;
+    }
+    .statement-expense-category-block {
+      border:1px solid rgba(15,72,66,.10); border-radius:18px; padding:15px; background:#fcfdfb;
+    }
+    .statement-expense-category-block .expense-category-donut { width:148px; height:148px; }
+    .statement-expense-category-block .expense-category-donut::after { inset:22px; }
+    .statement-expense-category-block .expense-category-donut-wrap { min-height:160px; }
+
+    @media (max-width:900px) {
+      .expense-category-overview-panel,.upcoming-overview-panel { grid-column:auto; grid-row:auto; }
+      .expense-category-infographic { grid-template-columns:1fr; }
+      .expense-category-donut-wrap { min-height:175px; }
+    }
   </style>
 </head>
 <body>
@@ -3495,7 +3558,17 @@
             </div>
           </article>
 
-          <article class="panel panel-pad">
+          <article class="panel panel-pad expense-category-overview-panel">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title">المصروفات حسب التصنيف</h2>
+                <p class="panel-subtitle">إنفوغرافي حي يتغير تلقائيًا مع كل مصروف ويعرض ألوان وأيقونات التصنيفات ونسبها.</p>
+              </div>
+            </div>
+            <div id="expenseCategoryInfographic" aria-live="polite"></div>
+          </article>
+
+          <article class="panel panel-pad upcoming-overview-panel">
             <div class="panel-head">
               <div>
                 <h2 class="panel-title">استحقاقات هذا الشهر</h2>
@@ -3611,6 +3684,30 @@
                 <button class="expense-category-choice" type="button" data-expense-category="هدايا" style="--cat-accent:#bc6b63;--cat-soft:#fbeeea" aria-pressed="false">
                   <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10h16v10H4V10ZM3 7h18v3H3V7ZM12 7v13"></path><path d="M12 7H8.5A2.5 2.5 0 1 1 11 4.5L12 7Zm0 0h3.5A2.5 2.5 0 1 0 13 4.5L12 7Z"></path></svg></span><span>هدايا</span>
                 </button>
+                <button class="expense-category-choice" type="button" data-expense-category="مغسلة ملابس" style="--cat-accent:#3f7f8f;--cat-soft:#e9f5f7" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><circle cx="12" cy="13" r="5"></circle><path d="M8 6h.01M11 6h5"></path></svg></span><span>مغسلة ملابس</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="عناية شخصية" style="--cat-accent:#a65f83;--cat-soft:#f8edf3" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 4h8M10 4v4l-4 4v7h12v-7l-4-4V4M9 14h6"></path></svg></span><span>عناية شخصية</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="صيانة سيارة" style="--cat-accent:#9a6a2f;--cat-soft:#f8f0df" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 17h14l-1-6-2-4H8l-2 4-1 6ZM7 17v2M17 17v2"></path><path d="m14.5 5 2-2 2.5 2.5-2 2"></path></svg></span><span>صيانة سيارة</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="خدمات منزلية" style="--cat-accent:#5a7b6f;--cat-soft:#ebf2ef" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8M5 10v10h14V10"></path><path d="m9 16 2 2 4-5"></path></svg></span><span>خدمات منزلية</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="توصيل" style="--cat-accent:#4e7aa5;--cat-soft:#eaf1f8" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7h11v10H3V7Zm11 4h4l3 3v3h-7v-6Z"></path><circle cx="7" cy="18" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg></span><span>توصيل</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="أطفال وعائلة" style="--cat-accent:#b06f48;--cat-soft:#faefe7" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"></circle><circle cx="16.5" cy="9" r="2.5"></circle><path d="M4 20c.5-4 2-6 5-6s4.5 2 5 6M13 20c.3-3 1.5-4.5 3.5-4.5S20 17 20 20"></path></svg></span><span>أطفال وعائلة</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="حيوانات أليفة" style="--cat-accent:#7a7450;--cat-soft:#f2f0e6" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="7" cy="8" r="2"></circle><circle cx="17" cy="8" r="2"></circle><circle cx="5.5" cy="13" r="2"></circle><circle cx="18.5" cy="13" r="2"></circle><path d="M12 11c-3 0-5 3-5 5.5 0 2 1.6 3.5 3.6 2.6l1.4-.6 1.4.6c2 .9 3.6-.6 3.6-2.6C17 14 15 11 12 11Z"></path></svg></span><span>حيوانات أليفة</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="مناسبات" style="--cat-accent:#a56e9e;--cat-soft:#f6edf6" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v4M5 7l3 2M19 7l-3 2M7 13h10l2 8H5l2-8Z"></path><path d="M9 13a3 3 0 0 1 6 0"></path></svg></span><span>مناسبات</span>
+                </button>
                 <button class="expense-category-choice" type="button" data-expense-category="أخرى" style="--cat-accent:#657477;--cat-soft:#eef1f1" aria-pressed="false">
                   <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="18" cy="12" r="1.5"></circle></svg></span><span>أخرى</span>
                 </button>
@@ -3637,6 +3734,14 @@
                 <option value="سفر">سفر</option>
                 <option value="تعليم">تعليم</option>
                 <option value="هدايا">هدايا</option>
+                <option value="مغسلة ملابس">مغسلة ملابس</option>
+                <option value="عناية شخصية">عناية شخصية</option>
+                <option value="صيانة سيارة">صيانة سيارة</option>
+                <option value="خدمات منزلية">خدمات منزلية</option>
+                <option value="توصيل">توصيل</option>
+                <option value="أطفال وعائلة">أطفال وعائلة</option>
+                <option value="حيوانات أليفة">حيوانات أليفة</option>
+                <option value="مناسبات">مناسبات</option>
                 <option value="أخرى">أخرى</option>
               </select>
             </div>
@@ -4451,6 +4556,10 @@
             <li>إمكانية إتاحة النسخة التجريبية لمستخدم محدد مع المالك دون نشرها لبقية المستخدمين.</li>
             <li>ترقية كشف الحساب PDF بتصميم تنفيذي راقٍ ورسومات إنفوغرافي وتدقيق بصري للحركات.</li>
             <li>تبسيط إعداد الاختصار بزر ينسخ رمز الربط ويفتح Shortcuts لإكمال الربط مرة واحدة.</li>
+            <li>تبسيط شرح ربط Apple Wallet خطوة بخطوة، بما في ذلك إضافة Amount وMerchant من Shortcut Input دون استخدام Text الخاص برسائل البنك.</li>
+            <li>توسعة تصنيفات المصروفات بخيارات واقعية مثل مغسلة الملابس والعناية الشخصية وصيانة السيارة والخدمات المنزلية والتوصيل والعائلة والحيوانات الأليفة والمناسبات.</li>
+            <li>رفع دقة التسجيل الصوتي باختيار أفضل نتيجة من عدة احتمالات وربط الكلمات اليومية بالتصنيف المناسب.</li>
+            <li>إضافة إنفوغرافي احترافي حي للمصروفات حسب التصنيف أسفل «توزيع الراتب»، مع إدراجه في كشف الحساب الشهري ونسخة PDF.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -5063,6 +5172,16 @@
       EN_TRANSLATIONS["سفر"] = "Travel";
       EN_TRANSLATIONS["تعليم"] = "Education";
       EN_TRANSLATIONS["هدايا"] = "Gifts";
+      EN_TRANSLATIONS["مغسلة ملابس"] = "Laundry";
+      EN_TRANSLATIONS["عناية شخصية"] = "Personal care";
+      EN_TRANSLATIONS["صيانة سيارة"] = "Car maintenance";
+      EN_TRANSLATIONS["خدمات منزلية"] = "Home services";
+      EN_TRANSLATIONS["توصيل"] = "Delivery";
+      EN_TRANSLATIONS["أطفال وعائلة"] = "Kids & family";
+      EN_TRANSLATIONS["حيوانات أليفة"] = "Pets";
+      EN_TRANSLATIONS["مناسبات"] = "Occasions";
+      EN_TRANSLATIONS["المصروفات حسب التصنيف"] = "Expenses by category";
+
 
       function applyLanguage(language, rerender) {
         currentLanguage = language === "en" ? "en" : "ar";
@@ -5090,7 +5209,7 @@
 
 
       var APP_VERSION = "3.9.3";
-      var APP_RELEASE_ID = "3.9.3-shortcuts-merchant-preview-r5";
+      var APP_RELEASE_ID = "3.9.3-expense-insights-voice-wallet-r6";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -5194,7 +5313,40 @@
         "سفر": "س",
         "تعليم": "ع",
         "هدايا": "هـ",
+        "مغسلة ملابس": "غ",
+        "عناية شخصية": "ن",
+        "صيانة سيارة": "ص",
+        "خدمات منزلية": "خ",
+        "توصيل": "و",
+        "أطفال وعائلة": "ع",
+        "حيوانات أليفة": "ح",
+        "مناسبات": "م",
         "أخرى": "أ"
+      };
+
+      var expenseCategoryMeta = {
+        "طعام": { label:"مطاعم", color:"#c66445", soft:"#fff0e8", icon:"🍽️" },
+        "مشتريات": { label:"بقالة", color:"#3a7c67", soft:"#e9f5ef", icon:"🛒" },
+        "مواصلات": { label:"وقود وتنقل", color:"#b87928", soft:"#fbf1dc", icon:"⛽" },
+        "فواتير": { label:"فواتير", color:"#2d7088", soft:"#e8f3f7", icon:"🧾" },
+        "اتصالات": { label:"اتصالات", color:"#526cb3", soft:"#eef0fb", icon:"📱" },
+        "صحة": { label:"صحة", color:"#b84f62", soft:"#fbecef", icon:"🩺" },
+        "ترفيه": { label:"ترفيه", color:"#705a9b", soft:"#f0ecf8", icon:"🎮" },
+        "قهوة": { label:"قهوة", color:"#8a6448", soft:"#f5eee8", icon:"☕" },
+        "ملابس": { label:"تسوق وملابس", color:"#8c5b7d", soft:"#f7edf4", icon:"👕" },
+        "منزل": { label:"منزل وإيجار", color:"#50736c", soft:"#eaf1ef", icon:"🏠" },
+        "سفر": { label:"سفر", color:"#3d83a2", soft:"#eaf5f9", icon:"✈️" },
+        "تعليم": { label:"تعليم", color:"#5d5aa2", soft:"#efeffa", icon:"🎓" },
+        "هدايا": { label:"هدايا", color:"#bc6b63", soft:"#fbeeea", icon:"🎁" },
+        "مغسلة ملابس": { label:"مغسلة ملابس", color:"#3f7f8f", soft:"#e9f5f7", icon:"🧺" },
+        "عناية شخصية": { label:"عناية شخصية", color:"#a65f83", soft:"#f8edf3", icon:"✂️" },
+        "صيانة سيارة": { label:"صيانة سيارة", color:"#9a6a2f", soft:"#f8f0df", icon:"🔧" },
+        "خدمات منزلية": { label:"خدمات منزلية", color:"#5a7b6f", soft:"#ebf2ef", icon:"🧹" },
+        "توصيل": { label:"توصيل", color:"#4e7aa5", soft:"#eaf1f8", icon:"🚚" },
+        "أطفال وعائلة": { label:"أطفال وعائلة", color:"#b06f48", soft:"#faefe7", icon:"👨‍👩‍👧" },
+        "حيوانات أليفة": { label:"حيوانات أليفة", color:"#7a7450", soft:"#f2f0e6", icon:"🐾" },
+        "مناسبات": { label:"مناسبات", color:"#a56e9e", soft:"#f6edf6", icon:"🎉" },
+        "أخرى": { label:"أخرى", color:"#657477", soft:"#eef1f1", icon:"•••" }
       };
 
       function $(selector) {
@@ -6404,8 +6556,8 @@
         if (hint) {
           hint.classList.add("on");
           hint.innerHTML = type === "wallet"
-            ? '<b>Apple Wallet:</b> ثبّت القالب وألصق رمز الربط المنسوخ عند السؤال. بعدها: Shortcuts ← Automation ← Transaction ← اختر بطاقتك ← Run Immediately. داخل الأتمتة أنشئ Text يحتوي <b>amount:</b> ثم Amount و<b>merchant:</b> ثم Merchant، وبعده Run Shortcut واختر قالب مدير الراتب ومرّر له الـText.'
-            : '<b>رسائل البنك:</b> ثبّت القالب وألصق رمز الربط المنسوخ عند السؤال. بعدها: Shortcuts ← Automation ← Message ← اختر Sender الخاص بالبنك ← Run Immediately ← Run Shortcut واختر قالب مدير الراتب، ومرّر نص الرسالة كـInput.';
+            ? '<div class="automation-mini-guide"><b>إعداد Apple Wallet</b><ol><li>ثبّت الاختصار والصق رمز الربط المنسوخ عند الطلب.</li><li>افتح الاختصار <b>«ربط مدير الراتب بـ Apple Wallet»</b> وانزل إلى <b>Get Contents of URL → Request Body → JSON</b>.</li><li>اضغط <b>Add new field</b> واكتب <b>amount</b>. اضغط قيمة الحقل ثم <b>Select Variable → Shortcut Input</b>، وبعد ظهور المتغير الأزرق اضغط عليه واختر <b>Amount</b>.</li><li>اضغط <b>Add new field</b> مرة أخرى واكتب <b>merchant</b>، ثم <b>Select Variable → Shortcut Input</b> واضغط المتغير الأزرق واختر <b>Merchant</b>.</li><li>في Apple Wallet لا تضف حقل <b>text</b>؛ هذا الحقل خاص برسائل البنك فقط.</li><li>افتح <b>Shortcuts → Automation → + → Wallet</b>، اختر بطاقتك ثم <b>Run Immediately</b>.</li><li>اختر <b>«ربط مدير الراتب بـ Apple Wallet»</b> وتأكد من ظهور علامة ✓ عليه، ثم اضغط رجوع و<b>Done</b>.</li></ol><small>بعد وصول أول عملية ناجحة ستظهر حالة «الربط يعمل ✓» داخل مدير الراتب.</small></div>'
+            : '<div class="automation-mini-guide"><b>إعداد رسائل البنك</b><ol><li>ثبّت الاختصار والصق رمز الربط المنسوخ عند الطلب.</li><li>داخل القالب يكون <b>source = bank_message</b> و<b>text = Shortcut Input</b>.</li><li>افتح <b>Shortcuts → Automation → Message</b> واختر اسم البنك في <b>Sender</b>.</li><li>اختر <b>Run Immediately</b> ثم اختر اختصار «ربط مدير الراتب برسائل البنك» ومرّر نص الرسالة كـInput.</li><li>اضغط <b>Done</b>.</li></ol></div>';
         }
         try { await navigator.clipboard.writeText(automationShortcutToken); }
         catch (_) { showToast("تعذر نسخ الرمز تلقائيًا؛ انسخه من الحقل قبل المتابعة.", true); return; }
@@ -7802,6 +7954,7 @@
           savingsTransferTotal: monthTransactionTotal(monthKey, ["savings_transfer","savings_plan"], "out"),
           expensesGrossTotal: monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0),
           expensesTotal: monthExpenses.reduce(function (sum, item) { return sum + netExpenseAmountForMonth(item, monthKey); }, 0),
+          expenseCategoryBreakdown: expenseCategoryBreakdownForItems(monthExpenses, monthKey),
           reimbursementsReceivedTotal: Math.max(0, monthTransactionTotal(monthKey, ["expense_reimbursement","expense_reimbursement_reversal","commitment_reimbursement","commitment_reimbursement_reversal"])),
           pendingReimbursementsAtClose: pendingReimbursementsTotal(),
           closingBalance: signedNumber(state.walletBalance),
@@ -8166,6 +8319,7 @@
         renderUpcoming(metrics.activeCommitments, metrics.activeRecurring);
         renderCommitments();
         renderRecurring();
+        renderExpenseCategoryInfographic(metrics.monthExpenses);
         renderExpenses(metrics.monthExpenses);
         renderPendingReimbursements();
         renderDeposits(metrics.monthDeposits);
@@ -8487,6 +8641,7 @@
           return '<details class="statement-card"><summary><div class="statement-summary-main"><strong>' + escapeHTML(formatMonth(key)) + '</strong><small>كشف حساب شهري محفوظ</small></div><div class="statement-summary-balance"><small>الرصيد الختامي</small><strong>' + moneyHTML(st.closingBalance) + '</strong></div><span class="statement-summary-chevron" aria-hidden="true">⌄</span></summary><div class="statement-body">' +
             '<div class="statement-hero"><div class="statement-hero-top"><div><span class="statement-hero-label">كشف نهائي · ' + escapeHTML(formatMonth(key)) + '</span><h3>ملخص الشهر</h3><div class="statement-hero-period">' + escapeHTML(statementPeriodText(key)) + '</div></div><div class="statement-hero-balance"><span>الرصيد الختامي</span><strong>' + moneyHTML(st.closingBalance) + '</strong></div></div></div>' +
             '<div class="statement-flow-grid"><div class="statement-flow"><small>رصيد البداية</small><strong>' + moneyHTML(audit.opening) + '</strong></div><div class="statement-flow inflow"><small>إجمالي الداخل</small><strong>+' + moneyHTML(audit.inflows) + '</strong></div><div class="statement-flow outflow"><small>إجمالي الخارج</small><strong>-' + moneyHTML(audit.outflows) + '</strong></div><div class="statement-flow"><small>الرصيد الختامي</small><strong>' + moneyHTML(audit.closing) + '</strong></div></div>' +
+            statementExpenseCategoryHTML(key, st) +
             '<div class="statement-section-title"><h4>تفاصيل الشهر</h4><small>القيم الفعلية المسجلة في مدير الراتب</small></div>' +
             '<div class="statement-metrics">' +
               statementMetricHTML("الرواتب المضافة", st.salaryTotal || 0, "in", "in") +
@@ -8585,6 +8740,7 @@
           '<div class="statement-print-flow"><div><small>رصيد البداية</small><strong>' + statementPrintAmountHTML(audit.opening, "") + '</strong></div><div><small>إجمالي الداخل</small><strong>' + statementPrintAmountHTML(audit.inflows, "in") + '</strong></div><div><small>إجمالي الخارج</small><strong>' + statementPrintAmountHTML(audit.outflows, "out") + '</strong></div><div><small>الرصيد الختامي</small><strong>' + statementPrintAmountHTML(audit.closing, "") + '</strong></div></div>' +
           '<div class="statement-print-section-head"><h2>الملخص التحليلي</h2><span>قراءة بصرية مبنية على الحركات الفعلية المحفوظة</span></div>' +
           '<div class="statement-print-analytics">' + statementDonutPrintHTML(breakdown, audit.outflows) + statementBarsPrintHTML(breakdown, audit.outflows) + '</div>' +
+          statementExpenseCategoryPrintHTML(key, st) +
           '<div class="statement-print-section-head"><h2>المؤشرات المالية</h2><span>تفصيل مصادر الداخل والخروج والمدخرات</span></div>' +
           '<div class="statement-print-metrics">' + metricHtml + '</div>' +
           '<div class="statement-print-audit' + (audit.matches ? '' : ' warn') + '"><span><strong>تدقيق الرصيد:</strong> ' + escapeHTML(auditText) + ' · الرصيد المتوقع ' + statementPrintAmountHTML(audit.expected, "") + '</span><span class="statement-print-audit-badge">' + (audit.matches ? 'مطابق ✓' : 'يحتاج مراجعة') + '</span></div>' +
@@ -8647,6 +8803,126 @@
         renderExpenses(metrics.monthExpenses);
         renderPendingReimbursements();
         translateDom(document.body);
+      }
+
+
+      function expenseCategoryBreakdownForItems(items, monthKey) {
+        var map = {};
+        var total = 0;
+        var count = 0;
+        (Array.isArray(items) ? items : []).forEach(function (raw) {
+          var item = normalizeExpenseRecord(raw);
+          if (monthKey && expenseMonth(item) !== monthKey) return;
+          var amount = Math.max(0, safeNumber(item.amount));
+          if (amount <= 0) return;
+          var category = String(item.category || "أخرى");
+          if (!expenseCategoryMeta[category]) category = "أخرى";
+          if (!map[category]) map[category] = { category:category, amount:0, count:0 };
+          map[category].amount = roundMoney(map[category].amount + amount);
+          map[category].count += 1;
+          total = roundMoney(total + amount);
+          count += 1;
+        });
+        var groups = Object.keys(map).map(function (key) {
+          return map[key];
+        }).sort(function (a, b) {
+          return b.amount - a.amount;
+        });
+        return { total:total, count:count, groups:groups };
+      }
+
+      function normalizeStoredExpenseCategoryBreakdown(value) {
+        if (!value || !Array.isArray(value.groups)) return null;
+        var groups = value.groups.map(function (row) {
+          var category = expenseCategoryMeta[String(row && row.category || "")] ? String(row.category) : "أخرى";
+          return {
+            category:category,
+            amount:Math.max(0, safeNumber(row && row.amount)),
+            count:Math.max(0, Math.round(Number(row && row.count) || 0))
+          };
+        }).filter(function (row) {
+          return row.amount > 0;
+        }).sort(function (a,b) {
+          return b.amount - a.amount;
+        });
+        var total = Math.max(0, safeNumber(value.total));
+        if (!total) {
+          total = groups.reduce(function (sum, row) {
+            return roundMoney(sum + row.amount);
+          }, 0);
+        }
+        var count = Math.max(0, Math.round(Number(value.count) || groups.reduce(function (sum,row) {
+          return sum + row.count;
+        }, 0)));
+        return { total:total, count:count, groups:groups };
+      }
+
+      function expenseCategoryInfographicHTML(breakdown, compact) {
+        breakdown = breakdown || { total:0, count:0, groups:[] };
+        var groups = Array.isArray(breakdown.groups) ? breakdown.groups : [];
+        if (!groups.length || safeNumber(breakdown.total) <= 0) {
+          return '<div class="expense-category-empty">لا توجد مصروفات كافية لعرض التوزيع بعد. سيظهر الرسم تلقائيًا عند تسجيل أول مصروف.</div>';
+        }
+        var cursor = 0;
+        var segments = groups.map(function (row) {
+          var meta = expenseCategoryMeta[row.category] || expenseCategoryMeta["أخرى"];
+          var pct = Math.max(0, safeNumber(row.amount) / Math.max(.01, safeNumber(breakdown.total)) * 100);
+          var start = cursor;
+          cursor += pct;
+          return meta.color + " " + start.toFixed(2) + "% " + cursor.toFixed(2) + "%";
+        }).join(",");
+        var legend = groups.map(function (row) {
+          var meta = expenseCategoryMeta[row.category] || expenseCategoryMeta["أخرى"];
+          var pct = safeNumber(breakdown.total) > 0 ? Math.round(safeNumber(row.amount) / safeNumber(breakdown.total) * 1000) / 10 : 0;
+          return '<div class="expense-category-row" style="--cat-color:' + escapeHTML(meta.color) + ';--cat-soft:' + escapeHTML(meta.soft) + '">' +
+            '<span class="expense-category-logo" aria-hidden="true">' + escapeHTML(meta.icon) + '</span>' +
+            '<div class="expense-category-row-copy"><strong>' + escapeHTML(meta.label) + '</strong><span>' + row.count + ' عملية</span></div>' +
+            '<div class="expense-category-row-amount"><strong>' + moneyHTML(row.amount) + '</strong><span>' + pct + '%</span></div>' +
+          '</div>';
+        }).join("");
+        return '<div class="expense-category-infographic' + (compact ? ' is-compact' : '') + '">' +
+          '<div class="expense-category-donut-wrap"><div class="expense-category-donut" style="background:conic-gradient(' + segments + ')"><div class="expense-category-donut-center"><div><strong>' + moneyHTML(breakdown.total) + '</strong><span>' + breakdown.count + ' مصروف مسجل</span></div></div></div></div>' +
+          '<div class="expense-category-legend">' + legend + '</div>' +
+        '</div>';
+      }
+
+      function renderExpenseCategoryInfographic(items) {
+        var root = $("#expenseCategoryInfographic");
+        if (!root) return;
+        root.innerHTML = expenseCategoryInfographicHTML(expenseCategoryBreakdownForItems(items, defaultMonth), false);
+      }
+
+      function statementExpenseCategoryBreakdown(key, st) {
+        var stored = normalizeStoredExpenseCategoryBreakdown(st && st.expenseCategoryBreakdown);
+        if (stored && stored.groups.length) return stored;
+        var items = (state.expenses || []).filter(function (item) {
+          return expenseMonth(item) === String(key || "");
+        });
+        return expenseCategoryBreakdownForItems(items, String(key || ""));
+      }
+
+      function statementExpenseCategoryHTML(key, st) {
+        var breakdown = statementExpenseCategoryBreakdown(key, st);
+        return '<div class="statement-expense-category-block"><div class="statement-section-title"><h4>المصروفات حسب التصنيف</h4><small>ألوان ونسب التصنيفات خلال الشهر</small></div>' + expenseCategoryInfographicHTML(breakdown, true) + '</div>';
+      }
+
+      function statementExpenseCategoryPrintHTML(key, st) {
+        var breakdown = statementExpenseCategoryBreakdown(key, st);
+        if (!breakdown.groups.length || !breakdown.total) {
+          return '<div class="statement-print-panel"><div class="statement-print-panel-title"><strong>المصروفات حسب التصنيف</strong><small>لا توجد مصروفات مسجلة</small></div></div>';
+        }
+        var stack = breakdown.groups.map(function (row) {
+          var meta = expenseCategoryMeta[row.category] || expenseCategoryMeta["أخرى"];
+          var pct = row.amount / breakdown.total * 100;
+          return '<i style="width:' + pct.toFixed(2) + '%;background:' + escapeHTML(meta.color) + '"></i>';
+        }).join("");
+        var legend = breakdown.groups.map(function (row) {
+          var meta = expenseCategoryMeta[row.category] || expenseCategoryMeta["أخرى"];
+          var pct = breakdown.total ? Math.round(row.amount / breakdown.total * 100) : 0;
+          return '<div class="statement-print-legend-row"><span class="statement-print-legend-dot" style="background:' + escapeHTML(meta.color) + '"></span><span>' + escapeHTML(meta.icon + " " + meta.label) + ' · ' + pct + '%</span><strong>' + statementPrintAmountHTML(row.amount, "out") + '</strong></div>';
+        }).join("");
+        return '<div class="statement-print-section-head"><h2>المصروفات حسب التصنيف</h2><span>تحليل إجمالي المصروفات المسجلة حسب الاستخدام الفعلي</span></div>' +
+          '<div class="statement-print-panel"><div class="statement-print-panel-title"><strong>توزيع التصنيفات</strong><small>' + breakdown.count + ' مصروف · ' + escapeHTML(formatAmount(breakdown.total)) + ' درهم</small></div><div class="statement-print-stack">' + stack + '</div><div class="statement-print-legend">' + legend + '</div></div>';
       }
 
       function renderExpenses(items) {
@@ -9573,6 +9849,14 @@
       function detectExpenseCategoryFromVoice(text) {
         var speech = normalizeArabicSpeechText(text);
         var rules = [
+          { value:"مغسلة ملابس", words:["مغسله ملابس","مغسلة ملابس","مغسله","مغسلة","غسيل ملابس","دراي كلين","دراي كليننج","laundry","laundromat","dry clean","dryclean"] },
+          { value:"صيانة سيارة", words:["صيانه سياره","صيانة سيارة","ورشه","ورشة","كراج","garage","auto service","car service","car wash","غسيل سياره","غسيل سيارة","تاير","اطارات","إطارات","oil change","تغيير زيت"] },
+          { value:"عناية شخصية", words:["صالون","حلاق","حلاقه","سبا","barber","salon","spa","beauty","مناكير","بديكير"] },
+          { value:"خدمات منزلية", words:["تنظيف منزل","عامله","عامل تنظيف","سباك","كهربائي","مكافحه حشرات","مكافحة حشرات","cleaning service","plumber","electrician","pest control"] },
+          { value:"توصيل", words:["توصيل","مندوب","delivery","courier","شحن محلي"] },
+          { value:"أطفال وعائلة", words:["اطفال","أطفال","حضانة","حضانه","بيبي","baby","kids","nursery","العاب اطفال","ألعاب أطفال"] },
+          { value:"حيوانات أليفة", words:["حيوان اليف","حيوانات اليفه","حيوانات أليفة","بيطري","pet","pets","pet shop","veterinary","vet"] },
+          { value:"مناسبات", words:["مناسبه","مناسبة","حفله","حفلة","عرس","زفاف","ورد","زهور","flowers","party","event","wedding"] },
           { value:"قهوة", words:["قهوه","قهوة","كوفي","كوفيه","كوفي شوب","كوفيشوب","كافي","كافيه","كافيهات","coffee","كابتشينو","لاتيه","اسبريسو","شاي"] },
           { value:"مواصلات", words:["بترول","بنزين","وقود","ادنوك","محطه","تاكسي","تكسي","اوبر","كريم","مواقف","سالك","سياره","مترو","باص","مواصلات"] },
           { value:"مشتريات", words:["بقاله","سوبرماركت","سوبر ماركت","جمعيه","كارفور","لولو","مشتريات","مقاضي","تموين"] },
@@ -9619,12 +9903,12 @@
           return true;
         }).join(" ").replace(/^و+|و+$/g, "").trim();
         if (cleaned) return cleaned.slice(0, 80);
-        var defaults = { "طعام":"مطاعم", "مشتريات":"بقالة", "مواصلات":"وقود وتنقل", "فواتير":"فواتير", "اتصالات":"اتصالات", "صحة":"صحة", "ترفيه":"ترفيه", "قهوة":"قهوة", "ملابس":"تسوق وملابس", "منزل":"منزل وإيجار", "سفر":"سفر", "تعليم":"تعليم", "هدايا":"هدايا", "أخرى":"مصروف" };
+        var defaults = { "طعام":"مطاعم", "مشتريات":"بقالة", "مواصلات":"وقود وتنقل", "فواتير":"فواتير", "اتصالات":"اتصالات", "صحة":"صحة", "ترفيه":"ترفيه", "قهوة":"قهوة", "ملابس":"تسوق وملابس", "منزل":"منزل وإيجار", "سفر":"سفر", "تعليم":"تعليم", "هدايا":"هدايا", "مغسلة ملابس":"مغسلة ملابس", "عناية شخصية":"عناية شخصية", "صيانة سيارة":"صيانة سيارة", "خدمات منزلية":"خدمات منزلية", "توصيل":"توصيل", "أطفال وعائلة":"أطفال وعائلة", "حيوانات أليفة":"حيوانات أليفة", "مناسبات":"مناسبات", "أخرى":"مصروف" };
         return defaults[category] || "مصروف";
       }
 
       function expenseCategoryDefaultTitle(category) {
-        var labels = { "طعام":"مطاعم", "مشتريات":"بقالة ومشتريات", "مواصلات":"وقود وتنقل", "فواتير":"فواتير", "اتصالات":"اتصالات", "صحة":"صحة", "ترفيه":"ترفيه", "قهوة":"قهوة", "ملابس":"تسوق وملابس", "منزل":"منزل وإيجار", "سفر":"سفر", "تعليم":"تعليم", "هدايا":"هدايا", "أخرى":"مصروف" };
+        var labels = { "طعام":"مطاعم", "مشتريات":"بقالة ومشتريات", "مواصلات":"وقود وتنقل", "فواتير":"فواتير", "اتصالات":"اتصالات", "صحة":"صحة", "ترفيه":"ترفيه", "قهوة":"قهوة", "ملابس":"تسوق وملابس", "منزل":"منزل وإيجار", "سفر":"سفر", "تعليم":"تعليم", "هدايا":"هدايا", "مغسلة ملابس":"مغسلة ملابس", "عناية شخصية":"عناية شخصية", "صيانة سيارة":"صيانة سيارة", "خدمات منزلية":"خدمات منزلية", "توصيل":"توصيل", "أطفال وعائلة":"أطفال وعائلة", "حيوانات أليفة":"حيوانات أليفة", "مناسبات":"مناسبات", "أخرى":"مصروف" };
         return labels[String(category || "أخرى")] || "مصروف";
       }
 
@@ -9685,6 +9969,33 @@
         }
       }
 
+
+      function expenseVoiceTranscriptScore(text, confidence) {
+        text = String(text || "").trim();
+        if (!text) return -1;
+        var score = Math.max(0, Number(confidence) || 0) * 20;
+        if (parseSpokenExpenseAmount(text) > 0) score += 100;
+        if (detectExpenseCategoryFromVoice(text) !== "أخرى") score += 35;
+        if (/(?:درهم|دراهم|aed|dhs?)/i.test(text)) score += 15;
+        score += Math.min(18, text.length / 4);
+        return score;
+      }
+
+      function bestExpenseVoiceAlternative(result) {
+        if (!result || !result.length) return "";
+        var best = "";
+        var bestScore = -1;
+        for (var i = 0; i < result.length; i += 1) {
+          var candidate = String(result[i] && result[i].transcript || "").trim();
+          var score = expenseVoiceTranscriptScore(candidate, result[i] && result[i].confidence);
+          if (score > bestScore) {
+            bestScore = score;
+            best = candidate;
+          }
+        }
+        return best;
+      }
+
       function ensureExpenseVoiceRecognition() {
         var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!Recognition) return null;
@@ -9692,7 +10003,7 @@
         var recognition = new Recognition();
         recognition.continuous = false;
         recognition.interimResults = true;
-        recognition.maxAlternatives = 1;
+        recognition.maxAlternatives = 5;
         recognition.lang = currentLanguage === "en" ? "en-AE" : "ar-AE";
         var latestTranscript = "";
         recognition.onstart = function () {
@@ -9701,13 +10012,18 @@
           setExpenseVoiceStatus(voiceLocaleText("تحدث الآن… مثال: خمسة وثلاثين درهم كوفي", "Speak now… for example: thirty-five dirhams coffee"), "listening");
         };
         recognition.onresult = function (event) {
-          var combined = "";
-          for (var i = 0; i < event.results.length; i += 1) combined += event.results[i][0].transcript + " ";
-          latestTranscript = combined.trim() || latestTranscript;
+          var parts = [];
+          for (var i = 0; i < event.results.length; i += 1) {
+            var best = bestExpenseVoiceAlternative(event.results[i]);
+            if (best) parts.push(best);
+          }
+          var combined = parts.join(" ").replace(/\s+/g, " ").trim();
+          if (combined) latestTranscript = combined;
           if (latestTranscript) setExpenseVoiceStatus(voiceLocaleText("سمعت: «" + latestTranscript + "»", "Heard: “" + latestTranscript + "”"), "listening");
         };
         recognition.onerror = function (event) {
           var code = String(event && event.error || "");
+          if (code === "aborted") return;
           var message = code === "not-allowed" || code === "service-not-allowed"
             ? voiceLocaleText("اسمح لمدير الراتب باستخدام الميكروفون من إعدادات المتصفح ثم حاول مرة أخرى.", "Allow microphone access in browser settings and try again.")
             : code === "no-speech"

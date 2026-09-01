@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
 const VERSION = "3.9.3";
-const RELEASE_ID = "3.9.3-commitment-bank-match-r3";
+const RELEASE_ID = "3.9.3-targeted-preview-statement-r4";
 const UPDATE_SIGNAL_VERSION = "3.9.3\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
 const PREVIOUS_RELEASE_ID = "3.8.6";
@@ -42,7 +42,8 @@ const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
   "3.9.2-voice-expenses-r2",
   "3.9.2-statement-pdf-r3",
   "3.9.3-wallet-bank-automation-r1",
-  "3.9.3-automation-assistant-r2"
+  "3.9.3-automation-assistant-r2",
+  "3.9.3-commitment-bank-match-r3"
 ]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -916,6 +917,21 @@ async function handleApi(request, env, url) {
     return apiJson(request, env, body || { ok:false }, response.status);
   }
 
+  if (p === "/api/admin/send-user-preview" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/admin/send-user-preview", { token:a.token, userId:b.userId, subject:url.origin });
+    return apiJson(request, env, body || { ok:false }, response.status);
+  }
+  if (p === "/api/admin/revoke-user-preview" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/admin/revoke-user-preview", { token:a.token, userId:b.userId, subject:url.origin });
+    return apiJson(request, env, body || { ok:false }, response.status);
+  }
+
   if (p === "/api/admin/users" && request.method === "GET") {
     const a = await requireAuth(request, env, { admin: true });
     if (!a.ok) return a.response;
@@ -978,7 +994,7 @@ export class SalaryStore extends DurableObject {
     try { await this.ctx.storage.put(`audit:${Date.now()}:${crypto.randomUUID()}`, { type, at: Date.now(), ...details }); } catch (_) {}
   }
   async publicUser(u) {
-    return u ? { id: u.id, username: u.username, email: u.email, role: u.role, status: u.status, accountId: u.accountId, createdAt: u.createdAt, lastLoginAt: u.lastLoginAt || null, appLockResetVersion: Number(u.appLockResetVersion || 0), lastAppVersion:String(u.lastAppVersion || ""), lastAppReleaseId:String(u.lastAppReleaseId || ""), lastVersionSeenAt:Number(u.lastVersionSeenAt || 0) || null } : null;
+    return u ? { id: u.id, username: u.username, email: u.email, role: u.role, status: u.status, accountId: u.accountId, createdAt: u.createdAt, lastLoginAt: u.lastLoginAt || null, appLockResetVersion: Number(u.appLockResetVersion || 0), lastAppVersion:String(u.lastAppVersion || ""), lastAppReleaseId:String(u.lastAppReleaseId || ""), lastVersionSeenAt:Number(u.lastVersionSeenAt || 0) || null, targetedPreviewVersion:String(u.targetedPreviewVersion || ""), targetedPreviewReleaseId:String(u.targetedPreviewReleaseId || ""), targetedPreviewAssignedAt:Number(u.targetedPreviewAssignedAt || 0) || null } : null;
   }
   async createSession(user, deviceLabel = "") {
     const token = randomToken(32);
@@ -2037,10 +2053,10 @@ export class SalaryStore extends DurableObject {
         const deviceVersions = []; const seen = new Set();
         for (const rec of versionRecords) { const key=rec.deviceLabel+"|"+rec.version+"|"+rec.releaseId; if (seen.has(key)) continue; seen.add(key); deviceVersions.push(rec); if (deviceVersions.length>=6) break; }
         const hasKnownOutdatedDevice = deviceVersions.some(rec => rec.version && (rec.version !== publishedVersion || (rec.releaseId && publishedReleaseId && rec.releaseId !== publishedReleaseId)));
-        out.push({ ...(await this.publicUser(u)), activeSessions: activeSessions.length, resetRequested: !!reset?.requestedAt, resetCodeActive: !!reset?.codeHash && Number(reset.expiresAt || 0) > Date.now(), appLockResetRequested: Number(u.appLockResetRequestedAt || 0) > 0, appLockResetRequestedAt: Number(u.appLockResetRequestedAt || 0) || null, currentAppVersion, currentAppReleaseId, onPublishedVersion, hasKnownOutdatedDevice, deviceVersions, targetedUpdateSentAt:Number(u.targetedUpdateSentAt || 0) || null });
+        out.push({ ...(await this.publicUser(u)), activeSessions: activeSessions.length, resetRequested: !!reset?.requestedAt, resetCodeActive: !!reset?.codeHash && Number(reset.expiresAt || 0) > Date.now(), appLockResetRequested: Number(u.appLockResetRequestedAt || 0) > 0, appLockResetRequestedAt: Number(u.appLockResetRequestedAt || 0) || null, currentAppVersion, currentAppReleaseId, onPublishedVersion, hasKnownOutdatedDevice, deviceVersions, targetedUpdateSentAt:Number(u.targetedUpdateSentAt || 0) || null, targetedPreviewVersion:String(u.targetedPreviewVersion || ""), targetedPreviewReleaseId:String(u.targetedPreviewReleaseId || ""), targetedPreviewAssignedAt:Number(u.targetedPreviewAssignedAt || 0) || null });
       }
       out.sort((a, b2) => Number(b2.createdAt) - Number(a.createdAt));
-      return json({ ok: true, users: out, count: out.length, publishedVersion, publishedReleaseId });
+      return json({ ok: true, users: out, count: out.length, publishedVersion, publishedReleaseId, stagedVersion: VERSION, stagedReleaseId: RELEASE_ID });
     }
     if (p === "/auth/admin/send-user-update") {
       const id = String(b.userId || ""), user = await this.ctx.storage.get(`user:${id}`);
@@ -2065,6 +2081,39 @@ export class SalaryStore extends DurableObject {
       const manualUpdateUrl = origin ? origin + bridgePath : bridgePath;
       return json({ ok:true, publishedVersion, publishedReleaseId, manualUpdateUrl, ...result });
     }
+    if (p === "/auth/admin/send-user-preview") {
+      const id = String(b.userId || ""), user = await this.ctx.storage.get(`user:${id}`);
+      if (!user) return json({ ok:false, error:"NOT_FOUND" },404);
+      if (user.role === "super_admin") return json({ ok:false, error:"CANNOT_TARGET_OWNER" },400);
+      const release = await this.ensureReleaseState(VERSION, PREVIOUS_PUBLISHED_VERSION, b.subject, false, RELEASE_ID, PREVIOUS_RELEASE_ID);
+      if (release.currentReleaseRejected) return json({ ok:false, error:"RELEASE_REJECTED" },409);
+      if (String(release.publishedReleaseId || "") === RELEASE_ID) return json({ ok:false, error:"ALREADY_PUBLISHED" },409);
+      user.targetedPreviewVersion = VERSION;
+      user.targetedPreviewReleaseId = RELEASE_ID;
+      user.targetedPreviewAssignedAt = Date.now();
+      user.targetedPreviewAssignedBy = admin.user.id;
+      await this.ctx.storage.put(`user:${id}`, user);
+      const nonce = Date.now();
+      const bridgePath = `/targeted-preview-update?__app_shell=${nonce}`;
+      const payload = { title:"نسخة تجريبية من مدير الراتب", body:`أتاح لك المالك الإصدار ${VERSION} للاختبار قبل نشره لبقية المستخدمين.`, icon:"./icons/choice/gold-192.png", badge:"./icons/choice/gold-192.png", url:bridgePath, tag:`salary-manager-preview-${id}-${RELEASE_ID}` };
+      const result = await this.sendPushToUser(id, payload, b.subject);
+      await this.audit("targeted-preview-assigned", { userId:id, adminId:admin.user.id, version:VERSION, releaseId:RELEASE_ID, sent:result.sent, subscriptionCount:result.subscriptionCount });
+      const origin = String(b.subject || "").replace(/\/$/, "");
+      const manualUpdateUrl = origin ? origin + bridgePath : bridgePath;
+      return json({ ok:true, stagedVersion:VERSION, stagedReleaseId:RELEASE_ID, manualUpdateUrl, ...result });
+    }
+    if (p === "/auth/admin/revoke-user-preview") {
+      const id = String(b.userId || ""), user = await this.ctx.storage.get(`user:${id}`);
+      if (!user) return json({ ok:false, error:"NOT_FOUND" },404);
+      if (user.role === "super_admin") return json({ ok:false, error:"CANNOT_TARGET_OWNER" },400);
+      const oldVersion = String(user.targetedPreviewVersion || "");
+      const oldReleaseId = String(user.targetedPreviewReleaseId || "");
+      delete user.targetedPreviewVersion; delete user.targetedPreviewReleaseId; delete user.targetedPreviewAssignedAt; delete user.targetedPreviewAssignedBy;
+      await this.ctx.storage.put(`user:${id}`, user);
+      await this.audit("targeted-preview-revoked", { userId:id, adminId:admin.user.id, version:oldVersion, releaseId:oldReleaseId });
+      return json({ ok:true });
+    }
+
     if (p === "/auth/admin/reset-code") {
       const id = String(b.userId || ""), user = await this.ctx.storage.get(`user:${id}`);
       if (!user) return json({ ok: false, error: "NOT_FOUND" }, 404);
@@ -2372,6 +2421,17 @@ export default {
 
       if (url.pathname.startsWith("/api/")) return await handleApi(request, env, url);
 
+      if (url.pathname === "/targeted-preview-update") {
+        const auth = await optionalAuth(request, env);
+        const release = await getReleaseState(env, url.origin);
+        const eligible = Boolean(auth?.user && auth.user.role !== "super_admin" && String(auth.user.targetedPreviewReleaseId || "") === RELEASE_ID && !Boolean(release.currentReleaseRejected));
+        if (!eligible) return Response.redirect(new URL("/", url.origin).toString(), 302);
+        const nonce = Date.now();
+        const safeVersion = VERSION.replace(/[<>&"']/g, "");
+        const html = `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#123f3b"><title>نسخة تجريبية - مدير الراتب</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f3efe7;color:#173331;font-family:Tahoma,Arial,sans-serif}.card{width:min(430px,calc(100% - 36px));box-sizing:border-box;padding:30px 24px;border-radius:26px;background:#fffdf9;box-shadow:0 20px 60px rgba(20,45,42,.12);text-align:center}.mark{width:64px;height:64px;margin:0 auto 16px;display:grid;place-items:center;border-radius:20px;background:#123f3b;color:white;font-size:28px}.bar{height:8px;margin:20px 0 12px;overflow:hidden;border-radius:99px;background:#e5e1d8}.bar i{display:block;width:35%;height:100%;border-radius:inherit;background:#14756c;animation:p 1.15s ease-in-out infinite alternate}@keyframes p{to{width:100%}}h2{margin:0 0 9px;font-size:22px}p{margin:0;color:#6d7d79;line-height:1.8;font-size:13px}</style></head><body><main class="card"><div class="mark">◎</div><h2>تجهيز النسخة التجريبية ${safeVersion}</h2><p>هذه النسخة متاحة لحسابك فقط باختيار المالك.</p><div class="bar"><i></i></div><p>لن تتأثر بيانات الحساب أو بقية المستخدمين.</p></main><script>(async function(){var finish=function(){location.replace('/index.html?__app_shell='+Date.now()+'&targeted_preview=1')};try{if(!('serviceWorker' in navigator)){finish();return}var reg=await navigator.serviceWorker.register('/sw.js?__app_shell=${nonce}&targeted_preview=1',{scope:'/',updateViaCache:'none'});try{await reg.update()}catch(_){}var worker=reg.waiting||reg.installing;if(worker&&worker.state!=='installed'&&worker.state!=='activated'){await new Promise(function(resolve){var t=setTimeout(resolve,7000);worker.addEventListener('statechange',function(){if(worker.state==='installed'||worker.state==='activated'||worker.state==='redundant'){clearTimeout(t);resolve()}},{once:false})})}worker=reg.waiting||worker;if(worker&&worker.state==='installed'){try{worker.postMessage({type:'SKIP_WAITING'})}catch(_){}}setTimeout(finish,650)}catch(e){setTimeout(finish,1800)}})();</script></body></html>`;
+        return new Response(html, { status:200, headers:{ "content-type":"text/html; charset=utf-8", "cache-control":"no-store" } });
+      }
+
       if (url.pathname === "/user-update") {
         const release = await getReleaseState(env, url.origin);
         const publishedVersion = String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
@@ -2392,6 +2452,7 @@ export default {
         const shellAuth = await optionalAuth(request, env);
         const forcePublic = url.searchParams.has("__public_update");
         const preview = !forcePublic && shellAuth?.user?.role === "super_admin" && !Boolean(release.currentReleaseRejected);
+        const targetedPreview = !forcePublic && shellAuth?.user?.role !== "super_admin" && String(shellAuth?.user?.targetedPreviewReleaseId || "") === RELEASE_ID && !Boolean(release.currentReleaseRejected);
         const publishedVersion = String(release.publishedVersion || PREVIOUS_PUBLISHED_VERSION);
         const rawPublishedReleaseId = String(release.publishedReleaseId || PREVIOUS_RELEASE_ID);
         // Defensive normalization: 3.8.6 can only map to its canonical archived release id.
@@ -2401,7 +2462,7 @@ export default {
           ? PREVIOUS_RELEASE_ID
           : rawPublishedReleaseId;
         const latestPublished = publishedReleaseId === RELEASE_ID;
-        const useLatest = preview || latestPublished;
+        const useLatest = preview || targetedPreview || latestPublished;
         const safePublishedReleaseId = /^[A-Za-z0-9._-]{1,80}$/.test(publishedReleaseId) ? publishedReleaseId : PREVIOUS_RELEASE_ID;
         let assetPath;
         if (isWorkerScript) {

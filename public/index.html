@@ -36,7 +36,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.3-wallet-bank-automation-r1";
+      var v = "3.9.3-commitment-bank-match-r3";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -2912,7 +2912,30 @@
     .automation-import-amount.unknown { color:#6e7b78; }
     .automation-import-actions { grid-column:1/-1; display:flex; gap:6px; flex-wrap:wrap; }
     .automation-import-raw { grid-column:1/-1; padding:8px 10px; border-radius:11px; background:#f6f4ee; color:#667572; font-size:9px; line-height:1.6; overflow-wrap:anywhere; }
-    @media (max-width:560px) { .automation-steps { grid-template-columns:1fr; } .automation-secret-row { align-items:stretch; flex-direction:column; } .automation-secret-row .soft-btn { width:100%; } }
+    .automation-setup-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:10px; }
+    .automation-setup-btn { min-height:52px; border:1px solid rgba(20,117,108,.2); border-radius:15px; background:#fff; color:var(--forest); font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; padding:10px; }
+    .automation-setup-btn .setup-symbol { width:29px; height:29px; border-radius:10px; display:grid; place-items:center; background:var(--teal-soft); color:var(--teal); font-size:16px; }
+    .automation-toggle-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:12px; border-radius:15px; background:#fff; border:1px solid var(--line); margin-top:10px; }
+    .automation-toggle-row strong { display:block; font-size:13px; color:var(--forest); }
+    .automation-toggle-row p { margin:4px 0 0; font-size:10px; color:var(--muted); line-height:1.7; }
+    .automation-switch { position:relative; width:48px; height:28px; flex:0 0 auto; }
+    .automation-switch input { position:absolute; opacity:0; pointer-events:none; }
+    .automation-switch span { position:absolute; inset:0; border-radius:999px; background:#d8ddda; transition:.2s ease; }
+    .automation-switch span::after { content:""; position:absolute; width:22px; height:22px; border-radius:50%; background:#fff; top:3px; left:3px; box-shadow:0 2px 8px rgba(0,0,0,.16); transition:.2s ease; }
+    .automation-switch input:checked + span { background:var(--teal); }
+    .automation-switch input:checked + span::after { transform:translateX(20px); }
+    .automation-security-note { padding:10px 12px; border-radius:14px; background:#fff7e8; border:1px solid #f2dfb8; color:#796237; font-size:10px; line-height:1.75; }
+    .automation-confidence { display:inline-flex; align-items:center; gap:4px; margin-inline-start:5px; padding:2px 7px; border-radius:999px; font-size:8px; font-weight:900; background:#eef4f2; color:#60706c; }
+    .automation-confidence.high { background:#e6f6ef; color:#16725f; }
+    .automation-review-fab { position:fixed; left:18px; bottom:calc(24px + env(safe-area-inset-bottom, 0px)); width:62px; height:62px; border:0; border-radius:22px; background:linear-gradient(145deg,#0f514b,#178b7e); color:#fff; display:grid; place-items:center; z-index:35; box-shadow:0 14px 34px rgba(15,81,75,.28); cursor:pointer; animation:automationFloat 2.8s ease-in-out infinite; }
+    .automation-review-fab[hidden] { display:none !important; }
+    .automation-review-fab svg { width:27px; height:27px; }
+    .automation-review-badge { position:absolute; top:-5px; right:-5px; min-width:22px; height:22px; padding:0 5px; display:grid; place-items:center; border-radius:999px; background:#d83b38; color:#fff; border:3px solid #f7f3ea; font-size:10px; font-weight:900; box-shadow:0 5px 12px rgba(216,59,56,.3); }
+    .automation-review-badge[hidden] { display:none !important; }
+    .automation-review-fab.has-pending { animation:automationFloat 2.2s ease-in-out infinite, automationAttention 1.5s ease-in-out infinite; }
+    @keyframes automationFloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-5px); } }
+    @keyframes automationAttention { 0%,100% { box-shadow:0 14px 34px rgba(15,81,75,.28); } 50% { box-shadow:0 14px 34px rgba(15,81,75,.28),0 0 0 8px rgba(216,59,56,.10); } }
+    @media (max-width:560px) { .automation-steps { grid-template-columns:1fr; } .automation-secret-row { align-items:stretch; flex-direction:column; } .automation-secret-row .soft-btn { width:100%; } .automation-setup-actions { grid-template-columns:1fr; } .automation-review-fab { width:58px; height:58px; border-radius:20px; left:14px; } }
 
     .settings-section {
       display: grid;
@@ -3804,6 +3827,10 @@
     </footer>
 
     <button class="mobile-fab" id="mobileFab" type="button" aria-label="إضافة عنصر">+</button>
+    <button class="automation-review-fab" id="automationReviewFab" type="button" aria-label="مراجعة المعاملات البنكية" title="مراجعة المعاملات" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.1 4.2h9.8l-1.6-1.6 1.4-1.4L20.7 5l-4 3.8-1.4-1.4 1.6-1.6H7.1V4.2Zm9.8 14H7.1l1.6 1.6-1.4 1.4L3.3 17l4-3.8 1.4 1.4-1.6 1.6h9.8v2Z"/></svg>
+      <span class="automation-review-badge" id="automationReviewBadge" hidden>0</span>
+    </button>
   </div>
 
   <dialog class="modal" id="salaryDialog">
@@ -4218,9 +4245,9 @@
         <div class="settings-actions"><button class="primary-btn" id="enableGeneralPushButton" type="button">تفعيل إشعارات التحديث</button><button class="soft-btn" id="testGeneralPushButton" type="button">اختبار الإشعار على هذا الجهاز</button><button class="ghost-btn" id="disableGeneralPushButton" type="button">إيقاف إشعارات التحديث</button></div>
       </section>
       <section class="settings-section automation-owner-section" id="automationSettingsSection" hidden>
-        <div class="settings-section-head"><div><h3>الربط التلقائي · Wallet والبنك</h3><p>تجربة للمالك فقط عبر تطبيق الاختصارات في iPhone. تصل العمليات للمراجعة أولًا ولا تغيّر الرصيد تلقائيًا.</p></div></div>
+        <div class="settings-section-head"><div><h3>الربط التلقائي · Wallet والبنك</h3><p>اربط حسابك مرة واحدة مع Shortcuts لاستقبال عمليات Wallet ورسائل البنك. يبقى الربط محفوظًا حتى توقفه بنفسك.</p></div></div>
         <div class="settings-status" id="automationSettingsStatus">الربط غير مفعّل.</div>
-        <div class="settings-actions"><button class="primary-btn" id="openAutomationSettingsButton" type="button">إعداد الربط</button></div>
+        <div class="settings-actions"><button class="primary-btn" id="openAutomationSettingsButton" type="button">إعداد الربط والاختصارات</button></div>
       </section>
     </div>
     <div class="modal-foot"><button class="primary-btn" type="button" data-close-dialog="settingsDialog">تم</button></div>
@@ -4230,26 +4257,54 @@
     <div class="modal-head"><h2>الربط التلقائي</h2><button class="close-btn" type="button" data-close-dialog="automationDialog" aria-label="إغلاق">×</button></div>
     <div class="modal-body automation-grid">
       <div class="automation-connect-card">
-        <strong>Wallet + رسائل البنك عبر Shortcuts</strong>
-        <p>هذه نسخة تجريبية للمالك. الاختصار يرسل العملية إلى مدير الراتب كعملية «بانتظار المراجعة»، ولا يتم خصم أو إضافة أي مبلغ حتى تعتمدها بنفسك.</p>
+        <strong>إعداد أسرع للاختصارات</strong>
+        <p>استخرج رمزك الخاص مرة واحدة، ثم استخدم الزر المناسب لفتح تطبيق Shortcuts. سيُنسخ رمز الربط تلقائيًا؛ ضعه في خانة <b>shortcutToken</b>. بعد إكمال الربط مرة واحدة سيبقى ثابتًا ولا تحتاج لإعادته مع كل عملية.</p>
+        <div class="automation-setup-actions">
+          <button class="automation-setup-btn" id="prepareBankShortcutButton" type="button"><span class="setup-symbol">✉</span><span>رسائل البنك</span></button>
+          <button class="automation-setup-btn" id="prepareWalletShortcutButton" type="button"><span class="setup-symbol">◈</span><span>Apple Wallet</span></button>
+        </div>
+        <div class="settings-status" id="automationSetupHint">ابدأ بإنشاء رمز الربط، ثم اضغط نوع الاختصار المطلوب.</div>
+      </div>
+
+      <div class="automation-connect-card">
+        <strong>حالة الربط</strong>
+        <p>الرمز خاص بحسابك. لا ترسله لأي شخص. إذا استبدلته سيتوقف الاختصار الذي يستخدم الرمز السابق.</p>
         <div class="settings-status" id="automationConnectionStatus">جارٍ التحقق من حالة الربط…</div>
         <div class="automation-secret">
           <label for="automationEndpoint">رابط الاستقبال</label>
           <div class="automation-secret-row"><input id="automationEndpoint" readonly><button class="soft-btn" id="copyAutomationEndpointButton" type="button">نسخ الرابط</button></div>
           <label for="automationToken">رمز الربط السري</label>
-          <div class="automation-secret-row"><input id="automationToken" readonly placeholder="أنشئ رمزًا ليظهر هنا مرة واحدة"><button class="soft-btn" id="copyAutomationTokenButton" type="button">نسخ الرمز</button></div>
+          <div class="automation-secret-row"><input id="automationToken" readonly placeholder="أنشئ رمزًا ليظهر هنا"><button class="soft-btn" id="copyAutomationTokenButton" type="button">نسخ الرمز</button></div>
         </div>
-        <div class="settings-actions" style="margin-top:10px"><button class="primary-btn" id="rotateAutomationTokenButton" type="button">إنشاء / استبدال رمز الربط</button><button class="ghost-btn" id="revokeAutomationTokenButton" type="button">إيقاف الربط</button></div>
+        <div class="settings-actions" style="margin-top:10px"><button class="primary-btn" id="rotateAutomationTokenButton" type="button">استخراج / استبدال رمز الربط</button><button class="ghost-btn" id="revokeAutomationTokenButton" type="button">إيقاف الربط</button></div>
+        <div class="automation-toggle-row">
+          <div><strong>اعتماد العمليات تلقائيًا</strong><p>عند تفعيله يعتمد مدير الراتب العمليات ذات الثقة العالية تلقائيًا دون سؤالك. العمليات الغامضة تبقى للمراجعة ويمكن حذف أي عملية خاطئة لاحقًا من سجل المصروفات أو الإيداعات.</p></div>
+          <label class="automation-switch" aria-label="اعتماد العمليات تلقائيًا"><input id="automationAutoApproveToggle" type="checkbox"><span></span></label>
+        </div>
+        <div class="automation-security-note">🔒 رسائل OTP ورموز التحقق وكلمات المرور تُرفض تلقائيًا ولا تُحفظ كمعاملات مالية.</div>
       </div>
 
       <div class="automation-steps">
-        <div class="automation-step"><div class="automation-step-icon">◈</div><strong>رسائل البنك</strong><p>في Shortcuts أنشئ Automation عند وصول رسالة من البنك، ثم أرسل Shortcut Input إلى رابط الاستقبال. استخدم source = bank_message. سيحاول مدير الراتب فهم الخصم/الإيداع والمبلغ والتاجر تلقائيًا.</p></div>
-        <div class="automation-step"><div class="automation-step-icon">⌁</div><strong>Apple Wallet</strong><p>أنشئ Automation من Transaction واختر البطاقة. أرسل ما يتيحه iOS من بيانات العملية إلى نفس الرابط مع source = wallet. إذا لم يرسل iOS المبلغ أو التاجر ستظهر العملية للمراجعة لإكمالها يدويًا.</p></div>
+        <div class="automation-step"><div class="automation-step-icon">◈</div><strong>رسائل البنك</strong><p>في Automation اختر وصول رسالة من البنك، ثم مرّر Shortcut Input. استخدم source = bank_message. اختلاف صيغة الرسالة لا يمنع التحليل طالما يمكن التعرف على المبلغ ونوع العملية.</p></div>
+        <div class="automation-step"><div class="automation-step-icon">⌁</div><strong>Apple Wallet</strong><p>في Automation اختر Transaction والبطاقة، ثم مرّر بيانات العملية إلى نفس الرابط مع source = wallet. يفضّل إرسال Amount وMerchant إذا أتاحهما iOS.</p></div>
+      </div>
+
+      <div class="automation-connect-card" id="automationTemplateAdminCard" hidden>
+        <strong>قوالب الاختصارات الجاهزة · للمالك</strong>
+        <p>بعد أن تختبر الاختصار، اجعل قيمة الرمز داخله <b>YOUR_TOKEN</b> وأضف لها Import Question باسم «ألصق رمز الربط»، ثم من Shortcuts اختر مشاركة → Copy iCloud Link والصق الرابط هنا مرة واحدة. لا تشارك اختصارًا يحتوي رمز المالك الحقيقي. بعدها زر المستخدم يفتح الاختصار الجاهز مباشرة للتثبيت النهائي.</p>
+        <div class="automation-secret">
+          <label for="automationBankTemplateUrl">رابط iCloud لاختصار رسائل البنك</label>
+          <div class="automation-secret-row"><input id="automationBankTemplateUrl" type="url" inputmode="url" placeholder="https://www.icloud.com/shortcuts/..."></div>
+          <label for="automationWalletTemplateUrl">رابط iCloud لاختصار Apple Wallet</label>
+          <div class="automation-secret-row"><input id="automationWalletTemplateUrl" type="url" inputmode="url" placeholder="https://www.icloud.com/shortcuts/..."></div>
+        </div>
+        <div class="settings-actions" style="margin-top:10px"><button class="soft-btn" id="saveAutomationTemplateUrlsButton" type="button">حفظ روابط الاختصارات</button></div>
+        <div class="settings-status" id="automationTemplateStatus">لم تُحفظ روابط جاهزة بعد.</div>
       </div>
 
       <div class="automation-connect-card">
         <strong>صيغة POST التي يقبلها مدير الراتب</strong>
-        <p>في «Get Contents of URL» اختر POST ثم JSON. يكفي token + source + text، ويمكن إضافة amount وmerchant وtype إذا كانت متاحة في الاختصار.</p>
+        <p>في «Get Contents of URL» اختر POST ثم JSON. ضع رمزك في shortcutToken. لرسائل البنك اجعل text = Shortcut Input.</p>
         <div class="automation-code" id="automationJsonExample">{
   "shortcutToken": "YOUR_TOKEN",
   "source": "bank_message",
@@ -4258,9 +4313,9 @@
         <div class="settings-actions" style="margin-top:10px"><button class="soft-btn" id="testAutomationButton" type="button">إرسال عملية تجريبية</button><button class="soft-btn" id="refreshAutomationButton" type="button">تحديث العمليات</button></div>
       </div>
 
-      <div class="automation-connect-card">
+      <div class="automation-connect-card" id="automationPendingCard">
         <strong>عمليات بانتظار المراجعة <span id="automationPendingCount">0</span></strong>
-        <p>اعتمد العملية فقط بعد مطابقتها مع Wallet أو رسالة البنك. يمنع مدير الراتب تسجيل نفس عملية الربط مرتين.</p>
+        <p>اعتمد العملية بعد مطابقتها مع البنك أو Wallet. إذا وصلت العملية نفسها من Wallet ورسالة البنك يدمجهما مدير الراتب كعملية واحدة ولا يخصم الرصيد مرتين.</p>
         <div class="automation-pending" id="automationPendingList"></div>
       </div>
     </div>
@@ -4314,8 +4369,12 @@
             <time datetime="2026-09-01">1 سبتمبر 2026</time>
           </div>
           <ul>
-            <li>إضافة ربط تجريبي للمالك مع Apple Wallet ورسائل البنك عبر Shortcuts.</li>
-            <li>وصول العمليات كمراجعة معلقة قبل التأثير على الرصيد، مع منع التكرار واقتراح نوع العملية والتصنيف.</li>
+            <li>إضافة ربط تجريبي مع Apple Wallet ورسائل البنك عبر Shortcuts، برمز ثابت خاص بكل حساب.</li>
+            <li>إضافة زر عائم لمراجعة المعاملات مع شارة حمراء عند وجود عمليات معلقة.</li>
+            <li>إضافة اعتماد تلقائي اختياري للعمليات الموثوقة، مع تجاهل رسائل OTP ورموز التحقق.</li>
+            <li>دمج عملية Wallet مع رسالة البنك المطابقة ومنع الخصم أو الإيداع المكرر.</li>
+            <li>مطابقة خصومات البنك مع الأقساط والسلف التي خُصمت عند الراتب وتأكيد تنفيذها دون خصمها مرة ثانية.</li>
+            <li>تبسيط إعداد الاختصار بزر ينسخ رمز الربط ويفتح Shortcuts لإكمال الربط مرة واحدة.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -4955,7 +5014,7 @@
 
 
       var APP_VERSION = "3.9.3";
-      var APP_RELEASE_ID = "3.9.3-wallet-bank-automation-r1";
+      var APP_RELEASE_ID = "3.9.3-commitment-bank-match-r3";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -4986,6 +5045,10 @@
       authState.authenticated = Boolean(authState.token && authState.user);
       var automationImports = [];
       var automationShortcutToken = "";
+      var automationAutoApproveEnabled = false;
+      var automationAutoApproveBusy = false;
+      var automationBankShortcutUrl = "";
+      var automationWalletShortcutUrl = "";
       var automationStatusTimer = null;
       var STORAGE_BACKUP_KEY = "monthlySalaryManager.v1.backup";
       var STORAGE_META_KEY = "monthlySalaryManager.v1.meta";
@@ -5595,7 +5658,10 @@
         $("#accountButtonLabel").textContent = signedIn ? authState.user.username : localizedText("تسجيل الدخول");
         $("#adminTab").classList.toggle("visible", signedIn && authState.user.role === "super_admin");
         var automationSection = $("#automationSettingsSection");
-        if (automationSection) automationSection.hidden = !(signedIn && authState.user.role === "super_admin");
+        if (automationSection) automationSection.hidden = !signedIn;
+        var automationFab = $("#automationReviewFab");
+        if (automationFab && !signedIn) automationFab.hidden = true;
+        if (signedIn) loadAutomationLocalToken();
         if (signedIn) {
           $("#accountUsername").textContent = authState.user.username;
           $("#accountEmail").textContent = authState.user.email;
@@ -5929,6 +5995,7 @@
             await syncFromCloud({ silent: true, force: true });
             startLiveSync();
             rebindPushIdentityAfterAuth();
+            setTimeout(async function () { var automationStatus = await refreshAutomationStatus(true); if (automationStatus && (automationStatus.autoApprove || Number(automationStatus.pendingCount || 0) > 0)) await refreshAutomationPending(true); }, 180);
             if (authState.user?.role === "super_admin") setTimeout(refreshReleaseStatus, 120);
           } catch (sessionError) {
             if (authState.token) clearAuth(); else { updateAccountUI(); document.documentElement.classList.remove("app-lock-pending"); }
@@ -5949,6 +6016,7 @@
         await syncFromCloud({ silent: true, force: true, initial: true, preserveLocalBackup: true });
         startLiveSync();
         rebindPushIdentityAfterAuth();
+        setTimeout(async function () { var automationStatus = await refreshAutomationStatus(true); if (automationStatus && (automationStatus.autoApprove || Number(automationStatus.pendingCount || 0) > 0)) await refreshAutomationPending(true); }, 180);
         $("#authDialog").close();
         showToast(message);
         if (authState.user?.role === "super_admin") setTimeout(refreshReleaseStatus, 180);
@@ -6066,8 +6134,37 @@
         return window.location.origin.replace(/\/$/, "") + "/api/automation/import";
       }
 
-      function automationSourceLabel(source) {
-        return source === "wallet" ? "Apple Wallet" : source === "bank_message" ? "رسالة بنك" : "Shortcuts";
+      function automationLocalTokenKey() {
+        return "monthlySalaryManager.automationToken.v1." + String(authState.user && authState.user.id || "guest");
+      }
+
+      function loadAutomationLocalToken() {
+        if (!authState.authenticated || !authState.user) { automationShortcutToken = ""; return ""; }
+        try { automationShortcutToken = localStorage.getItem(automationLocalTokenKey()) || ""; }
+        catch (_) { automationShortcutToken = ""; }
+        var field = $("#automationToken");
+        if (field) field.value = automationShortcutToken;
+        return automationShortcutToken;
+      }
+
+      function saveAutomationLocalToken(value) {
+        automationShortcutToken = String(value || "");
+        try {
+          if (automationShortcutToken) localStorage.setItem(automationLocalTokenKey(), automationShortcutToken);
+          else localStorage.removeItem(automationLocalTokenKey());
+        } catch (_) {}
+        var field = $("#automationToken");
+        if (field) field.value = automationShortcutToken;
+      }
+
+      function automationSourceLabel(source, sources) {
+        var list = Array.isArray(sources) ? sources.map(String) : [String(source || "")];
+        var hasWallet = list.indexOf("wallet") !== -1;
+        var hasBank = list.indexOf("bank_message") !== -1;
+        if (hasWallet && hasBank) return "Apple Wallet + البنك";
+        if (hasWallet) return "Apple Wallet";
+        if (hasBank) return "رسالة بنك";
+        return "Shortcuts";
       }
 
       function automationKindLabel(kind) {
@@ -6079,27 +6176,91 @@
         return Number.isNaN(d.getTime()) ? new Date() : d;
       }
 
+      function automationConfiguredShortcutUrl(type) {
+        var configured = type === "wallet" ? (automationWalletShortcutUrl || String(window.SALARY_WALLET_SHORTCUT_URL || "")) : (automationBankShortcutUrl || String(window.SALARY_BANK_SHORTCUT_URL || ""));
+        return /^(?:https?:|shortcuts:)/i.test(configured) ? configured : "";
+      }
+
+      async function refreshAutomationTemplates(silent) {
+        if (!authState.authenticated) return null;
+        try {
+          var data = await apiFetch("/api/automation/templates?ts=" + Date.now());
+          automationBankShortcutUrl = String(data.bankUrl || "");
+          automationWalletShortcutUrl = String(data.walletUrl || "");
+          var ownerCard = $("#automationTemplateAdminCard");
+          if (ownerCard) ownerCard.hidden = authState.user?.role !== "super_admin";
+          if ($("#automationBankTemplateUrl")) $("#automationBankTemplateUrl").value = automationBankShortcutUrl;
+          if ($("#automationWalletTemplateUrl")) $("#automationWalletTemplateUrl").value = automationWalletShortcutUrl;
+          var status = $("#automationTemplateStatus");
+          if (status) {
+            var count = (automationBankShortcutUrl ? 1 : 0) + (automationWalletShortcutUrl ? 1 : 0);
+            status.classList.toggle("on", count > 0);
+            status.textContent = count === 2 ? "القالبان جاهزان للتثبيت بضغطة واحدة ✓" : count === 1 ? "تم حفظ قالب واحد؛ القالب الآخر ما زال يدويًا." : "لم تُحفظ روابط جاهزة بعد.";
+          }
+          return data;
+        } catch (error) { if (!silent) showToast("تعذر تحميل روابط الاختصارات", true); return null; }
+      }
+
+      async function saveAutomationTemplateUrls() {
+        if (!authState.authenticated || authState.user?.role !== "super_admin") return;
+        try {
+          var data = await apiFetch("/api/admin/automation-templates", { method:"POST", body:JSON.stringify({ bankUrl:$("#automationBankTemplateUrl").value.trim(), walletUrl:$("#automationWalletTemplateUrl").value.trim() }) });
+          automationBankShortcutUrl = String(data.bankUrl || "");
+          automationWalletShortcutUrl = String(data.walletUrl || "");
+          await refreshAutomationTemplates(true);
+          showToast("تم حفظ روابط الاختصارات الجاهزة");
+        } catch (error) { showToast(error.code === "INVALID_SHORTCUT_URL" ? "استخدم رابط iCloud Shortcut صحيحًا يبدأ بـ https://www.icloud.com/shortcuts/" : apiErrorMessage(error.code), true); }
+      }
+
+      function updateAutomationReviewFab(count, enabled) {
+        var fab = $("#automationReviewFab");
+        var badge = $("#automationReviewBadge");
+        if (!fab || !badge) return;
+        var visible = Boolean(authState.authenticated && enabled);
+        fab.hidden = !visible;
+        var n = Math.max(0, Number(count || 0));
+        badge.textContent = n > 99 ? "99+" : String(n);
+        badge.hidden = !n;
+        fab.classList.toggle("has-pending", n > 0);
+        fab.setAttribute("aria-label", n ? "مراجعة " + n + " معاملات بنكية معلقة" : "مراجعة المعاملات البنكية");
+      }
+
       function updateAutomationSettingsStatus(status) {
         var node = $("#automationSettingsStatus");
         if (!node) return;
-        if (!authState.authenticated || authState.user?.role !== "super_admin") { node.textContent = "متاح للمالك فقط."; node.classList.remove("on"); return; }
-        if (!status || !status.enabled) { node.textContent = "الربط غير مفعّل."; node.classList.remove("on"); return; }
+        if (!authState.authenticated) {
+          node.textContent = "سجّل الدخول أولًا لإعداد الربط.";
+          node.classList.remove("on");
+          updateAutomationReviewFab(0, false);
+          return;
+        }
+        if (!status || !status.enabled) {
+          node.textContent = "الربط غير مفعّل.";
+          node.classList.remove("on");
+          updateAutomationReviewFab(0, false);
+          return;
+        }
         node.classList.add("on");
-        node.textContent = "الربط مفعّل" + (Number(status.pendingCount || 0) ? " · " + Number(status.pendingCount) + " عملية بانتظار المراجعة" : " · لا توجد عمليات معلقة");
+        node.textContent = "الربط مفعّل" + (status.autoApprove ? " · اعتماد تلقائي" : " · اعتماد يدوي") + (Number(status.pendingCount || 0) ? " · " + Number(status.pendingCount) + " معلقة" : " · لا توجد عمليات معلقة");
+        updateAutomationReviewFab(status.pendingCount, true);
       }
 
       async function refreshAutomationStatus(silent) {
-        if (!authState.authenticated || authState.user?.role !== "super_admin") return null;
+        if (!authState.authenticated) return null;
         try {
           var status = await apiFetch("/api/automation/status?ts=" + Date.now());
+          automationAutoApproveEnabled = Boolean(status.autoApprove);
           updateAutomationSettingsStatus(status);
           var connection = $("#automationConnectionStatus");
           if (connection) {
             connection.classList.toggle("on", Boolean(status.enabled));
-            connection.textContent = status.enabled ? "الربط مفعّل وآمن لهذا الحساب" + (status.lastUsedAt ? " · آخر استقبال " + formatDateTimeCompact(status.lastUsedAt) : "") : "الربط غير مفعّل. أنشئ رمز ربط أولًا.";
+            connection.textContent = status.enabled ? "الربط مفعّل لهذا الحساب ولا يحتاج إعادة ربط" + (status.lastUsedAt ? " · آخر استقبال " + formatDateTimeCompact(status.lastUsedAt) : "") : "الربط غير مفعّل. استخرج رمز ربط أولًا.";
           }
           var count = $("#automationPendingCount");
           if (count) count.textContent = String(Number(status.pendingCount || 0));
+          var toggle = $("#automationAutoApproveToggle");
+          if (toggle) { toggle.checked = automationAutoApproveEnabled; toggle.disabled = !status.enabled; }
+          if (!automationShortcutToken) loadAutomationLocalToken();
           return status;
         } catch (error) {
           if (!silent) showToast("تعذر التحقق من الربط الآن", true);
@@ -6114,39 +6275,86 @@
       }
 
       async function openAutomationDialog() {
-        if (!authState.authenticated || authState.user?.role !== "super_admin") { showToast("هذه التجربة متاحة للمالك فقط", true); return; }
+        if (!authState.authenticated) { showToast("سجّل الدخول أولًا لإعداد الربط", true); return; }
         if ($("#settingsDialog") && $("#settingsDialog").open) $("#settingsDialog").close();
+        loadAutomationLocalToken();
         $("#automationEndpoint").value = automationEndpointUrl();
         $("#automationToken").value = automationShortcutToken || "";
         $("#automationDialog").showModal();
+        await refreshAutomationTemplates(true);
         await refreshAutomationStatus(true);
         await refreshAutomationPending(true);
       }
 
-      async function rotateAutomationToken() {
-        if (!authState.authenticated || authState.user?.role !== "super_admin") return;
+      async function rotateAutomationToken(options) {
+        options = options || {};
+        if (!authState.authenticated) return "";
         var status = await refreshAutomationStatus(true);
-        if (status && status.enabled && !localizedConfirm("إنشاء رمز جديد سيوقف الاختصار الذي يستخدم الرمز السابق. هل تريد المتابعة؟")) return;
+        if (status && status.enabled && !options.force && !localizedConfirm("إنشاء رمز جديد سيوقف الاختصار الذي يستخدم الرمز السابق. هل تريد المتابعة؟")) return "";
         try {
           var data = await apiFetch("/api/automation/token", { method:"POST", body:"{}" });
-          automationShortcutToken = String(data.shortcutToken || "");
-          $("#automationToken").value = automationShortcutToken;
+          saveAutomationLocalToken(String(data.shortcutToken || ""));
           $("#automationJsonExample").textContent = '{\n  "shortcutToken": "' + automationShortcutToken + '",\n  "source": "bank_message",\n  "text": "Shortcut Input"\n}';
           await refreshAutomationStatus(true);
-          showToast("تم إنشاء رمز الربط. انسخه الآن وأضفه إلى الاختصار.");
-        } catch (error) { showToast(apiErrorMessage(error.code), true); }
+          showToast("تم إنشاء رمز الربط وحفظه على هذا الجهاز");
+          return automationShortcutToken;
+        } catch (error) { showToast(apiErrorMessage(error.code), true); return ""; }
+      }
+
+      async function prepareShortcutAssistant(type) {
+        if (!authState.authenticated) { showToast("سجّل الدخول أولًا", true); return; }
+        loadAutomationLocalToken();
+        var status = await refreshAutomationStatus(true);
+        if (!automationShortcutToken) {
+          if (status && status.enabled) {
+            var replace = localizedConfirm("الربط قائم بالفعل لكن الرمز السري غير محفوظ على هذا الجهاز. إنشاء رمز جديد سيوقف الاختصار القديم. هل تريد إنشاء رمز جديد؟");
+            if (!replace) { showToast("الربط الحالي سيستمر بالعمل دون أي تغيير"); return; }
+          }
+          var token = await rotateAutomationToken({ force:true });
+          if (!token) return;
+        }
+        var source = type === "wallet" ? "wallet" : "bank_message";
+        var hint = $("#automationSetupHint");
+        if (hint) {
+          hint.classList.add("on");
+          hint.innerHTML = 'تم نسخ رمزك. في Shortcuts ضعه في خانة <b>shortcutToken</b>، واجعل <b>source = ' + source + '</b>. الربط يتم مرة واحدة فقط.';
+        }
+        try { await navigator.clipboard.writeText(automationShortcutToken); }
+        catch (_) { showToast("تعذر نسخ الرمز تلقائيًا؛ انسخه من الحقل قبل المتابعة.", true); return; }
+        var configured = automationConfiguredShortcutUrl(type);
+        showToast(configured ? "تم نسخ رمزك · جارٍ فتح الاختصار الجاهز" : "تم نسخ رمزك · جارٍ فتح Shortcuts");
+        setTimeout(function () {
+          try { window.location.href = configured || "shortcuts://create-shortcut"; }
+          catch (_) { window.open(configured || "shortcuts://", "_blank"); }
+        }, 350);
       }
 
       async function revokeAutomationToken() {
         if (!localizedConfirm("إيقاف الربط؟ لن تستطيع الاختصارات إرسال عمليات جديدة حتى تنشئ رمزًا جديدًا.")) return;
         try {
           await apiFetch("/api/automation/revoke", { method:"POST", body:"{}" });
-          automationShortcutToken = "";
-          $("#automationToken").value = "";
+          saveAutomationLocalToken("");
+          automationAutoApproveEnabled = false;
           $("#automationJsonExample").textContent = '{\n  "shortcutToken": "YOUR_TOKEN",\n  "source": "bank_message",\n  "text": "Shortcut Input"\n}';
           await refreshAutomationStatus(true);
           showToast("تم إيقاف الربط");
         } catch (error) { showToast(apiErrorMessage(error.code), true); }
+      }
+
+      async function setAutomationAutoApprove(enabled) {
+        if (!authState.authenticated) return;
+        try {
+          var data = await apiFetch("/api/automation/preferences", { method:"POST", body:JSON.stringify({ autoApprove:Boolean(enabled) }) });
+          automationAutoApproveEnabled = Boolean(data.autoApprove);
+          var toggle = $("#automationAutoApproveToggle");
+          if (toggle) toggle.checked = automationAutoApproveEnabled;
+          showToast(automationAutoApproveEnabled ? "تم تفعيل الاعتماد التلقائي للعمليات الموثوقة" : "تم إيقاف الاعتماد التلقائي");
+          await refreshAutomationPending(true);
+        } catch (error) {
+          var toggle = $("#automationAutoApproveToggle");
+          if (toggle) toggle.checked = automationAutoApproveEnabled;
+          showToast(error.code === "AUTOMATION_NOT_LINKED" ? "فعّل الربط أولًا ثم شغّل الاعتماد التلقائي" : apiErrorMessage(error.code), true);
+        }
       }
 
       async function copyAutomationValue(value, successText) {
@@ -6155,85 +6363,251 @@
         catch (_) { showToast("تعذر النسخ تلقائيًا. اضغط مطولًا على الحقل وانسخه يدويًا.", true); }
       }
 
+      function automationCommitmentTextEvidenceLocal(commitment, item) {
+        var hay = normalizeArabicSpeechText(String((item && item.merchant) || "") + " " + String((item && item.rawText) || ""));
+        var name = normalizeArabicSpeechText(String((commitment && commitment.name) || ""));
+        var stop = {"قسط":1,"سلفه":1,"سلفيه":1,"تمويل":1,"شهري":1};
+        var tokens = name.split(/\s+/).filter(function (token) { return token.length >= 3 && !stop[token]; });
+        if (tokens.some(function (token) { return hay.indexOf(token) !== -1; })) return true;
+        var words = {
+          "سيارة":["car","auto","vehicle","motor","سياره","مركبه"],
+          "عقار":["mortgage","property","home finance","housing","عقار","عقاري","تمويل عقاري"],
+          "بطاقة":["credit card","card payment","card due","بطاقه ائتمان"],
+          "سلفة":["loan","finance","financing","personal finance","قرض","سلفه","تمويل"]
+        };
+        return (words[String(commitment && commitment.category || "")] || []).some(function (word) {
+          var normalizedWord = normalizeArabicSpeechText(word);
+          if (/^[a-z0-9 ]+$/.test(normalizedWord)) {
+            if (normalizedWord.indexOf(" ") !== -1) return (" " + hay + " ").indexOf(" " + normalizedWord + " ") !== -1;
+            return hay.split(/[^a-z0-9]+/).indexOf(normalizedWord) !== -1;
+          }
+          return hay.indexOf(normalizedWord) !== -1;
+        });
+      }
+
+      function automationDateDayDiffLocal(a, b) {
+        var aa = new Date(String(a || "") + (String(a || "").length === 10 ? "T12:00:00" : "")).getTime();
+        var bb = new Date(String(b || "") + (String(b || "").length === 10 ? "T12:00:00" : "")).getTime();
+        if (!Number.isFinite(aa) || !Number.isFinite(bb)) return 9999;
+        return Math.abs(aa - bb) / 86400000;
+      }
+
+      function commitmentDueDateForMonthLocal(commitment, monthKey) {
+        var parts = String(monthKey || "").split("-");
+        var year = Number(parts[0]), month = Number(parts[1]);
+        if (!year || !month) return "";
+        var last = new Date(year, month, 0).getDate();
+        var day = Math.min(last, Math.max(1, Math.round(Number(commitment && commitment.dueDay || 1))));
+        return String(year) + "-" + String(month).padStart(2,"0") + "-" + String(day).padStart(2,"0");
+      }
+
+      function findAutomationCommitmentMatchLocal(item) {
+        if (!item || String(item.kind || "") !== "expense") return { strict:null, plausible:null, candidates:[] };
+        var amount = roundMoney(item.amount);
+        if (amount <= 0) return { strict:null, plausible:null, candidates:[] };
+        var when = automationImportDate(item);
+        var date = toDateInput(when);
+        var monthKey = date.slice(0,7);
+        var previousMonth = shiftMonth(monthKey, -1);
+        var rows = [];
+        (state.transactions || []).forEach(function (tx) {
+          if (!tx || tx.type !== "commitment" || Math.abs(Math.abs(signedNumber(tx.amount)) - amount) > 0.001) return;
+          var commitment = (state.commitments || []).find(function (entry) { return String(entry.id || "") === String(tx.refId || ""); });
+          if (!commitment) return;
+          var txDate = String(tx.date || tx.paydayKey || "");
+          var ageDays = automationDateDayDiffLocal(date, txDate);
+          if (ageDays > 40) return;
+          var dueDiff = Math.min(automationDateDayDiffLocal(date, commitmentDueDateForMonthLocal(commitment, monthKey)), automationDateDayDiffLocal(date, commitmentDueDateForMonthLocal(commitment, previousMonth)));
+          rows.push({ commitment:commitment, transaction:tx, paydayKey:String(tx.paydayKey || tx.date || ""), ageDays:ageDays, dueDiff:dueDiff, textEvidence:automationCommitmentTextEvidenceLocal(commitment, item) });
+        });
+        if (!rows.length) return { strict:null, plausible:null, candidates:[] };
+        var uniqueIds = Array.from(new Set(rows.map(function (row) { return String(row.commitment.id); })));
+        var uniqueAmount = uniqueIds.length === 1;
+        rows.forEach(function (row) {
+          var financialContext = normalizeArabicSpeechText(String(item && item.merchant || "") + " " + String(item && item.rawText || ""));
+          var hasFinancialContext = /(?:bank|adib|fab|nbd|mashreq|dib|cbd|rakbank|wio|finance|financing|loan|installment|instalment|mortgage|بنك|مصرف|تمويل|قرض|سلفه|قسط)/i.test(financialContext);
+          row.strict = Boolean(row.textEvidence || (uniqueAmount && row.dueDiff <= 2 && hasFinancialContext));
+          row.score = (row.textEvidence ? 100 : 0) + (uniqueAmount ? 35 : 0) + Math.max(0,30-row.dueDiff*4) + Math.max(0,20-row.ageDays);
+        });
+        rows.sort(function (a,b) { return Number(b.score || 0) - Number(a.score || 0); });
+        return { strict:rows.find(function (row) { return row.strict; }) || null, plausible:rows[0] || null, candidates:rows };
+      }
+
+      function confirmAutomationCommitment(item, match) {
+        if (!item || !match || !match.commitment || !match.transaction) return false;
+        var importId = String(item.id || "");
+        var commitment = match.commitment;
+        var tx = match.transaction;
+        var paydayKey = String(match.paydayKey || tx.paydayKey || tx.date || "");
+        var when = automationImportDate(item);
+        var date = toDateInput(when);
+        var sources = Array.isArray(item.sources) ? item.sources.slice() : [String(item.source || "shortcut")];
+        var confirmation = { importId:importId, amount:roundMoney(item.amount), occurredAt:when.toISOString(), date:date, merchant:String(item.merchant || ""), sources:sources, source:String(item.source || sources[0] || "shortcut"), reference:String(item.reference || ""), cardLast4:String(item.cardLast4 || "").slice(-4), confirmedAt:new Date().toISOString() };
+        if (!commitment.bankConfirmations || typeof commitment.bankConfirmations !== "object") commitment.bankConfirmations = {};
+        commitment.bankConfirmations[paydayKey] = confirmation;
+        tx.bankConfirmed = true;
+        tx.bankConfirmedAt = confirmation.confirmedAt;
+        tx.bankConfirmationDate = date;
+        tx.bankConfirmationMerchant = confirmation.merchant;
+        tx.bankConfirmationSources = Array.from(new Set((Array.isArray(tx.bankConfirmationSources) ? tx.bankConfirmationSources : []).concat(sources)));
+        if (!tx.externalImportId) tx.externalImportId = importId;
+        tx.externalImportIds = Array.from(new Set((Array.isArray(tx.externalImportIds) ? tx.externalImportIds : []).concat([importId])));
+        tx.automationReference = tx.automationReference || confirmation.reference;
+        tx.automationCardLast4 = tx.automationCardLast4 || confirmation.cardLast4;
+        return true;
+      }
+
       function renderAutomationPending() {
         var root = $("#automationPendingList");
         if (!root) return;
         $("#automationPendingCount").textContent = String(automationImports.length);
+        updateAutomationReviewFab(automationImports.length, true);
         if (!automationImports.length) { root.innerHTML = '<div class="settings-status on">لا توجد عمليات بانتظار المراجعة.</div>'; return; }
         root.innerHTML = automationImports.map(function (item) {
           var kind = String(item.kind || "unknown");
           var amount = safeNumber(item.amount);
           var amountText = amount > 0 ? (kind === "expense" ? "-" : kind === "deposit" ? "+" : "") + formatMoney(amount) : "المبلغ غير معروف";
           var merchant = String(item.merchant || "").trim() || (kind === "deposit" ? "إيداع بنكي" : kind === "expense" ? expenseCategoryDefaultTitle(item.category || "أخرى") : "عملية بنكية جديدة");
-          var meta = automationSourceLabel(item.source) + " · " + automationKindLabel(kind) + " · " + formatDateTimeCompact(item.occurredAt || item.receivedAt);
+          var meta = automationSourceLabel(item.source, item.sources) + " · " + automationKindLabel(kind) + " · " + formatDateTimeCompact(item.occurredAt || item.receivedAt);
           if (kind === "expense" && item.category) meta += " · " + item.category;
+          var confidence = Number(item.confidence || 0);
+          var confidenceText = item.safeToAutoApprove ? "ثقة عالية" : confidence >= .6 ? "تحتاج مراجعة" : "غير مؤكدة";
+          var confidenceClass = item.safeToAutoApprove ? " high" : "";
           var raw = String(item.rawText || "").trim();
+          var commitmentMatch = kind === "expense" ? findAutomationCommitmentMatchLocal(item) : { strict:null, plausible:null };
+          if (commitmentMatch.plausible) {
+            meta += commitmentMatch.candidates.length > 1 ? " · قد يطابق أحد الأقساط المسجلة" : " · قد يطابق " + String(commitmentMatch.plausible.commitment.name || "قسطًا مسجلًا");
+            if (commitmentMatch.strict) confidenceText = "مطابقة قسط";
+          }
           var actions = '';
-          if (amount > 0 && kind === "expense") actions += '<button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="expense">اعتماد كمصروف</button>';
+          if (amount > 0 && kind === "expense" && commitmentMatch.plausible) {
+            var shownCommitments = {};
+            commitmentMatch.candidates.slice(0,3).forEach(function (candidate) {
+              var cid = String(candidate.commitment && candidate.commitment.id || "");
+              if (!cid || shownCommitments[cid]) return;
+              shownCommitments[cid] = true;
+              actions += '<button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="commitment_confirmation" data-automation-commitment-id="' + escapeHTML(cid) + '">تأكيد ' + escapeHTML(candidate.commitment.name || "القسط") + '</button>';
+            });
+            actions += '<button class="mini-btn" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="expense">مصروف مستقل</button>';
+          } else if (amount > 0 && kind === "expense") actions += '<button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="expense">اعتماد كمصروف</button>';
           else if (amount > 0 && kind === "deposit") actions += '<button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="deposit">اعتماد كإيداع</button>';
           else if (amount > 0) actions += '<button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="expense">كمصروف</button><button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="deposit">كإيداع</button>';
           actions += '<button class="mini-btn" type="button" data-automation-ignore="' + escapeHTML(item.id) + '">تجاهل</button>';
-          return '<div class="automation-import"><div class="automation-import-main"><strong>' + escapeHTML(merchant) + '</strong><small>' + escapeHTML(meta) + '</small></div><div class="automation-import-amount ' + escapeHTML(kind) + '">' + escapeHTML(amountText) + '</div>' + (raw ? '<div class="automation-import-raw">' + escapeHTML(raw.slice(0,260)) + '</div>' : '') + '<div class="automation-import-actions">' + actions + '</div></div>';
+          return '<div class="automation-import"><div class="automation-import-main"><strong>' + escapeHTML(merchant) + '<span class="automation-confidence' + confidenceClass + '">' + escapeHTML(confidenceText) + '</span></strong><small>' + escapeHTML(meta) + '</small></div><div class="automation-import-amount ' + escapeHTML(kind) + '">' + escapeHTML(amountText) + '</div>' + (raw ? '<div class="automation-import-raw">' + escapeHTML(raw.slice(0,260)) + '</div>' : '') + '<div class="automation-import-actions">' + actions + '</div></div>';
         }).join("");
       }
 
       async function refreshAutomationPending(silent) {
-        if (!authState.authenticated || authState.user?.role !== "super_admin") return;
+        if (!authState.authenticated) return;
         try {
           var data = await apiFetch("/api/automation/pending?ts=" + Date.now());
           automationImports = Array.isArray(data.imports) ? data.imports : [];
           renderAutomationPending();
-          updateAutomationSettingsStatus({ enabled: Boolean((await refreshAutomationStatus(true))?.enabled), pendingCount: automationImports.length });
+          var status = await refreshAutomationStatus(true);
+          if (status && automationAutoApproveEnabled && automationImports.length && !automationAutoApproveBusy) await autoApproveAutomationPending();
         } catch (error) { if (!silent) showToast("تعذر تحميل العمليات المعلقة", true); }
       }
 
       function hasExternalImport(importId) {
-        return (state.expenses || []).some(item => String(item.externalImportId || "") === String(importId)) || (state.deposits || []).some(item => String(item.externalImportId || "") === String(importId));
+        var id = String(importId || "");
+        function matches(item) { return String(item && item.externalImportId || "") === id || (Array.isArray(item && item.externalImportIds) && item.externalImportIds.some(function (value) { return String(value) === id; })); }
+        return (state.expenses || []).some(matches) || (state.deposits || []).some(matches) || (state.transactions || []).some(matches);
       }
 
       async function resolveAutomationImport(importId, status, acceptedKind) {
         await apiFetch("/api/automation/resolve", { method:"POST", body:JSON.stringify({ importId:importId, status:status, acceptedKind:acceptedKind || "" }) });
       }
 
-      async function acceptAutomationImport(importId, kind) {
-        var item = automationImports.find(entry => String(entry.id) === String(importId));
-        if (!item) return;
+      async function recordAutomationImport(item, kind, options) {
+        options = options || {};
+        if (!item) return false;
+        var importId = String(item.id || "");
         var amount = roundMoney(item.amount);
-        if (amount <= 0) { showToast("لم يتم التعرف على مبلغ العملية. سجّلها يدويًا ثم تجاهل الرسالة.", true); return; }
+        if (amount <= 0) { if (!options.silent) showToast("لم يتم التعرف على مبلغ العملية. سجّلها يدويًا ثم تجاهل الرسالة.", true); return false; }
         if (hasExternalImport(importId)) {
           try { await resolveAutomationImport(importId, "accepted", kind); } catch (_) {}
-          await refreshAutomationPending(true);
-          showToast("هذه العملية مسجلة مسبقًا ولم تُكرر");
-          return;
+          return true;
         }
         ensureWalletCalendarCurrent(false);
         var when = automationImportDate(item);
         var date = toDateInput(when);
-        if (calendarMonthForDate(date) !== defaultMonth) { showToast("هذه العملية تخص شهرًا مؤرشفًا. لم يتم تعديل كشف سابق تلقائيًا؛ سجّلها يدويًا إذا لزم.", true); return; }
+        if (calendarMonthForDate(date) !== defaultMonth) { if (!options.silent) showToast("هذه العملية تخص شهرًا مؤرشفًا. لم يتم تعديل كشف سابق تلقائيًا؛ سجّلها يدويًا إذا لزم.", true); return false; }
         var merchant = String(item.merchant || "").trim();
+        var commitmentMatch = item.kind === "expense" ? findAutomationCommitmentMatchLocal(item) : { strict:null, plausible:null };
+        if (kind === "commitment_confirmation") {
+          var chosenMatch = options.commitmentId ? commitmentMatch.candidates.find(function (candidate) { return String(candidate.commitment && candidate.commitment.id || "") === String(options.commitmentId); }) : commitmentMatch.plausible;
+          if (!chosenMatch) { if (!options.silent) showToast("لم يعد هناك قسط مطابق لهذه العملية. اعتمدها كمصروف مستقل إذا كانت عملية جديدة.", true); return false; }
+          confirmAutomationCommitment(item, chosenMatch);
+          saveState();
+          render();
+          try { await resolveAutomationImport(importId, "accepted", "commitment_confirmation"); } catch (_) {}
+          return true;
+        }
+        if (kind === "expense" && options.auto && commitmentMatch.strict) {
+          confirmAutomationCommitment(item, commitmentMatch.strict);
+          saveState();
+          render();
+          try { await resolveAutomationImport(importId, "accepted", "commitment_confirmation"); } catch (_) {}
+          return true;
+        }
+        if (kind === "expense" && options.auto && commitmentMatch.plausible) return false;
         if (kind === "deposit") {
           if (!Array.isArray(state.deposits)) state.deposits = [];
           var depositTitle = merchant || "إيداع من البنك";
-          var deposit = { id:makeId("deposit"), title:depositTitle, source:"تحويل وارد", amount:amount, date:date, createdAt:when.toISOString(), externalImportId:String(importId), automationSource:String(item.source || "shortcut") };
+          var deposit = { id:makeId("deposit"), title:depositTitle, source:"تحويل وارد", amount:amount, date:date, createdAt:when.toISOString(), externalImportId:importId, automationSource:String(item.source || "shortcut"), automationSources:Array.isArray(item.sources) ? item.sources.slice() : [String(item.source || "shortcut")] };
           state.deposits.push(deposit);
           state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + amount);
           state.walletStarted = true;
-          addTransaction("deposit", amount, "إيداع — " + depositTitle, date, deposit.id, { depositId:deposit.id, source:deposit.source, externalImportId:String(importId), automationSource:deposit.automationSource });
+          addTransaction("deposit", amount, "إيداع — " + depositTitle, date, deposit.id, { depositId:deposit.id, source:deposit.source, externalImportId:importId, automationSource:deposit.automationSource, automationSources:deposit.automationSources });
         } else {
           var combined = (merchant + " " + String(item.rawText || "")).trim();
           var category = String(item.category || detectExpenseCategoryFromVoice(combined) || "أخرى");
           var expenseTitle = merchant || voiceExpenseTitle(combined, category) || expenseCategoryDefaultTitle(category);
-          var expense = { id:makeId("expense"), title:expenseTitle, category:category, amount:amount, date:date, excludeFromBudget:false, createdAt:when.toISOString(), accountMonth:defaultMonth, externalImportId:String(importId), automationSource:String(item.source || "shortcut") };
+          var expense = { id:makeId("expense"), title:expenseTitle, category:category, amount:amount, date:date, excludeFromBudget:false, createdAt:when.toISOString(), accountMonth:defaultMonth, externalImportId:importId, automationSource:String(item.source || "shortcut"), automationSources:Array.isArray(item.sources) ? item.sources.slice() : [String(item.source || "shortcut")] };
           state.expenses.push(expense);
           state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - amount);
           state.walletStarted = true;
-          addTransaction("expense", -amount, expenseTitle, date, expense.id, { externalImportId:String(importId), automationSource:expense.automationSource });
+          addTransaction("expense", -amount, expenseTitle, date, expense.id, { externalImportId:importId, automationSource:expense.automationSource, automationSources:expense.automationSources });
         }
+        saveState();
         render();
         try { await resolveAutomationImport(importId, "accepted", kind); }
-        catch (_) { showToast("تم تسجيل العملية محليًا، لكن تعذر تحديث قائمة المراجعة الآن. لن تُسجل مرتين.", true); return; }
+        catch (_) { if (!options.silent) showToast("تم تسجيل العملية، لكن تعذر تحديث قائمة المراجعة الآن. لن تُسجل مرتين.", true); return true; }
+        return true;
+      }
+
+      async function acceptAutomationImport(importId, kind, commitmentId) {
+        var item = automationImports.find(entry => String(entry.id) === String(importId));
+        if (!item) return;
+        var ok = await recordAutomationImport(item, kind, { silent:false, commitmentId:String(commitmentId || "") });
+        if (!ok) return;
         await refreshAutomationPending(true);
-        showToast(kind === "deposit" ? "تم اعتماد الإيداع وإضافته إلى الرصيد" : "تم اعتماد المصروف وخصمه من الرصيد");
+        showToast(kind === "commitment_confirmation" ? "تم تأكيد تنفيذ القسط من البنك دون خصمه مرة أخرى" : (kind === "deposit" ? "تم اعتماد الإيداع وإضافته إلى الرصيد" : "تم اعتماد المصروف وخصمه من الرصيد"));
+      }
+
+      async function autoApproveAutomationPending() {
+        if (automationAutoApproveBusy || !automationAutoApproveEnabled) return;
+        var candidates = automationImports.filter(function (item) {
+          return Boolean(item.safeToAutoApprove && safeNumber(item.amount) > 0 && (item.kind === "expense" || item.kind === "deposit"));
+        });
+        if (!candidates.length) return;
+        automationAutoApproveBusy = true;
+        var accepted = 0;
+        try {
+          for (var i = 0; i < candidates.length; i++) {
+            var ok = await recordAutomationImport(candidates[i], candidates[i].kind, { silent:true, auto:true });
+            if (ok) accepted += 1;
+          }
+          var data = await apiFetch("/api/automation/pending?ts=" + Date.now());
+          automationImports = Array.isArray(data.imports) ? data.imports : [];
+          renderAutomationPending();
+          await refreshAutomationStatus(true);
+          if (accepted) showToast("تم اعتماد " + accepted + " عملية موثوقة تلقائيًا");
+        } catch (_) {
+          // تظل أي عملية غير مكتملة في قائمة المراجعة ولا تُكرر بفضل externalImportId.
+        } finally {
+          automationAutoApproveBusy = false;
+        }
       }
 
       async function ignoreAutomationImport(importId) {
@@ -6243,9 +6617,9 @@
 
       async function testAutomationImport() {
         try {
-          await apiFetch("/api/automation/test", { method:"POST", body:JSON.stringify({ text:"Your card was debited AED 37.50 at ARABICA COFFEE", source:"bank_message" }) });
+          var data = await apiFetch("/api/automation/test", { method:"POST", body:JSON.stringify({ text:"Your card was debited AED 37.50 at ARABICA COFFEE", source:"bank_message" }) });
           await refreshAutomationPending(true);
-          showToast("تم إرسال عملية تجريبية للمراجعة");
+          showToast(data.ignored ? "تم تجاهل الرسالة التجريبية لأنها ليست معاملة مالية" : "تم إرسال عملية تجريبية");
         } catch (error) { showToast(apiErrorMessage(error.code), true); }
       }
 
@@ -7806,6 +8180,13 @@
           var statusLabel = active ? (false ? "بانتظار تفعيل الشهر" : (autoCharged ? "مخصوم تلقائيًا" : "غير مخصوم")) : (endMonth < defaultMonth ? "منتهٍ" : "يبدأ لاحقًا");
           var notes = item.notes ? ' · ' + escapeHTML(item.notes) : "";
           var sharedMeta = "";
+          var bankConfirmationMeta = "";
+          var latestPaydayForBank = latestCommitmentPaydayKey(item);
+          var bankConfirmation = item.bankConfirmations && typeof item.bankConfirmations === "object" ? item.bankConfirmations[latestPaydayForBank] : null;
+          if (bankConfirmation) {
+            var bankSourceText = automationSourceLabel(bankConfirmation.source, bankConfirmation.sources);
+            bankConfirmationMeta = '<div class="expense-shared-meta">✓ تم تأكيد تنفيذ القسط من ' + escapeHTML(bankSourceText) + (bankConfirmation.date ? ' · ' + escapeHTML(formatDate(bankConfirmation.date)) : '') + '</div>';
+          }
           if (item.sharedCommitment && Array.isArray(item.participants) && item.participants.length > 1) {
             var sharedPayday = latestCommitmentPaydayKey(item);
             var sharedCycleInfo = sharedCommitmentCycleInfo(item, sharedPayday);
@@ -7823,7 +8204,7 @@
                 '<span>الخصم يوم ' + escapeHTML(item.dueDay || 1) + '</span>' +
                 '<span>ينتهي ' + escapeHTML(formatDate(item.endDate)) + '</span>' +
                 '<span>' + remainingMonths + ' شهر متبقٍ</span>' + notes +
-              '</div>' + sharedMeta +
+              '</div>' + sharedMeta + bankConfirmationMeta +
             '</div>' +
             '<div class="commitment-actions">' +
               '<strong class="commitment-amount">' + moneyHTML(item.amount) + ' / شهر</strong>' +
@@ -8563,6 +8944,7 @@
           if (!hadPaidMonth && idx !== -1) paidMonths.splice(idx, 1);
           item.paidMonths = paidMonths;
           if (item.sharedPayments && typeof item.sharedPayments === "object" && item.sharedPayments[paydayKey]) delete item.sharedPayments[paydayKey];
+          if (item.bankConfirmations && typeof item.bankConfirmations === "object" && item.bankConfirmations[paydayKey]) delete item.bankConfirmations[paydayKey];
         });
 
         delete state.processedPaydays[paydayKey];
@@ -8587,9 +8969,14 @@
           }
         });
         (state.commitments || []).forEach(function (item) {
-          if (!item.sharedPayments || typeof item.sharedPayments !== "object" || !item.sharedPayments[oldKey]) return;
-          if (!item.sharedPayments[newKey]) item.sharedPayments[newKey] = item.sharedPayments[oldKey];
-          delete item.sharedPayments[oldKey];
+          if (item.sharedPayments && typeof item.sharedPayments === "object" && item.sharedPayments[oldKey]) {
+            if (!item.sharedPayments[newKey]) item.sharedPayments[newKey] = item.sharedPayments[oldKey];
+            delete item.sharedPayments[oldKey];
+          }
+          if (item.bankConfirmations && typeof item.bankConfirmations === "object" && item.bankConfirmations[oldKey]) {
+            if (!item.bankConfirmations[newKey]) item.bankConfirmations[newKey] = item.bankConfirmations[oldKey];
+            delete item.bankConfirmations[oldKey];
+          }
         });
         return true;
       }
@@ -8735,6 +9122,7 @@
           expectedReimbursement:roundMoney(shared.expectedReimbursement || 0),
           participants:Array.isArray(shared.participants) ? shared.participants : [],
           sharedPayments:shared.sharedPayments || {},
+          bankConfirmations: existing && existing.bankConfirmations && typeof existing.bankConfirmations === "object" ? existing.bankConfirmations : {},
           createdAt: existing && existing.createdAt ? existing.createdAt : new Date().toISOString()
         };
         if (!item.name || item.amount <= 0 || !item.startDate || !item.endDate) { showToast("أكمل بيانات القسط أو السلفة", true); return; }
@@ -9786,16 +10174,21 @@
           });
         }
         $("#openAutomationSettingsButton").addEventListener("click", openAutomationDialog);
-        $("#rotateAutomationTokenButton").addEventListener("click", rotateAutomationToken);
+        $("#rotateAutomationTokenButton").addEventListener("click", function () { rotateAutomationToken(); });
         $("#revokeAutomationTokenButton").addEventListener("click", revokeAutomationToken);
         $("#copyAutomationEndpointButton").addEventListener("click", function () { copyAutomationValue(automationEndpointUrl(), "تم نسخ رابط الاستقبال"); });
         $("#copyAutomationTokenButton").addEventListener("click", function () { copyAutomationValue(automationShortcutToken || $("#automationToken").value, "تم نسخ رمز الربط"); });
+        $("#prepareBankShortcutButton").addEventListener("click", function () { prepareShortcutAssistant("bank"); });
+        $("#prepareWalletShortcutButton").addEventListener("click", function () { prepareShortcutAssistant("wallet"); });
+        $("#saveAutomationTemplateUrlsButton").addEventListener("click", saveAutomationTemplateUrls);
+        $("#automationAutoApproveToggle").addEventListener("change", function (event) { setAutomationAutoApprove(Boolean(event.target.checked)); });
+        $("#automationReviewFab").addEventListener("click", async function () { await openAutomationDialog(); setTimeout(function () { var card = $("#automationPendingCard"); if (card) card.scrollIntoView({ behavior:"smooth", block:"start" }); }, 120); });
         $("#refreshAutomationButton").addEventListener("click", function () { refreshAutomationPending(false); });
         $("#testAutomationButton").addEventListener("click", testAutomationImport);
         $("#automationPendingList").addEventListener("click", function (event) {
           var accept = event.target.closest("[data-automation-accept]");
           var ignore = event.target.closest("[data-automation-ignore]");
-          if (accept) acceptAutomationImport(accept.dataset.automationAccept, accept.dataset.automationKind);
+          if (accept) acceptAutomationImport(accept.dataset.automationAccept, accept.dataset.automationKind, accept.dataset.automationCommitmentId || "");
           else if (ignore) ignoreAutomationImport(ignore.dataset.automationIgnore);
         });
         $("#enableGeneralPushButton").addEventListener("click", function () { enableGeneralPushNotifications(true); });
@@ -10122,10 +10515,10 @@
 
       setText("#appVersion", APP_VERSION);
       syncExpenseCategoryGrid();
-      automationStatusTimer = setInterval(function () {
-        if (authState.authenticated && authState.user?.role === "super_admin" && navigator.onLine) {
-          refreshAutomationStatus(true);
-          if ($("#automationDialog") && $("#automationDialog").open) refreshAutomationPending(true);
+      automationStatusTimer = setInterval(async function () {
+        if (authState.authenticated && navigator.onLine) {
+          var status = await refreshAutomationStatus(true);
+          if (status && (($("#automationDialog") && $("#automationDialog").open) || (status.autoApprove && Number(status.pendingCount || 0) > 0))) await refreshAutomationPending(true);
         }
       }, 30000);
       document.documentElement.lang = currentLanguage;
@@ -10152,6 +10545,11 @@
       window.addEventListener("offline", function () {
         stopLiveSync();
         setSyncStatus(authState.authenticated ? "غير متصل · محفوظ محليًا" : "حفظ محلي", false);
+      });
+      document.addEventListener("visibilitychange", async function () {
+        if (document.visibilityState !== "visible" || !authState.authenticated || !navigator.onLine) return;
+        var status = await refreshAutomationStatus(true);
+        if (status && (Number(status.pendingCount || 0) > 0 || status.autoApprove)) await refreshAutomationPending(true);
       });
       window.addEventListener("focus", function () {
         resumeContinuousSync();

@@ -1,4 +1,4 @@
-const CACHE = "salary-manager-v3.9.3-wallet-bank-automation-r1";
+const CACHE = "salary-manager-v3.9.3-commitment-bank-match-r3";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = [

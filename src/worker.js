@@ -1,9 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.9.2";
-const RELEASE_ID = "3.9.2-statement-pdf-r3";
-const UPDATE_SIGNAL_VERSION = "3.9.2\u200B";
+const VERSION = "3.9.3";
+const RELEASE_ID = "3.9.3-wallet-bank-automation-r1";
+const UPDATE_SIGNAL_VERSION = "3.9.3\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
 const PREVIOUS_RELEASE_ID = "3.8.6";
 const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
@@ -39,7 +39,8 @@ const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
   "3.9.1-finance-integrity-r2",
   "3.9.1-voice-expenses-r3",
   "3.9.2-voice-expenses-r1",
-  "3.9.2-voice-expenses-r2"
+  "3.9.2-voice-expenses-r2",
+  "3.9.2-statement-pdf-r3"
 ]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -100,6 +101,78 @@ function randomToken(n = 32) {
 async function sha256(value) {
   const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(value || "")));
   return b64(new Uint8Array(d));
+}
+
+function normalizeAutomationText(value) {
+  return String(value || "")
+    .replace(/[٠-٩]/g, d => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/[۰-۹]/g, d => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٫]/g, ".")
+    .replace(/[٬،]/g, ",")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function automationAmountFromText(value) {
+  const text = normalizeAutomationText(value);
+  const currency = String.raw`(?:AED|DHS?|د\s*[.٫]?\s*[إا]|درهم(?:اً|ا|ين)?|دراهم)`;
+  const before = new RegExp(currency + String.raw`\s*[:\-]?\s*([0-9]{1,9}(?:[,][0-9]{3})*(?:\.[0-9]{1,2})?)`, "i").exec(text);
+  const after = new RegExp(String.raw`([0-9]{1,9}(?:[,][0-9]{3})*(?:\.[0-9]{1,2})?)\s*` + currency, "i").exec(text);
+  const raw = before?.[1] || after?.[1] || "";
+  const amount = Number(raw.replace(/,/g, ""));
+  return Number.isFinite(amount) && amount > 0 ? Math.round(amount * 100) / 100 : 0;
+}
+function automationKindFromText(value, explicitType) {
+  const explicit = String(explicitType || "").toLowerCase();
+  if (["deposit","credit","in","income","incoming"].includes(explicit)) return "deposit";
+  if (["expense","debit","out","spend","purchase","payment"].includes(explicit)) return "expense";
+  const text = normalizeAutomationText(value).toLowerCase();
+  const creditWords = ["credited","credit to","received","deposit","incoming transfer","salary","refund","cashback","ايداع","إيداع","وارد","تم اضافة","تم إضافة","استلام","استلمت","راتب","استرداد","مبلغ وارد","تحويل وارد"];
+  const debitWords = ["debited","debit from","purchase","spent","paid","payment","withdraw","card transaction","خصم","شراء","سحب","دفع","عملية شراء","مدفوع","استخدام البطاقة"];
+  if (creditWords.some(word => text.includes(word.toLowerCase()))) return "deposit";
+  if (debitWords.some(word => text.includes(word.toLowerCase()))) return "expense";
+  return "unknown";
+}
+function automationCategoryFromText(value) {
+  const text = normalizeAutomationText(value).toLowerCase();
+  const rules = [
+    ["قهوة", ["coffee","cafe","café","starbucks","كوفي","كافيه","قهوة","لاتيه","espresso","اسبريسو"]],
+    ["مواصلات", ["adnoc","enoc","fuel","petrol","gas station","uber","careem","taxi","parking","salik","ادنوك","اينوك","بترول","بنزين","وقود","تاكسي","كريم","اوبر","مواقف","سالك"]],
+    ["مشتريات", ["carrefour","lulu","supermarket","grocery","coop","amazon","noon","بقالة","بقاله","سوبرماركت","جمعية","جمعيه","كارفور","لولو","مقاضي"]],
+    ["طعام", ["restaurant","food","burger","pizza","talabat","deliveroo","مطعم","اكل","غداء","عشاء","فطور","برجر","بيتزا","طلبات"]],
+    ["اتصالات", ["etisalat","e&","du ","telecom","internet","اتصالات","دو ","انترنت","هاتف"]],
+    ["صحة", ["pharmacy","hospital","clinic","medical","صيدلية","صيدليه","مستشفى","عيادة","عياده","دواء"]],
+    ["فواتير", ["utility","electricity","water bill","insurance","bill payment","فاتورة","فاتوره","كهرباء","ماء","تأمين","تامين"]],
+    ["ترفيه", ["cinema","vox","reel","game","entertainment","سينما","ترفيه","العاب","ألعاب"]],
+    ["ملابس", ["fashion","clothing","apparel","zara","h&m","ملابس","تسوق","عطور","عطر"]],
+    ["منزل", ["rent","home","furniture","maintenance","ايجار","إيجار","منزل","اثاث","أثاث","صيانة"]],
+    ["سفر", ["airways","airline","hotel","booking","travel","emirates","etihad","طيران","فندق","سفر","حجز"]],
+    ["تعليم", ["school","university","course","education","مدرسة","مدرسه","جامعة","جامعه","تعليم","دورة"]],
+    ["هدايا", ["gift","charity","donation","هدية","هديه","هدايا","تبرع","صدقة","صدقه"]]
+  ];
+  for (const [category, words] of rules) if (words.some(word => text.includes(word.toLowerCase()))) return category;
+  return "أخرى";
+}
+function automationMerchantFromText(value) {
+  const text = normalizeAutomationText(value);
+  const english = /\b(?:at|to|from)\s+([^\n,;]{2,70}?)(?=\s+(?:on|using|with|ref|reference|card|ending|dated)\b|[.;,]|$)/i.exec(text);
+  if (english?.[1]) return english[1].trim();
+  const arabic = /(?:لدى|عند)\s+([^،.;]{2,70}?)(?=\s+(?:بتاريخ|بواسطة|مرجع)|[،.;]|$)/.exec(text);
+  if (arabic?.[1]) return arabic[1].trim();
+  return "";
+}
+function normalizeAutomationPayload(payload = {}) {
+  const rawText = normalizeAutomationText(payload.text || payload.message || payload.body || payload.shortcutInput || "").slice(0, 1200);
+  const explicitAmount = Number(String(payload.amount ?? "").replace(/,/g, ""));
+  const amount = Number.isFinite(explicitAmount) && explicitAmount > 0 ? Math.round(explicitAmount * 100) / 100 : automationAmountFromText(rawText);
+  const merchant = normalizeAutomationText(payload.merchant || payload.store || automationMerchantFromText(rawText)).slice(0, 100);
+  const kind = automationKindFromText((merchant + " " + rawText).trim(), payload.type || payload.kind || payload.direction);
+  let occurredAt = String(payload.occurredAt || payload.date || payload.timestamp || "");
+  const parsedDate = occurredAt ? new Date(occurredAt) : new Date();
+  occurredAt = Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+  const sourceRaw = String(payload.source || "bank_message").toLowerCase();
+  const source = sourceRaw.includes("wallet") ? "wallet" : sourceRaw.includes("message") || sourceRaw.includes("sms") ? "bank_message" : "shortcut";
+  const category = kind === "expense" ? automationCategoryFromText((merchant + " " + rawText).trim()) : "";
+  return { rawText, amount, merchant, kind, source, category, occurredAt };
 }
 async function hmacSha256(secret, value) {
   const enc = new TextEncoder();
@@ -198,7 +271,7 @@ function corsHeaders(request, env) {
     "access-control-allow-credentials": "true",
     "vary": "Origin",
     "access-control-allow-methods": "GET,POST,PUT,OPTIONS",
-    "access-control-allow-headers": "content-type,authorization,x-salary-manager-app,x-salary-manager-version,x-salary-manager-release",
+    "access-control-allow-headers": "content-type,authorization,x-salary-manager-app,x-salary-manager-version,x-salary-manager-release,x-salary-shortcut-token",
     "access-control-max-age": "86400"
   } : {};
 }
@@ -373,6 +446,52 @@ async function handleApi(request, env, url) {
       clientReleaseId: publishedReleaseId
     });
     return apiJson(request, env, { ok: Boolean(body?.ok), publishedVersion, publishedReleaseId }, response.status);
+  }
+
+
+  if (p === "/api/automation/import" && request.method === "POST") {
+    const b = await request.json().catch(() => ({}));
+    const shortcutToken = String(request.headers.get("x-salary-shortcut-token") || b.shortcutToken || b.token || "");
+    const { response, body } = await internal(env, "/auth/automation/import", { shortcutToken, payload: b, subject: url.origin });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+  if (p === "/api/automation/status" && request.method === "GET") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const { response, body } = await internal(env, "/auth/automation/status", { token: a.token });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+  if (p === "/api/automation/token" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const { response, body } = await internal(env, "/auth/automation/token", { token: a.token });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+  if (p === "/api/automation/revoke" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const { response, body } = await internal(env, "/auth/automation/revoke", { token: a.token });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+  if (p === "/api/automation/pending" && request.method === "GET") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const { response, body } = await internal(env, "/auth/automation/pending", { token: a.token });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+  if (p === "/api/automation/resolve" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/automation/resolve", { token: a.token, importId: b.importId, status: b.status, acceptedKind: b.acceptedKind });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+  if (p === "/api/automation/test" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/automation/test", { token: a.token, payload: b });
+    return apiJson(request, env, body || { ok: false }, response.status);
   }
 
   if (p === "/api/admin/release-status" && request.method === "GET") {
@@ -984,6 +1103,45 @@ export class SalaryStore extends DurableObject {
     }
   }
 
+
+  async automationOwnerFromSession(token) {
+    const found = await this.getSession(String(token || ""));
+    if (!found || found.user?.role !== "super_admin") return null;
+    return found;
+  }
+
+  async enqueueAutomationImport(payload, ownerUserId, sourceLabel = "shortcut") {
+    const parsed = normalizeAutomationPayload(payload || {});
+    const now = Date.now();
+    const minuteKey = Math.floor(new Date(parsed.occurredAt).getTime() / 60000);
+    const fingerprint = await sha256([ownerUserId, parsed.source, parsed.kind, parsed.amount.toFixed(2), parsed.merchant.toLowerCase(), parsed.rawText.toLowerCase(), minuteKey].join("|"));
+    let imports = await this.ctx.storage.get("automation:imports");
+    imports = Array.isArray(imports) ? imports : [];
+    const duplicate = imports.find(item => item.fingerprint === fingerprint && now - Number(item.receivedAtMs || 0) < 24 * 60 * 60 * 1000);
+    if (duplicate) return { ok: true, duplicate: true, import: duplicate };
+    const item = {
+      id: crypto.randomUUID(),
+      userId: ownerUserId,
+      status: "pending",
+      acceptedKind: "",
+      source: parsed.source || sourceLabel,
+      kind: parsed.kind,
+      amount: parsed.amount,
+      merchant: parsed.merchant,
+      category: parsed.category,
+      occurredAt: parsed.occurredAt,
+      rawText: parsed.rawText,
+      fingerprint,
+      receivedAt: new Date(now).toISOString(),
+      receivedAtMs: now
+    };
+    imports.unshift(item);
+    imports = imports.filter(entry => now - Number(entry.receivedAtMs || now) < 45 * 24 * 60 * 60 * 1000).slice(0, 120);
+    await this.ctx.storage.put("automation:imports", imports);
+    await this.audit("automation-import-received", { userId: ownerUserId, importId: item.id, source: item.source, kind: item.kind, amount: item.amount });
+    return { ok: true, duplicate: false, import: item };
+  }
+
   async authFetch(request, url) {
     const p = url.pathname;
     const b = await request.json().catch(() => ({}));
@@ -1069,6 +1227,74 @@ export class SalaryStore extends DurableObject {
       await this.audit("browser-handoff-consume", { userId: user.id });
       return json({ ok: true, token: created.token, session: created.session, user: await this.publicUser(user) });
     }
+    if (p === "/auth/automation/status") {
+      const owner = await this.automationOwnerFromSession(b.token);
+      if (!owner) return json({ ok: false, error: "FORBIDDEN" }, 403);
+      const link = await this.ctx.storage.get("automation:owner-link");
+      let imports = await this.ctx.storage.get("automation:imports");
+      imports = Array.isArray(imports) ? imports : [];
+      const pendingCount = imports.filter(item => item.status === "pending" && item.userId === owner.user.id).length;
+      return json({ ok: true, enabled: Boolean(link?.enabled && link?.tokenHash && link?.userId === owner.user.id), createdAt: link?.createdAt || null, rotatedAt: link?.rotatedAt || null, lastUsedAt: link?.lastUsedAt || null, pendingCount });
+    }
+    if (p === "/auth/automation/token") {
+      const owner = await this.automationOwnerFromSession(b.token);
+      if (!owner) return json({ ok: false, error: "FORBIDDEN" }, 403);
+      const rawToken = randomToken(36);
+      const previous = await this.ctx.storage.get("automation:owner-link");
+      const record = { userId: owner.user.id, tokenHash: await sha256(rawToken), enabled: true, createdAt: previous?.createdAt || new Date().toISOString(), rotatedAt: new Date().toISOString(), lastUsedAt: previous?.lastUsedAt || null };
+      await this.ctx.storage.put("automation:owner-link", record);
+      await this.audit("automation-token-rotated", { userId: owner.user.id });
+      return json({ ok: true, shortcutToken: rawToken, createdAt: record.createdAt, rotatedAt: record.rotatedAt });
+    }
+    if (p === "/auth/automation/revoke") {
+      const owner = await this.automationOwnerFromSession(b.token);
+      if (!owner) return json({ ok: false, error: "FORBIDDEN" }, 403);
+      await this.ctx.storage.delete("automation:owner-link");
+      await this.audit("automation-token-revoked", { userId: owner.user.id });
+      return json({ ok: true });
+    }
+    if (p === "/auth/automation/import") {
+      const link = await this.ctx.storage.get("automation:owner-link");
+      const shortcutToken = String(b.shortcutToken || "");
+      if (!link?.enabled || !link?.tokenHash || !shortcutToken || !safeEqual(await sha256(shortcutToken), link.tokenHash)) return json({ ok: false, error: "INVALID_SHORTCUT_TOKEN" }, 401);
+      const user = await this.ctx.storage.get(`user:${link.userId}`);
+      if (!user || user.role !== "super_admin" || user.status !== "active") return json({ ok: false, error: "FORBIDDEN" }, 403);
+      link.lastUsedAt = new Date().toISOString();
+      await this.ctx.storage.put("automation:owner-link", link);
+      const result = await this.enqueueAutomationImport(b.payload || {}, user.id);
+      return json(result, 200);
+    }
+    if (p === "/auth/automation/pending") {
+      const owner = await this.automationOwnerFromSession(b.token);
+      if (!owner) return json({ ok: false, error: "FORBIDDEN" }, 403);
+      let imports = await this.ctx.storage.get("automation:imports");
+      imports = Array.isArray(imports) ? imports : [];
+      const pending = imports.filter(item => item.userId === owner.user.id && item.status === "pending").slice(0, 60);
+      return json({ ok: true, imports: pending, count: pending.length });
+    }
+    if (p === "/auth/automation/resolve") {
+      const owner = await this.automationOwnerFromSession(b.token);
+      if (!owner) return json({ ok: false, error: "FORBIDDEN" }, 403);
+      let imports = await this.ctx.storage.get("automation:imports");
+      imports = Array.isArray(imports) ? imports : [];
+      const item = imports.find(entry => entry.id === String(b.importId || "") && entry.userId === owner.user.id);
+      if (!item) return json({ ok: false, error: "NOT_FOUND" }, 404);
+      item.status = b.status === "accepted" ? "accepted" : "ignored";
+      item.acceptedKind = b.acceptedKind === "deposit" ? "deposit" : b.acceptedKind === "expense" ? "expense" : "";
+      item.resolvedAt = new Date().toISOString();
+      item.rawText = "";
+      await this.ctx.storage.put("automation:imports", imports);
+      await this.audit("automation-import-resolved", { userId: owner.user.id, importId: item.id, status: item.status, acceptedKind: item.acceptedKind });
+      return json({ ok: true });
+    }
+    if (p === "/auth/automation/test") {
+      const owner = await this.automationOwnerFromSession(b.token);
+      if (!owner) return json({ ok: false, error: "FORBIDDEN" }, 403);
+      const payload = Object.assign({ source: "bank_message", text: "Your card was debited AED 37.50 at ARABICA COFFEE on 2026-09-01" }, b.payload || {});
+      const result = await this.enqueueAutomationImport(payload, owner.user.id, "test");
+      return json(result, 200);
+    }
+
     if (p === "/auth/logout") {
       const found = await this.getSession(String(b.token || ""), false);
       if (found) await this.ctx.storage.delete(found.key);

@@ -36,7 +36,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.2-voice-expenses-r2";
+      var v = "3.9.2-statement-pdf-r3";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -1588,7 +1588,7 @@
       box-shadow: 0 0 0 4px rgba(20, 117, 108, .09);
     }
 
-    /* 3.9.2 r2 — quick expense categories + order-independent voice capture */
+    /* 3.9.2 r3 — voice expenses + premium monthly statements/PDF */
     #expenseForm.quick-form {
       grid-template-columns: 1.5fr .72fr .82fr auto;
     }
@@ -3064,23 +3064,111 @@
     .payday-carry-icon { width: 62px; height: 62px; margin: 0 auto 12px; border-radius: 20px; display:grid; place-items:center; background:#e0f2ed; color:#176b60; font-size:28px; font-weight:800; }
     .payday-carry-amount { display:block; font-size: clamp(28px, 6vw, 42px); color: var(--forest); margin: 8px 0 16px; }
     .payday-choice-grid { display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:16px; }
-    .statement-list { display:grid; gap:14px; }
-    .statement-card { border:1px solid var(--line); border-radius:18px; background:var(--paper); overflow:hidden; }
-    .statement-card summary { cursor:pointer; list-style:none; padding:18px; display:flex; justify-content:space-between; gap:16px; align-items:center; font-weight:800; }
+    .statement-list { display:grid; gap:18px; }
+    .statement-card { border:1px solid rgba(15,72,66,.12); border-radius:24px; background:linear-gradient(180deg,#fff 0%,#fcfbf7 100%); overflow:hidden; box-shadow:0 16px 38px rgba(22,55,50,.08); }
+    .statement-card summary { cursor:pointer; list-style:none; padding:18px 20px; display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:14px; align-items:center; font-weight:800; background:linear-gradient(135deg,rgba(233,246,242,.9),rgba(255,251,241,.95)); }
     .statement-card summary::-webkit-details-marker { display:none; }
-    .statement-card[open] summary { border-bottom:1px solid var(--line); background:#faf8f3; }
-    .statement-body { padding:18px; display:grid; gap:14px; }
-    .statement-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
-    .statement-metric { border:1px solid var(--line); border-radius:14px; padding:12px; background:#fff; }
-    .statement-metric small { display:block; color:var(--muted); margin-bottom:4px; }
-    .statement-transactions { display:grid; gap:8px; }
-    .statement-transaction { display:grid; grid-template-columns:1fr auto; gap:10px; border-top:1px solid var(--line); padding-top:8px; }
+    .statement-card[open] summary { border-bottom:1px solid rgba(15,72,66,.10); }
+    .statement-summary-main { min-width:0; }
+    .statement-summary-main strong { display:block; font-size:1.05rem; color:var(--forest); }
+    .statement-summary-main small { display:block; color:var(--muted); margin-top:4px; font-size:.78rem; }
+    .statement-summary-balance { text-align:end; }
+    .statement-summary-balance small { display:block; color:var(--muted); font-size:.72rem; margin-bottom:3px; }
+    .statement-summary-balance strong { font-size:1.08rem; white-space:nowrap; color:var(--ink); }
+    .statement-summary-chevron { width:34px; height:34px; border-radius:12px; background:#fff; border:1px solid rgba(15,72,66,.10); display:grid; place-items:center; color:var(--forest); transition:transform .2s ease; }
+    .statement-card[open] .statement-summary-chevron { transform:rotate(180deg); }
+    .statement-body { padding:18px; display:grid; gap:18px; }
+    .statement-hero { position:relative; overflow:hidden; border-radius:22px; padding:20px; color:#fff; background:linear-gradient(135deg,#0b4d46,#14756c 58%,#2b9184); box-shadow:0 14px 30px rgba(12,78,70,.18); }
+    .statement-hero::after { content:""; position:absolute; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,.08); inset-inline-start:-70px; top:-90px; }
+    .statement-hero-top { position:relative; z-index:1; display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+    .statement-hero-label { display:inline-flex; align-items:center; gap:7px; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.13); border:1px solid rgba(255,255,255,.18); font-size:.74rem; font-weight:800; }
+    .statement-hero h3 { position:relative; z-index:1; margin:11px 0 3px; font-size:1.4rem; color:#fff; }
+    .statement-hero-period { position:relative; z-index:1; opacity:.78; font-size:.78rem; }
+    .statement-hero-balance { position:relative; z-index:1; text-align:end; min-width:145px; }
+    .statement-hero-balance span { display:block; opacity:.78; font-size:.75rem; }
+    .statement-hero-balance strong { display:block; font-size:1.45rem; margin-top:6px; color:#fff; white-space:nowrap; }
+    .statement-flow-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; }
+    .statement-flow { border-radius:16px; padding:12px; border:1px solid rgba(15,72,66,.10); background:#fff; min-width:0; }
+    .statement-flow small { display:block; color:var(--muted); font-size:.72rem; margin-bottom:5px; }
+    .statement-flow strong { display:block; font-size:.91rem; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .statement-flow.inflow { background:#f0faf6; border-color:rgba(20,117,108,.15); }
+    .statement-flow.inflow strong { color:#14756c; }
+    .statement-flow.outflow { background:#fff4f1; border-color:rgba(191,78,72,.14); }
+    .statement-flow.outflow strong { color:#b84d47; }
+    .statement-section-title { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:-6px; }
+    .statement-section-title h4 { margin:0; font-size:1rem; color:var(--forest); }
+    .statement-section-title small { color:var(--muted); font-size:.73rem; }
+    .statement-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
+    .statement-metric { position:relative; overflow:hidden; border:1px solid rgba(15,72,66,.10); border-radius:16px; padding:13px; background:#fff; min-height:78px; }
+    .statement-metric::before { content:""; position:absolute; top:0; inset-inline-start:0; width:4px; height:100%; background:#d7dfdc; }
+    .statement-metric.in::before { background:#3aa48f; }
+    .statement-metric.out::before { background:#d46c63; }
+    .statement-metric.savings::before { background:#6e8fc7; }
+    .statement-metric.info::before { background:#d7a649; }
+    .statement-metric small { display:block; color:var(--muted); margin-bottom:7px; font-size:.72rem; line-height:1.35; }
+    .statement-metric strong { display:block; color:var(--ink); font-size:.92rem; }
+    .statement-metric.in strong { color:#14756c; }
+    .statement-metric.out strong { color:#b84d47; }
+    .statement-metric.savings strong { color:#526fa7; }
+    .statement-audit { border-radius:18px; padding:14px 15px; display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center; border:1px solid rgba(20,117,108,.15); background:#eff9f5; }
+    .statement-audit.has-difference { background:#fff6e9; border-color:rgba(201,135,37,.22); }
+    .statement-audit strong { display:block; color:var(--forest); margin-bottom:3px; }
+    .statement-audit small { color:var(--muted); line-height:1.5; }
+    .statement-audit-badge { border-radius:999px; padding:7px 10px; font-size:.72rem; font-weight:900; background:#d9f1e9; color:#0f665c; white-space:nowrap; }
+    .statement-audit.has-difference .statement-audit-badge { background:#f7dfb3; color:#805815; }
+    .statement-action-row { display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
+    .statement-pdf-btn { border:0; border-radius:14px; background:var(--forest); color:#fff; padding:10px 14px; font:inherit; font-size:.82rem; font-weight:900; cursor:pointer; display:inline-flex; align-items:center; gap:7px; box-shadow:0 8px 18px rgba(10,79,70,.16); }
+    .statement-pdf-btn:active { transform:translateY(1px); }
+    .statement-transactions { display:grid; gap:0; border:1px solid rgba(15,72,66,.10); border-radius:18px; overflow:hidden; background:#fff; }
+    .statement-transaction { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; padding:13px 14px; border-top:1px solid rgba(15,72,66,.08); align-items:center; }
     .statement-transaction:first-child { border-top:0; }
+    .statement-transaction-main { min-width:0; }
+    .statement-transaction-main strong { display:block; color:var(--ink); font-size:.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .statement-transaction-main small { display:block; margin-top:4px; color:var(--muted); font-size:.71rem; }
+    .statement-transaction-side { text-align:end; }
+    .statement-transaction-side > strong { display:block; font-size:.91rem; white-space:nowrap; }
+    .statement-running-balance { display:block; margin-top:4px; color:var(--muted); font-size:.68rem; white-space:nowrap; }
     .statement-amount-in { color:#14756c; }
     .statement-amount-out { color:#bf4e48; }
     .savings-history-positive { color:#14756c; }
     .savings-history-negative { color:#bf4e48; }
-    @media (max-width: 620px) { .payday-choice-grid, .statement-metrics { grid-template-columns:1fr; } }
+
+    #statementPrintRoot { display:none; }
+    @media print {
+      @page { size:A4; margin:10mm; }
+      html, body { background:#fff !important; }
+      body.statement-print-mode > *:not(#statementPrintRoot) { display:none !important; }
+      body.statement-print-mode #statementPrintRoot { display:block !important; direction:rtl; color:#173833; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .statement-print-sheet { width:100%; }
+      .statement-print-header { border-radius:16px; padding:18px 20px; color:#fff; background:linear-gradient(135deg,#0b4d46,#14756c); display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }
+      .statement-print-header h1 { margin:5px 0 4px; font-size:22px; }
+      .statement-print-header p { margin:0; opacity:.82; font-size:10px; }
+      .statement-print-balance { text-align:left; }
+      .statement-print-balance small { display:block; opacity:.8; font-size:9px; }
+      .statement-print-balance strong { display:block; font-size:20px; margin-top:5px; }
+      .statement-print-balance .statement-print-amount { color:#fff !important; }
+      .statement-print-flow { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin:10px 0; }
+      .statement-print-flow > div { border:1px solid #dfe8e5; border-radius:10px; padding:9px; background:#f8fbfa; }
+      .statement-print-flow small, .statement-print-metrics small { display:block; color:#71827e; font-size:8px; margin-bottom:4px; }
+      .statement-print-flow strong, .statement-print-metrics strong { font-size:10px; }
+      .statement-print-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:10px; }
+      .statement-print-metrics > div { border:1px solid #e4e9e7; border-radius:10px; padding:8px; background:#fff; break-inside:avoid; }
+      .statement-print-audit { border:1px solid #cfe4de; background:#eff8f5; border-radius:10px; padding:9px 10px; margin-bottom:10px; font-size:9px; display:flex; justify-content:space-between; gap:12px; }
+      .statement-print-audit.warn { border-color:#ead7b5; background:#fff7e9; }
+      .statement-print-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:8.5px; }
+      .statement-print-table th { background:#edf5f2; color:#355b55; text-align:right; padding:7px 6px; border-bottom:1px solid #d4e1dd; }
+      .statement-print-table td { padding:6px; border-bottom:1px solid #edf0ef; vertical-align:top; }
+      .statement-print-table th:nth-child(1), .statement-print-table td:nth-child(1) { width:22%; }
+      .statement-print-table th:nth-child(3), .statement-print-table td:nth-child(3), .statement-print-table th:nth-child(4), .statement-print-table td:nth-child(4) { width:18%; text-align:left; white-space:nowrap; }
+      .statement-print-plus { color:#14756c; font-weight:800; }
+      .statement-print-minus { color:#b84d47; font-weight:800; }
+      .statement-print-amount { white-space:nowrap; }
+      .statement-print-amount bdi { direction:ltr; unicode-bidi:isolate; }
+      .statement-print-footer { display:flex; justify-content:space-between; gap:12px; color:#778581; font-size:7.5px; margin-top:10px; padding-top:8px; border-top:1px solid #e5e9e7; }
+      .statement-print-table tr { break-inside:avoid; }
+    }
+    @media (max-width: 760px) { .statement-flow-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .statement-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    @media (max-width: 620px) { .payday-choice-grid { grid-template-columns:1fr; } .statement-card summary { grid-template-columns:minmax(0,1fr) auto auto; padding:15px; } .statement-body { padding:14px; } .statement-hero-top { gap:10px; } .statement-hero-balance strong { font-size:1.2rem; } .statement-metrics { grid-template-columns:1fr 1fr; } }
 
   
     /* 3.8.7 r16: keep the hero focused on salary/date/current balance; percentage usage caused confusion. */
@@ -3362,7 +3450,7 @@
                   <span class="expense-voice-mic" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"></path></svg>
                   </span>
-                  <span class="expense-voice-copy"><strong id="expenseVoiceButtonLabel">سجّل بصوتك</strong><small>مثال: «خمسين درهم بترول»</small></span>
+                  <span class="expense-voice-copy"><strong id="expenseVoiceButtonLabel">سجّل بصوتك</strong><small>مثال: «خمسة وثلاثين درهم كوفي»</small></span>
                   <span class="expense-voice-bars" aria-hidden="true"><i></i><i></i><i></i></span>
                 </button>
               </div>
@@ -4157,6 +4245,7 @@
             <li>إعادة المدفوعات الثابتة إلى «بانتظار الدفع» مع كل راتب جديد.</li>
             <li>إظهار إصدار كل مستخدم للمالك مع إمكانية إرسال التحديث لمستخدم محدد.</li>
             <li>إضافة تسجيل المصروف بالصوت مع فهم المبلغ قبل أو بعد التصنيف وكلمات شائعة مثل «كوفي» = «قهوة».</li>
+            <li>إعادة تصميم كشف الحساب الشهري مع تدقيق الرصيد وإمكانية حفظه كملف PDF.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -4382,6 +4471,8 @@
   </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <div id="statementPrintRoot" aria-hidden="true"></div>
 
   <script>
     (function () {
@@ -4734,8 +4825,12 @@
 
       EN_TRANSLATIONS["إضافة مصروف سريع"] = "Quick expense";
       EN_TRANSLATIONS["اختر التصنيف أو سجّل المصروف بصوتك، ثم راجع المبلغ واضغط حفظ."] = "Choose a category or record the expense by voice, then review the amount and save.";
+      EN_TRANSLATIONS["مثال: «خمسة وثلاثين درهم كوفي»"] = "Example: “thirty-five dirhams coffee”";
+      EN_TRANSLATIONS["حفظ PDF"] = "Save PDF";
+      EN_TRANSLATIONS["كشف حساب شهري محفوظ"] = "Saved monthly statement";
+      EN_TRANSLATIONS["تدقيق الرصيد"] = "Balance audit";
+      EN_TRANSLATIONS["الحركات المالية"] = "Transactions";
       EN_TRANSLATIONS["سجّل بصوتك"] = "Record by voice";
-      EN_TRANSLATIONS["مثال: «خمسين درهم بترول»"] = "Example: “fifty dirhams fuel”";
       EN_TRANSLATIONS["وصف المصروف"] = "Expense description";
       EN_TRANSLATIONS["(اختياري)"] = "(optional)";
       EN_TRANSLATIONS["مطاعم"] = "Dining";
@@ -4776,7 +4871,7 @@
 
 
       var APP_VERSION = "3.9.2";
-      var APP_RELEASE_ID = "3.9.2-voice-expenses-r2";
+      var APP_RELEASE_ID = "3.9.2-statement-pdf-r3";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -7553,6 +7648,70 @@
         }
       }
 
+      function statementPeriodText(monthKey) {
+        var parts = String(monthKey || "").split("-");
+        var year = Number(parts[0]) || today.getFullYear();
+        var monthIndex = Math.max(0, (Number(parts[1]) || 1) - 1);
+        var lastDay = new Date(year, monthIndex + 1, 0).getDate();
+        return formatDate(toDateInput(new Date(year, monthIndex, 1))) + " — " + formatDate(toDateInput(new Date(year, monthIndex, lastDay)));
+      }
+
+      function statementTransactionRows(st) {
+        var opening = signedNumber(st && st.openingBalance);
+        var tx = Array.isArray(st && st.transactions) ? st.transactions.slice() : [];
+        tx.sort(function (a, b) {
+          var byDate = String(a && a.date || "").localeCompare(String(b && b.date || ""));
+          if (byDate) return byDate;
+          var at = Date.parse(String(a && a.createdAt || ""));
+          var bt = Date.parse(String(b && b.createdAt || ""));
+          if (!Number.isFinite(at)) at = 0;
+          if (!Number.isFinite(bt)) bt = 0;
+          if (at !== bt) return at - bt;
+          return String(a && a.id || "").localeCompare(String(b && b.id || ""));
+        });
+        var running = opening;
+        return tx.map(function (item) {
+          var amount = signedNumber(item.amount);
+          running = roundSignedMoney(running + amount);
+          return { item: item, amount: amount, balanceAfter: running };
+        });
+      }
+
+      function statementAuditData(st) {
+        var rows = statementTransactionRows(st);
+        var inflows = rows.reduce(function (sum, row) { return sum + (row.amount > 0 ? row.amount : 0); }, 0);
+        var outflows = rows.reduce(function (sum, row) { return sum + (row.amount < 0 ? Math.abs(row.amount) : 0); }, 0);
+        inflows = roundMoney(inflows);
+        outflows = roundMoney(outflows);
+        var opening = signedNumber(st && st.openingBalance);
+        var closing = signedNumber(st && st.closingBalance);
+        var expected = roundSignedMoney(opening + inflows - outflows);
+        var difference = roundSignedMoney(closing - expected);
+        return { rows: rows, opening: opening, closing: closing, inflows: inflows, outflows: outflows, expected: expected, difference: difference, matches: Math.abs(difference) < 0.01 };
+      }
+
+      function statementSignedHTML(value, forcePlus) {
+        var amount = signedNumber(value);
+        var cls = amount > 0 ? "statement-amount-in" : amount < 0 ? "statement-amount-out" : "";
+        var sign = amount < 0 ? "-" : (forcePlus && amount > 0 ? "+" : "");
+        return '<strong class="' + cls + '">' + sign + moneyHTML(Math.abs(amount)) + '</strong>';
+      }
+
+      function statementMetricHTML(label, value, kind, signMode) {
+        var amount = signedNumber(value);
+        var sign = signMode === "out" ? (amount ? "-" : "") : signMode === "in" ? (amount ? "+" : "") : amount < 0 ? "-" : amount > 0 && signMode === "signed" ? "+" : "";
+        return '<div class="statement-metric ' + escapeHTML(kind || "") + '"><small>' + escapeHTML(label) + '</small><strong>' + sign + moneyHTML(Math.abs(amount)) + '</strong></div>';
+      }
+
+      function statementTransactionHTML(row) {
+        var item = row.item || {};
+        var amount = row.amount;
+        var cls = amount >= 0 ? "statement-amount-in" : "statement-amount-out";
+        var recorded = formatRecordedTime(item);
+        var meta = formatDate(item.date) + (recorded ? " · " + recorded : "");
+        return '<div class="statement-transaction"><div class="statement-transaction-main"><strong>' + escapeHTML(item.title || "عملية") + '</strong><small>' + escapeHTML(meta) + '</small></div><div class="statement-transaction-side"><strong class="' + cls + '">' + (amount >= 0 ? "+" : "-") + moneyHTML(Math.abs(amount)) + '</strong><span class="statement-running-balance">الرصيد بعدها: ' + moneyHTML(row.balanceAfter) + '</span></div></div>';
+      }
+
       function renderStatements() {
         var root = $("#statementList");
         if (!root) return;
@@ -7564,29 +7723,107 @@
         }
         root.innerHTML = keys.map(function (key) {
           var st = statements[key] || {};
-          var tx = Array.isArray(st.transactions) ? st.transactions : [];
-          var txHtml = tx.length ? tx.slice().sort(function(a,b){ return String(b.date).localeCompare(String(a.date)); }).map(function (item) {
-            var amount = signedNumber(item.amount);
-            var cls = amount >= 0 ? "statement-amount-in" : "statement-amount-out";
-            return '<div class="statement-transaction"><div><strong>' + escapeHTML(item.title || 'عملية') + '</strong><small class="item-meta">' + escapeHTML(formatDate(item.date)) + '</small></div><strong class="' + cls + '">' + (amount >= 0 ? '+' : '-') + moneyHTML(Math.abs(amount)) + '</strong></div>';
-          }).join('') : '<p class="item-meta">لا توجد حركات مالية مسجلة في هذا الشهر.</p>';
-          return '<details class="statement-card"><summary><span>' + escapeHTML(formatMonth(key)) + '</span><strong>' + moneyHTML(st.closingBalance) + '</strong></summary><div class="statement-body">' +
+          var audit = statementAuditData(st);
+          var rowsNewest = audit.rows.slice().reverse();
+          var txHtml = rowsNewest.length ? rowsNewest.map(statementTransactionHTML).join("") : '<p class="item-meta" style="padding:14px">لا توجد حركات مالية مسجلة في هذا الشهر.</p>';
+          var diffLabel = audit.matches ? "مطابق" : "فرق " + formatMoney(Math.abs(audit.difference));
+          var auditText = audit.matches
+            ? "رصيد البداية + المبالغ الداخلة - المبالغ الخارجة يطابق الرصيد الختامي المحفوظ."
+            : "يوجد فرق بين حركة العمليات والرصيد الختامي المحفوظ. راجع التسويات أو العمليات القديمة.";
+          return '<details class="statement-card"><summary><div class="statement-summary-main"><strong>' + escapeHTML(formatMonth(key)) + '</strong><small>كشف حساب شهري محفوظ</small></div><div class="statement-summary-balance"><small>الرصيد الختامي</small><strong>' + moneyHTML(st.closingBalance) + '</strong></div><span class="statement-summary-chevron" aria-hidden="true">⌄</span></summary><div class="statement-body">' +
+            '<div class="statement-hero"><div class="statement-hero-top"><div><span class="statement-hero-label">كشف نهائي · ' + escapeHTML(formatMonth(key)) + '</span><h3>ملخص الشهر</h3><div class="statement-hero-period">' + escapeHTML(statementPeriodText(key)) + '</div></div><div class="statement-hero-balance"><span>الرصيد الختامي</span><strong>' + moneyHTML(st.closingBalance) + '</strong></div></div></div>' +
+            '<div class="statement-flow-grid"><div class="statement-flow"><small>رصيد البداية</small><strong>' + moneyHTML(audit.opening) + '</strong></div><div class="statement-flow inflow"><small>إجمالي الداخل</small><strong>+' + moneyHTML(audit.inflows) + '</strong></div><div class="statement-flow outflow"><small>إجمالي الخارج</small><strong>-' + moneyHTML(audit.outflows) + '</strong></div><div class="statement-flow"><small>الرصيد الختامي</small><strong>' + moneyHTML(audit.closing) + '</strong></div></div>' +
+            '<div class="statement-section-title"><h4>تفاصيل الشهر</h4><small>القيم الفعلية المسجلة في مدير الراتب</small></div>' +
             '<div class="statement-metrics">' +
-              '<div class="statement-metric"><small>رصيد بداية الشهر</small><strong>' + moneyHTML(st.openingBalance) + '</strong></div>' +
-              '<div class="statement-metric"><small>الرصيد الختامي</small><strong>' + moneyHTML(st.closingBalance) + '</strong></div>' +
-              '<div class="statement-metric"><small>الرواتب المضافة</small><strong>' + moneyHTML(st.salaryTotal) + '</strong></div>' +
-              '<div class="statement-metric"><small>الإيداعات</small><strong>+' + moneyHTML(st.depositsTotal || 0) + '</strong></div>' +
-              '<div class="statement-metric"><small>تسويات الرصيد</small><strong>' + (safeNumber(st.balanceAdjustmentTotal) >= 0 ? '+' : '-') + moneyHTML(Math.abs(safeNumber(st.balanceAdjustmentTotal))) + '</strong></div>' +
-              '<div class="statement-metric"><small>الأقساط والسلف</small><strong>' + moneyHTML(st.commitmentsTotal) + '</strong></div>' +
-              '<div class="statement-metric"><small>المدفوعات الثابتة</small><strong>' + moneyHTML(st.recurringTotal) + '</strong></div>' +
-              '<div class="statement-metric"><small>المصروفات</small><strong>' + moneyHTML(st.expensesTotal) + '</strong></div>' +
-              '<div class="statement-metric"><small>استردادات مستلمة</small><strong>+' + moneyHTML(st.reimbursementsReceivedTotal || 0) + '</strong></div>' +
-              '<div class="statement-metric"><small>بانتظار الاسترداد عند الإغلاق</small><strong>' + moneyHTML(st.pendingReimbursementsAtClose || 0) + '</strong></div>' +
-              '<div class="statement-metric"><small>المحوّل للمدخرات</small><strong>' + moneyHTML(st.savingsTransferTotal) + '</strong></div>' +
-              '<div class="statement-metric"><small>إجمالي المدخرات عند الإغلاق</small><strong>' + moneyHTML(st.savingsBalanceAtClose) + '</strong></div>' +
-            '</div><div class="statement-transactions">' + txHtml + '</div></div></details>';
+              statementMetricHTML("الرواتب المضافة", st.salaryTotal || 0, "in", "in") +
+              statementMetricHTML("الإيداعات", st.depositsTotal || 0, "in", "signed") +
+              statementMetricHTML("استردادات مستلمة", st.reimbursementsReceivedTotal || 0, "in", "in") +
+              statementMetricHTML("الأقساط والسلف", st.commitmentsTotal || 0, "out", "out") +
+              statementMetricHTML("المدفوعات الثابتة", st.recurringTotal || 0, "out", "out") +
+              statementMetricHTML("المصروفات", st.expensesTotal || 0, "out", "out") +
+              statementMetricHTML("تسويات الرصيد", st.balanceAdjustmentTotal || 0, "info", "signed") +
+              statementMetricHTML("المحوّل للمدخرات", st.savingsTransferTotal || 0, "savings", "out") +
+              statementMetricHTML("إجمالي المدخرات عند الإغلاق", st.savingsBalanceAtClose || 0, "savings", "") +
+              statementMetricHTML("بانتظار الاسترداد عند الإغلاق", st.pendingReimbursementsAtClose || 0, "info", "") +
+            '</div>' +
+            '<div class="statement-audit' + (audit.matches ? '' : ' has-difference') + '"><div><strong>تدقيق الرصيد</strong><small>' + escapeHTML(auditText) + ' المتوقع: ' + escapeHTML(formatMoney(audit.expected)) + '</small></div><span class="statement-audit-badge">' + escapeHTML(diffLabel) + '</span></div>' +
+            '<div class="statement-section-title"><h4>الحركات المالية</h4><small>' + audit.rows.length + ' عملية</small></div>' +
+            '<div class="statement-action-row"><button class="statement-pdf-btn" type="button" data-save-statement-pdf="' + escapeHTML(key) + '"><span aria-hidden="true">⇩</span> حفظ PDF</button></div>' +
+            '<div class="statement-transactions">' + txHtml + '</div></div></details>';
         }).join("");
       }
+
+      function statementPrintMoney(value, signMode) {
+        var amount = signedNumber(value);
+        var sign = signMode === "in" ? (amount ? "+" : "") : signMode === "out" ? (amount ? "-" : "") : amount < 0 ? "-" : amount > 0 && signMode === "signed" ? "+" : "";
+        return sign + formatMoney(Math.abs(amount));
+      }
+
+      function statementPrintAmountHTML(value, signMode) {
+        var amount = signedNumber(value);
+        var sign = signMode === "in" ? (amount ? "+" : "") : signMode === "out" ? (amount ? "-" : "") : amount < 0 ? "-" : amount > 0 && signMode === "signed" ? "+" : "";
+        var cls = signMode === "out" ? " statement-print-minus" : signMode === "in" ? " statement-print-plus" : amount < 0 ? " statement-print-minus" : amount > 0 && signMode === "signed" ? " statement-print-plus" : "";
+        var unit = currentLanguage === "en" ? "AED" : "درهم";
+        return '<span class="statement-print-amount' + cls + '"><bdi dir="ltr">' + escapeHTML(sign + formatAmount(Math.abs(amount))) + '</bdi> <span>' + escapeHTML(unit) + '</span></span>';
+      }
+
+      function buildStatementPrintHTML(key, st) {
+        var audit = statementAuditData(st);
+        var rows = audit.rows.slice().reverse();
+        var metrics = [
+          ["الرواتب المضافة", st.salaryTotal || 0, "in"],
+          ["الإيداعات", st.depositsTotal || 0, "signed"],
+          ["الاستردادات المستلمة", st.reimbursementsReceivedTotal || 0, "in"],
+          ["الأقساط والسلف", st.commitmentsTotal || 0, "out"],
+          ["المدفوعات الثابتة", st.recurringTotal || 0, "out"],
+          ["المصروفات", st.expensesTotal || 0, "out"],
+          ["تسويات الرصيد", st.balanceAdjustmentTotal || 0, "signed"],
+          ["المحوّل للمدخرات", st.savingsTransferTotal || 0, "out"],
+          ["إجمالي المدخرات عند الإغلاق", st.savingsBalanceAtClose || 0, ""],
+          ["بانتظار الاسترداد عند الإغلاق", st.pendingReimbursementsAtClose || 0, ""]
+        ];
+        var metricHtml = metrics.map(function (entry) {
+          return '<div><small>' + escapeHTML(entry[0]) + '</small><strong>' + statementPrintAmountHTML(entry[1], entry[2]) + '</strong></div>';
+        }).join("");
+        var txRows = rows.length ? rows.map(function (row) {
+          var item = row.item || {};
+          var cls = row.amount >= 0 ? "statement-print-plus" : "statement-print-minus";
+          var moment = formatDate(item.date) + (formatRecordedTime(item) ? " · " + formatRecordedTime(item) : "");
+          return '<tr><td>' + escapeHTML(moment) + '</td><td>' + escapeHTML(item.title || "عملية") + '</td><td class="' + cls + '">' + statementPrintAmountHTML(row.amount, row.amount >= 0 ? "in" : "out") + '</td><td>' + statementPrintAmountHTML(row.balanceAfter, "") + '</td></tr>';
+        }).join("") : '<tr><td colspan="4">لا توجد حركات مالية مسجلة في هذا الشهر.</td></tr>';
+        var auditText = audit.matches ? "مطابق - لا يوجد فرق حسابي" : "فرق " + formatMoney(Math.abs(audit.difference));
+        return '<section class="statement-print-sheet"><header class="statement-print-header"><div><small>مدير الراتب</small><h1>كشف حساب ' + escapeHTML(formatMonth(key)) + '</h1><p>' + escapeHTML(statementPeriodText(key)) + '</p></div><div class="statement-print-balance"><small>الرصيد الختامي</small><strong>' + statementPrintAmountHTML(audit.closing, "") + '</strong></div></header>' +
+          '<div class="statement-print-flow"><div><small>رصيد البداية</small><strong>' + statementPrintAmountHTML(audit.opening, "") + '</strong></div><div><small>إجمالي الداخل</small><strong>' + statementPrintAmountHTML(audit.inflows, "in") + '</strong></div><div><small>إجمالي الخارج</small><strong>' + statementPrintAmountHTML(audit.outflows, "out") + '</strong></div><div><small>الرصيد الختامي</small><strong>' + statementPrintAmountHTML(audit.closing, "") + '</strong></div></div>' +
+          '<div class="statement-print-metrics">' + metricHtml + '</div>' +
+          '<div class="statement-print-audit' + (audit.matches ? '' : ' warn') + '"><span><strong>تدقيق الرصيد:</strong> ' + escapeHTML(auditText) + '</span><span>المتوقع: ' + statementPrintAmountHTML(audit.expected, "") + '</span></div>' +
+          '<table class="statement-print-table"><thead><tr><th>التاريخ والوقت</th><th>العملية</th><th>المبلغ</th><th>الرصيد بعد العملية</th></tr></thead><tbody>' + txRows + '</tbody></table>' +
+          '<footer class="statement-print-footer"><span>تم إنشاء هذا الكشف من البيانات المحفوظة في مدير الراتب.</span><span>تاريخ الإنشاء: ' + escapeHTML(formatDisplayDateObject(new Date(), true) + ' · ' + formatClockWithSeconds(new Date())) + '</span></footer></section>';
+      }
+
+      function cleanupStatementPrint() {
+        document.body.classList.remove("statement-print-mode");
+        var root = $("#statementPrintRoot");
+        if (root) { root.innerHTML = ""; root.setAttribute("aria-hidden", "true"); }
+      }
+
+      function printStatementPdf(key) {
+        var statements = state.statements && typeof state.statements === "object" ? state.statements : {};
+        var st = statements[String(key || "")];
+        if (!st) { showToast("تعذر العثور على كشف الحساب المطلوب", true); return; }
+        var root = $("#statementPrintRoot");
+        if (!root) return;
+        root.innerHTML = buildStatementPrintHTML(String(key), st);
+        root.setAttribute("aria-hidden", "false");
+        document.body.classList.add("statement-print-mode");
+        showToast("سيُفتح نموذج الطباعة؛ اختر حفظ كملف PDF");
+        requestAnimationFrame(function () {
+          setTimeout(function () {
+            try { window.print(); } catch (_) { cleanupStatementPrint(); showToast("تعذر فتح نافذة حفظ PDF", true); }
+          }, 80);
+        });
+      }
+
+      window.addEventListener("afterprint", cleanupStatementPrint);
 
       function participantPaymentHTML(item, compact) {
         if (!hasParticipantTracking(item)) return "";
@@ -8558,15 +8795,25 @@
         return "أخرى";
       }
 
+      function stripVoiceCurrencyText(value) {
+        return String(value || "")
+          .replace(/\b(?:aed|dhs?|dirhams?)\b/gi, " ")
+          .replace(/د\s*[.٫٬]?\s*[إأا]\s*[.]?/g, " ")
+          .replace(/درهم(?:ا|ين)?|دراهم/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
       function voiceExpenseTitle(text, category) {
-        var currency = new Set(["درهم","دراهم","درهما","درهمين","aed"]);
+        var currency = new Set(["درهم","دراهم","درهما","درهمين","aed","dh","dhs"]);
         var fillers = new Set(["دفعت","دفعة","صرفت","صرف","مصروف","مبلغ","بمبلغ","بقيمة","بقميه","قيمه","على","حق"]);
-        var tokens = String(text || "").replace(/[،؛]/g, " ").split(/\s+/).filter(Boolean);
+        var tokens = stripVoiceCurrencyText(text).replace(/[،؛]/g, " ").split(/\s+/).filter(Boolean);
         var cleaned = tokens.filter(function (raw) {
           var norm = normalizeArabicSpeechText(raw).replace(/^و(?=.)/, "");
           if (!norm) return false;
           if (/^\d+(?:[\.,]\d+)?$/.test(norm)) return false;
           if (currency.has(norm) || fillers.has(norm)) return false;
+          if (/^د[.\s]*[اا]$/.test(norm)) return false;
           if (norm === "الف" || norm === "الاف" || norm === "الفين" || norm === "الفان" || norm === "نص" || norm === "نصف") return false;
           if (voiceNumberToken(norm) != null) return false;
           return true;
@@ -8634,7 +8881,7 @@
           setExpenseVoiceStatus(voiceLocaleText("سمعت: «" + heard + "» — تم تجهيز " + formatMoney(amount) + " ضمن «" + expenseCategoryDefaultTitle(category) + "». راجع ثم اضغط حفظ.", "Heard: “" + heard + "” — prepared " + formatMoney(amount) + ". Review and save."), "success");
           try { navigator.vibrate && navigator.vibrate(22); } catch (_) {}
         } else {
-          setExpenseVoiceStatus(voiceLocaleText("سمعت: «" + heard + "»، لكن لم أتعرف على المبلغ. يمكنك قوله مثل «خمسين درهم بترول» أو إدخال المبلغ يدويًا.", "I heard: “" + heard + "”, but could not detect the amount. You can enter it manually."), "error");
+          setExpenseVoiceStatus(voiceLocaleText("سمعت: «" + heard + "»، لكن لم أتعرف على المبلغ. يمكنك قوله مثل «خمسة وثلاثين درهم كوفي» أو إدخال المبلغ يدويًا.", "I heard: “" + heard + "”, but could not detect the amount. You can enter it manually."), "error");
         }
       }
 
@@ -8651,7 +8898,7 @@
         recognition.onstart = function () {
           latestTranscript = "";
           setExpenseVoiceListening(true);
-          setExpenseVoiceStatus(voiceLocaleText("تحدث الآن… مثال: خمسين درهم بترول", "Speak now… for example: fifty dirhams fuel"), "listening");
+          setExpenseVoiceStatus(voiceLocaleText("تحدث الآن… مثال: خمسة وثلاثين درهم كوفي", "Speak now… for example: thirty-five dirhams coffee"), "listening");
         };
         recognition.onresult = function (event) {
           var combined = "";
@@ -9510,6 +9757,15 @@
           if (button) deleteDeposit(button.dataset.deleteDeposit);
         });
         $("#depositCancelEditButton").addEventListener("click", function () { resetDepositForm(); });
+
+        var statementListRoot = $("#statementList");
+        if (statementListRoot) statementListRoot.addEventListener("click", function (event) {
+          var pdfButton = event.target.closest("[data-save-statement-pdf]");
+          if (!pdfButton) return;
+          event.preventDefault();
+          event.stopPropagation();
+          printStatementPdf(pdfButton.dataset.saveStatementPdf);
+        });
 
         $("#mobileFab").addEventListener("click", function () {
           if (activeView === "expensesView") {

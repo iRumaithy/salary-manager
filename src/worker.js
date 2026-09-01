@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
 const VERSION = "3.9.3";
-const RELEASE_ID = "3.9.3-wallet-bank-automation-r1";
+const RELEASE_ID = "3.9.3-commitment-bank-match-r3";
 const UPDATE_SIGNAL_VERSION = "3.9.3\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
 const PREVIOUS_RELEASE_ID = "3.8.6";
@@ -40,7 +40,9 @@ const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
   "3.9.1-voice-expenses-r3",
   "3.9.2-voice-expenses-r1",
   "3.9.2-voice-expenses-r2",
-  "3.9.2-statement-pdf-r3"
+  "3.9.2-statement-pdf-r3",
+  "3.9.3-wallet-bank-automation-r1",
+  "3.9.3-automation-assistant-r2"
 ]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -160,20 +162,225 @@ function automationMerchantFromText(value) {
   if (arabic?.[1]) return arabic[1].trim();
   return "";
 }
+function automationSensitiveReason(value) {
+  const text = normalizeAutomationText(value).toLowerCase();
+  if (!text) return "";
+  const sensitiveWords = [
+    "otp", "one time password", "one-time password", "one time pin", "one-time pin",
+    "verification code", "security code", "security pin", "passcode", "do not share", "never share",
+    "رمز التحقق", "رمز تحقق", "رمز سري", "رمز الأمان", "رمز الامان", "الرقم السري",
+    "رمز لمرة واحدة", "رمز الاستخدام لمرة واحدة", "كلمة مرور لمرة واحدة", "كلمة المرور لمرة واحدة",
+    "لا تشارك الرمز", "لا تشارك هذا الرمز", "لا تفصح عن الرمز", "لا تقم بمشاركة الرمز"
+  ];
+  return sensitiveWords.some(word => text.includes(word)) ? "otp_or_security_message" : "";
+}
+function automationHasCurrency(value) {
+  const text = normalizeAutomationText(value).toLowerCase();
+  return /\b(?:aed|dhs?)\b/i.test(text) || /(?:درهم|دراهم|د\s*[.٫]?\s*[إا])/i.test(text);
+}
+function automationHasStrongTransactionSignal(value, kind) {
+  const text = normalizeAutomationText(value).toLowerCase();
+  const debitSignals = [
+    "debited", "purchase", "spent", "card transaction", "card purchase", "withdrawn", "withdrawal",
+    "خصم", "تم الخصم", "شراء", "عملية شراء", "سحب", "تم السحب", "استخدام البطاقة", "تم استخدام بطاقتك", "تم الدفع"
+  ];
+  const creditSignals = [
+    "credited", "received", "deposit", "incoming transfer", "refund", "cashback",
+    "إيداع", "ايداع", "تم إضافة", "تم اضافة", "مبلغ وارد", "تحويل وارد", "استرداد", "تم استلام"
+  ];
+  const words = kind === "deposit" ? creditSignals : kind === "expense" ? debitSignals : [];
+  return words.some(word => text.includes(word.toLowerCase()));
+}
+function automationReferenceFromPayload(payload, rawText) {
+  const direct = normalizeAutomationText(payload.transactionId || payload.transactionID || payload.reference || payload.ref || payload.authCode || payload.authorizationCode || "");
+  if (direct) return direct.slice(0, 80);
+  const text = normalizeAutomationText(rawText);
+  const match = /(?:ref(?:erence)?|txn|transaction|auth(?:orization)?(?:\s*code)?|مرجع|رقم\s*العملية)\s*[:#-]?\s*([A-Za-z0-9_-]{5,40})/i.exec(text);
+  return match?.[1] ? match[1].slice(0, 80) : "";
+}
+function automationCardLast4FromPayload(payload, rawText) {
+  const direct = String(payload.cardLast4 || payload.last4 || payload.cardEnding || "").replace(/\D/g, "");
+  if (direct.length >= 4) return direct.slice(-4);
+  const text = normalizeAutomationText(rawText);
+  const match = /(?:ending|ends?\s+in|card\s*[*xX•-]*|بطاق(?:ة|تك).*?(?:تنتهي|آخر|اخر))\s*(?:in|بـ|ب)?\s*[*xX•-]*\s*([0-9]{4})\b/i.exec(text)
+    || /[*xX•]{2,}\s*([0-9]{4})\b/.exec(text);
+  return match?.[1] || "";
+}
+function automationMerchantKey(value) {
+  const stop = new Set(["llc","l","ltd","limited","inc","uae","dubai","abu","dhabi","branch","store","shop","merchant","distribution","company","co","مؤسسة","شركة","فرع"]);
+  return normalizeAutomationText(value).toLowerCase()
+    .replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي")
+    .replace(/[^a-z0-9\u0600-\u06ff]+/gi, " ")
+    .split(/\s+/).filter(token => token.length > 1 && !stop.has(token)).join(" ").trim();
+}
+function automationMerchantSimilar(a, b) {
+  const x = automationMerchantKey(a), y = automationMerchantKey(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  if (Math.min(x.length, y.length) >= 4 && (x.includes(y) || y.includes(x))) return true;
+  const xa = new Set(x.split(" ").filter(Boolean)), ya = new Set(y.split(" ").filter(Boolean));
+  let common = 0;
+  xa.forEach(token => { if (ya.has(token)) common += 1; });
+  return common > 0 && common / Math.min(xa.size || 1, ya.size || 1) >= 0.6;
+}
+function automationDateKey(value, timeZone = "Asia/Dubai") {
+  const date = value instanceof Date ? value : new Date(value || Date.now());
+  if (Number.isNaN(date.getTime())) return new Date().toISOString().slice(0, 10);
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone, year:"numeric", month:"2-digit", day:"2-digit" }).formatToParts(date);
+    const pick = type => parts.find(part => part.type === type)?.value || "";
+    return `${pick("year")}-${pick("month")}-${pick("day")}`;
+  } catch (_) {
+    return date.toISOString().slice(0, 10);
+  }
+}
 function normalizeAutomationPayload(payload = {}) {
   const rawText = normalizeAutomationText(payload.text || payload.message || payload.body || payload.shortcutInput || "").slice(0, 1200);
+  const sensitiveReason = automationSensitiveReason(rawText);
   const explicitAmount = Number(String(payload.amount ?? "").replace(/,/g, ""));
-  const amount = Number.isFinite(explicitAmount) && explicitAmount > 0 ? Math.round(explicitAmount * 100) / 100 : automationAmountFromText(rawText);
+  const hasExplicitAmount = Number.isFinite(explicitAmount) && explicitAmount > 0;
+  const amount = hasExplicitAmount ? Math.round(explicitAmount * 100) / 100 : automationAmountFromText(rawText);
   const merchant = normalizeAutomationText(payload.merchant || payload.store || automationMerchantFromText(rawText)).slice(0, 100);
-  const kind = automationKindFromText((merchant + " " + rawText).trim(), payload.type || payload.kind || payload.direction);
-  let occurredAt = String(payload.occurredAt || payload.date || payload.timestamp || "");
-  const parsedDate = occurredAt ? new Date(occurredAt) : new Date();
-  occurredAt = Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
   const sourceRaw = String(payload.source || "bank_message").toLowerCase();
-  const source = sourceRaw.includes("wallet") ? "wallet" : sourceRaw.includes("message") || sourceRaw.includes("sms") ? "bank_message" : "shortcut";
+  const source = sourceRaw.includes("wallet") ? "wallet" : sourceRaw.includes("message") || sourceRaw.includes("sms") || sourceRaw.includes("bank") || sourceRaw.includes("notification") ? "bank_message" : "shortcut";
+  let kind = automationKindFromText((merchant + " " + rawText).trim(), payload.type || payload.kind || payload.direction);
+  // A Wallet transaction trigger represents a card transaction; if iOS gives only amount/merchant, treat it as an expense.
+  if (source === "wallet" && kind === "unknown" && amount > 0) kind = "expense";
+  const occurredAtRaw = String(payload.occurredAt || payload.date || payload.timestamp || "");
+  const parsedDate = occurredAtRaw ? new Date(occurredAtRaw) : new Date();
+  const occurredAt = Number.isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
   const category = kind === "expense" ? automationCategoryFromText((merchant + " " + rawText).trim()) : "";
-  return { rawText, amount, merchant, kind, source, category, occurredAt };
+  const reference = automationReferenceFromPayload(payload, rawText);
+  const cardLast4 = automationCardLast4FromPayload(payload, rawText);
+  const localDate = /^\d{4}-\d{2}-\d{2}$/.test(String(payload.localDate || "")) ? String(payload.localDate) : automationDateKey(occurredAt);
+  const strongSignal = source === "wallet" ? (hasExplicitAmount || amount > 0) : automationHasStrongTransactionSignal(rawText, kind);
+  let confidence = 0;
+  if (amount > 0) confidence += 0.45;
+  if (kind === "expense" || kind === "deposit") confidence += 0.30;
+  if (merchant) confidence += 0.10;
+  if (hasExplicitAmount || automationHasCurrency(rawText)) confidence += 0.10;
+  if (reference || cardLast4 || source === "wallet") confidence += 0.05;
+  confidence = Math.min(1, Math.round(confidence * 100) / 100);
+  const safeToAutoApprove = !sensitiveReason && amount > 0 && (kind === "expense" || kind === "deposit") && strongSignal && confidence >= 0.8;
+  return { rawText, amount, merchant, kind, source, category, occurredAt, localDate, reference, cardLast4, confidence, safeToAutoApprove, sensitiveReason };
 }
+
+function automationSources(item) {
+  const list = Array.isArray(item?.sources) ? item.sources : [item?.source];
+  return [...new Set(list.map(value => String(value || "")).filter(Boolean))];
+}
+function automationCrossSourceScore(existing, parsed) {
+  const sources = automationSources(existing);
+  if (!["wallet","bank_message"].includes(parsed.source) || sources.includes(parsed.source)) return -1;
+  if (!sources.some(source => ["wallet","bank_message"].includes(source))) return -1;
+  const existingAmount = Math.round(Number(existing.amount || 0) * 100);
+  const parsedAmount = Math.round(Number(parsed.amount || 0) * 100);
+  if (!existingAmount || existingAmount !== parsedAmount) return -1;
+  const existingKind = String(existing.kind || "unknown");
+  if (existingKind !== "unknown" && parsed.kind !== "unknown" && existingKind !== parsed.kind) return -1;
+  const existingTime = new Date(existing.occurredAt || existing.receivedAt || 0).getTime();
+  const parsedTime = new Date(parsed.occurredAt || 0).getTime();
+  if (!Number.isFinite(existingTime) || !Number.isFinite(parsedTime)) return -1;
+  const diffMs = Math.abs(existingTime - parsedTime);
+  if (diffMs > 10 * 60 * 1000) return -1;
+
+  const refA = String(existing.reference || "").toLowerCase();
+  const refB = String(parsed.reference || "").toLowerCase();
+  const last4A = String(existing.cardLast4 || "");
+  const last4B = String(parsed.cardLast4 || "");
+  const merchantMatch = automationMerchantSimilar(existing.merchant, parsed.merchant);
+  const exactRef = Boolean(refA && refB && refA === refB);
+  const exactCard = Boolean(last4A && last4B && last4A === last4B);
+
+  // Without merchant/card/reference evidence, equal amounts alone are never enough to merge.
+  if (!merchantMatch && !exactRef && !exactCard) return -1;
+
+  let score = 100 - Math.min(60, Math.round(diffMs / 10000));
+  if (exactRef) score += 100;
+  if (exactCard) score += 35;
+  if (merchantMatch) score += 45;
+  if (existingKind === parsed.kind && parsed.kind !== "unknown") score += 20;
+  return score;
+}
+
+function automationCommitmentWords(category) {
+  const key = normalizeAutomationText(category).toLowerCase();
+  const map = {
+    "سيارة": ["car", "auto", "vehicle", "motor", "سيارة", "السيارة", "مركبة", "مركبه"],
+    "عقار": ["mortgage", "property", "home finance", "housing", "عقار", "عقاري", "تمويل عقاري"],
+    "بطاقة": ["credit card", "card payment", "card due", "بطاقة ائتمان", "بطاقه ائتمان"],
+    "سلفة": ["loan", "finance", "financing", "personal finance", "قرض", "سلفة", "سلفه", "تمويل"]
+  };
+  return map[key] || [];
+}
+function automationDayDiff(a, b) {
+  const aa = new Date(String(a || "") + (String(a || "").length === 10 ? "T12:00:00Z" : "")).getTime();
+  const bb = new Date(String(b || "") + (String(b || "").length === 10 ? "T12:00:00Z" : "")).getTime();
+  if (!Number.isFinite(aa) || !Number.isFinite(bb)) return 9999;
+  return Math.abs(aa - bb) / 86400000;
+}
+function automationDueDateForMonth(commitment, monthKey) {
+  const m = /^(\d{4})-(\d{2})$/.exec(String(monthKey || ""));
+  if (!m) return "";
+  const year = Number(m[1]), month = Number(m[2]);
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const day = Math.min(last, Math.max(1, Math.round(Number(commitment?.dueDay || 1))));
+  return `${m[1]}-${m[2]}-${String(day).padStart(2, "0")}`;
+}
+function automationCommitmentTextEvidence(commitment, item) {
+  const hay = normalizeAutomationText(`${item?.merchant || ""} ${item?.rawText || ""}`).toLowerCase()
+    .replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
+  if (!hay) return false;
+  const nameKey = automationMerchantKey(commitment?.name || "");
+  const usefulNameTokens = nameKey.split(/\s+/).filter(token => token.length >= 3 && !["قسط","سلفه","سلفيه","تمويل","شهري"].includes(token));
+  if (usefulNameTokens.some(token => hay.includes(token))) return true;
+  return automationCommitmentWords(commitment?.category).some(word => {
+    const normalizedWord = normalizeAutomationText(word).toLowerCase().replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
+    if (/^[a-z0-9 ]+$/.test(normalizedWord)) {
+      if (normalizedWord.includes(" ")) return (" " + hay + " ").includes(" " + normalizedWord + " ");
+      return hay.split(/[^a-z0-9]+/).includes(normalizedWord);
+    }
+    return hay.includes(normalizedWord);
+  });
+}
+function findAutomationCommitmentMatch(state, item, importDate) {
+  if (!state || !item || String(item.kind || "") !== "expense") return { strict:null, plausible:null, candidates:[] };
+  const amountCents = Math.round(Number(item.amount || 0) * 100);
+  if (!amountCents) return { strict:null, plausible:null, candidates:[] };
+  const commitments = Array.isArray(state.commitments) ? state.commitments : [];
+  const transactions = Array.isArray(state.transactions) ? state.transactions : [];
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(importDate || "")) ? String(importDate) : automationDateKey(item.occurredAt);
+  const monthKey = date.slice(0, 7);
+  const previousMonthDate = new Date(Date.UTC(Number(monthKey.slice(0,4)), Number(monthKey.slice(5,7)) - 2, 1));
+  const previousMonth = `${previousMonthDate.getUTCFullYear()}-${String(previousMonthDate.getUTCMonth()+1).padStart(2,"0")}`;
+  const rows = [];
+  for (const tx of transactions) {
+    if (tx?.type !== "commitment") continue;
+    if (Math.round(Math.abs(Number(tx.amount || 0)) * 100) !== amountCents) continue;
+    const commitment = commitments.find(entry => String(entry?.id || "") === String(tx.refId || ""));
+    if (!commitment) continue;
+    const txDate = String(tx.date || tx.paydayKey || "");
+    const ageDays = automationDayDiff(date, txDate);
+    if (ageDays > 40) continue;
+    const dueCurrent = automationDueDateForMonth(commitment, monthKey);
+    const duePrevious = automationDueDateForMonth(commitment, previousMonth);
+    const dueDiff = Math.min(automationDayDiff(date, dueCurrent), automationDayDiff(date, duePrevious));
+    const textEvidence = automationCommitmentTextEvidence(commitment, item);
+    rows.push({ commitment, transaction:tx, paydayKey:String(tx.paydayKey || tx.date || ""), ageDays, dueDiff, textEvidence });
+  }
+  if (!rows.length) return { strict:null, plausible:null, candidates:[] };
+  const uniqueIds = [...new Set(rows.map(row => String(row.commitment.id)))];
+  const uniqueAmount = uniqueIds.length === 1;
+  rows.forEach(row => {
+    const financialContext = normalizeAutomationText(`${item?.merchant || ""} ${item?.rawText || ""}`).toLowerCase();
+    const hasFinancialContext = /(?:bank|adib|fab|nbd|mashreq|dib|cbd|rakbank|wio|finance|financing|loan|installment|instalment|mortgage|بنك|مصرف|تمويل|قرض|سلفه|سلفة|قسط)/i.test(financialContext);
+    row.strict = Boolean(row.textEvidence || (uniqueAmount && row.dueDiff <= 2 && hasFinancialContext));
+    row.score = (row.textEvidence ? 100 : 0) + (uniqueAmount ? 35 : 0) + Math.max(0, 30 - row.dueDiff * 4) + Math.max(0, 20 - row.ageDays);
+  });
+  rows.sort((a,b) => Number(b.score || 0) - Number(a.score || 0));
+  return { strict: rows.find(row => row.strict) || null, plausible: rows[0] || null, candidates:rows };
+}
+
 async function hmacSha256(secret, value) {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -456,41 +663,62 @@ async function handleApi(request, env, url) {
     return apiJson(request, env, body || { ok: false }, response.status);
   }
   if (p === "/api/automation/status" && request.method === "GET") {
-    const a = await requireAuth(request, env, { admin: true });
+    const a = await requireAuth(request, env);
     if (!a.ok) return a.response;
     const { response, body } = await internal(env, "/auth/automation/status", { token: a.token });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
+  if (p === "/api/automation/templates" && request.method === "GET") {
+    const a = await requireAuth(request, env);
+    if (!a.ok) return a.response;
+    const { response, body } = await internal(env, "/auth/automation/templates", { token: a.token });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
   if (p === "/api/automation/token" && request.method === "POST") {
-    const a = await requireAuth(request, env, { admin: true });
+    const a = await requireAuth(request, env);
     if (!a.ok) return a.response;
     const { response, body } = await internal(env, "/auth/automation/token", { token: a.token });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
   if (p === "/api/automation/revoke" && request.method === "POST") {
-    const a = await requireAuth(request, env, { admin: true });
+    const a = await requireAuth(request, env);
     if (!a.ok) return a.response;
     const { response, body } = await internal(env, "/auth/automation/revoke", { token: a.token });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
+  if (p === "/api/automation/preferences" && request.method === "POST") {
+    const a = await requireAuth(request, env);
+    if (!a.ok) return a.response;
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/automation/preferences", { token: a.token, autoApprove: Boolean(b.autoApprove) });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
   if (p === "/api/automation/pending" && request.method === "GET") {
-    const a = await requireAuth(request, env, { admin: true });
+    const a = await requireAuth(request, env);
     if (!a.ok) return a.response;
     const { response, body } = await internal(env, "/auth/automation/pending", { token: a.token });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
   if (p === "/api/automation/resolve" && request.method === "POST") {
-    const a = await requireAuth(request, env, { admin: true });
+    const a = await requireAuth(request, env);
     if (!a.ok) return a.response;
     const b = await request.json().catch(() => ({}));
     const { response, body } = await internal(env, "/auth/automation/resolve", { token: a.token, importId: b.importId, status: b.status, acceptedKind: b.acceptedKind });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
   if (p === "/api/automation/test" && request.method === "POST") {
-    const a = await requireAuth(request, env, { admin: true });
+    const a = await requireAuth(request, env);
     if (!a.ok) return a.response;
     const b = await request.json().catch(() => ({}));
     const { response, body } = await internal(env, "/auth/automation/test", { token: a.token, payload: b });
+    return apiJson(request, env, body || { ok: false }, response.status);
+  }
+
+  if (p === "/api/admin/automation-templates" && request.method === "POST") {
+    const a = await requireAuth(request, env, { admin: true });
+    if (!a.ok) return a.response;
+    const b = await request.json().catch(() => ({}));
+    const { response, body } = await internal(env, "/auth/admin/automation-templates", { token: a.token, bankUrl: b.bankUrl, walletUrl: b.walletUrl });
     return apiJson(request, env, body || { ok: false }, response.status);
   }
 
@@ -1104,33 +1332,114 @@ export class SalaryStore extends DurableObject {
   }
 
 
-  async automationOwnerFromSession(token) {
+  async automationUserFromSession(token) {
     const found = await this.getSession(String(token || ""));
-    if (!found || found.user?.role !== "super_admin") return null;
+    if (!found || found.user?.status !== "active") return null;
     return found;
   }
+  automationLinkKey(userId) { return `automation:link:${String(userId || "")}`; }
+  automationTokenIndexKey(tokenHash) { return `automation:token:${String(tokenHash || "")}`; }
+  async automationLinkForUser(user) {
+    if (!user?.id) return null;
+    const key = this.automationLinkKey(user.id);
+    let link = await this.ctx.storage.get(key);
+    if (!link && user.role === "super_admin") {
+      const legacy = await this.ctx.storage.get("automation:owner-link");
+      if (legacy?.userId === user.id && legacy?.tokenHash) {
+        link = { ...legacy, autoApprove: Boolean(legacy.autoApprove) };
+        await this.ctx.storage.put(key, link);
+        await this.ctx.storage.put(this.automationTokenIndexKey(link.tokenHash), user.id);
+      }
+    }
+    return link || null;
+  }
 
-  async enqueueAutomationImport(payload, ownerUserId, sourceLabel = "shortcut") {
+  async enqueueAutomationImport(payload, userId, sourceLabel = "shortcut") {
     const parsed = normalizeAutomationPayload(payload || {});
+    if (parsed.sensitiveReason) {
+      await this.audit("automation-sensitive-message-ignored", { userId, reason: parsed.sensitiveReason, source: parsed.source });
+      return { ok: true, ignored: true, reason: "SENSITIVE_MESSAGE" };
+    }
+    if (!parsed.amount && parsed.kind === "unknown") {
+      return { ok: true, ignored: true, reason: "NON_FINANCIAL_MESSAGE" };
+    }
+
     const now = Date.now();
     const minuteKey = Math.floor(new Date(parsed.occurredAt).getTime() / 60000);
-    const fingerprint = await sha256([ownerUserId, parsed.source, parsed.kind, parsed.amount.toFixed(2), parsed.merchant.toLowerCase(), parsed.rawText.toLowerCase(), minuteKey].join("|"));
+    const fingerprint = await sha256([
+      userId, parsed.source, parsed.kind, parsed.amount.toFixed(2),
+      parsed.merchant.toLowerCase(), parsed.rawText.toLowerCase(),
+      parsed.reference.toLowerCase(), parsed.cardLast4, minuteKey
+    ].join("|"));
+
     let imports = await this.ctx.storage.get("automation:imports");
     imports = Array.isArray(imports) ? imports : [];
-    const duplicate = imports.find(item => item.fingerprint === fingerprint && now - Number(item.receivedAtMs || 0) < 24 * 60 * 60 * 1000);
-    if (duplicate) return { ok: true, duplicate: true, import: duplicate };
+
+    // Exact same source/message: ignore a repeated Shortcut run.
+    const exactDuplicate = imports.find(item =>
+      item.userId === userId &&
+      item.fingerprint === fingerprint &&
+      now - Number(item.receivedAtMs || 0) < 24 * 60 * 60 * 1000
+    );
+    if (exactDuplicate) return { ok: true, duplicate: true, mergedSource: false, import: exactDuplicate };
+
+    // Wallet + bank notification/SMS for the same purchase are merged into ONE financial event.
+    // Amount alone is intentionally not enough; merchant/card/reference evidence is required.
+    let best = null, bestScore = -1;
+    for (const existing of imports) {
+      if (existing.userId !== userId || existing.status === "ignored") continue;
+      if (now - Number(existing.receivedAtMs || 0) > 24 * 60 * 60 * 1000) continue;
+      const score = automationCrossSourceScore(existing, parsed);
+      if (score > bestScore) { best = existing; bestScore = score; }
+    }
+    if (best && bestScore >= 0) {
+      const sourceList = [...new Set([...automationSources(best), parsed.source])];
+      best.sources = sourceList;
+      best.crossSourceConfirmed = sourceList.includes("wallet") && sourceList.includes("bank_message");
+      best.lastMatchedAt = new Date(now).toISOString();
+      best.matchCount = Math.max(1, Number(best.matchCount || 1)) + 1;
+      if (!best.reference && parsed.reference) best.reference = parsed.reference;
+      if (!best.cardLast4 && parsed.cardLast4) best.cardLast4 = parsed.cardLast4;
+      if (!best.merchant && parsed.merchant) best.merchant = parsed.merchant;
+      if ((!best.category || best.category === "أخرى") && parsed.category) best.category = parsed.category;
+      if (best.kind === "unknown" && parsed.kind !== "unknown") best.kind = parsed.kind;
+      if (best.status === "pending") {
+        if (parsed.confidence >= Number(best.confidence || 0)) {
+          if (parsed.merchant) best.merchant = parsed.merchant;
+          if (parsed.category) best.category = parsed.category;
+          if (parsed.kind !== "unknown") best.kind = parsed.kind;
+          if (parsed.rawText) best.rawText = parsed.rawText;
+        }
+        best.confidence = Math.min(1, Math.round((Math.max(Number(best.confidence || 0), parsed.confidence) + (best.crossSourceConfirmed ? 0.05 : 0)) * 100) / 100);
+        best.safeToAutoApprove = Boolean(best.safeToAutoApprove || parsed.safeToAutoApprove);
+      }
+      await this.ctx.storage.put("automation:imports", imports);
+      await this.audit("automation-import-cross-source-merged", {
+        userId, importId: best.id, source: parsed.source, sources: best.sources,
+        kind: best.kind, amount: best.amount, crossSourceConfirmed: best.crossSourceConfirmed
+      });
+      return { ok: true, duplicate: true, mergedSource: true, import: best };
+    }
+
     const item = {
       id: crypto.randomUUID(),
-      userId: ownerUserId,
+      userId,
       status: "pending",
       acceptedKind: "",
       source: parsed.source || sourceLabel,
+      sources: [parsed.source || sourceLabel],
       kind: parsed.kind,
       amount: parsed.amount,
       merchant: parsed.merchant,
       category: parsed.category,
       occurredAt: parsed.occurredAt,
+      localDate: parsed.localDate,
+      reference: parsed.reference,
+      cardLast4: parsed.cardLast4,
       rawText: parsed.rawText,
+      confidence: parsed.confidence,
+      safeToAutoApprove: Boolean(parsed.safeToAutoApprove),
+      crossSourceConfirmed: false,
       fingerprint,
       receivedAt: new Date(now).toISOString(),
       receivedAtMs: now
@@ -1138,8 +1447,73 @@ export class SalaryStore extends DurableObject {
     imports.unshift(item);
     imports = imports.filter(entry => now - Number(entry.receivedAtMs || now) < 45 * 24 * 60 * 60 * 1000).slice(0, 120);
     await this.ctx.storage.put("automation:imports", imports);
-    await this.audit("automation-import-received", { userId: ownerUserId, importId: item.id, source: item.source, kind: item.kind, amount: item.amount });
-    return { ok: true, duplicate: false, import: item };
+    await this.audit("automation-import-received", { userId, importId: item.id, source: item.source, kind: item.kind, amount: item.amount, confidence: item.confidence });
+    return { ok: true, duplicate: false, mergedSource: false, import: item };
+  }
+
+  async tryAutoApplyAutomationImport(user, item) {
+    if (!user?.accountId || !item?.id || !item?.safeToAutoApprove) return { ok: false, applied: false, error: "NOT_ELIGIBLE" };
+    try {
+      const response = await accountStub(this.env, user.accountId).fetch(new Request("https://account/data/automation-apply", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ import: item })
+      }));
+      const body = await response.json().catch(() => ({}));
+      return { ...body, ok: Boolean(body?.ok && response.ok) };
+    } catch (error) {
+      console.error("Automation background apply failed", error);
+      return { ok: false, applied: false, error: "AUTO_APPLY_FAILED" };
+    }
+  }
+
+  async setAutomationImportApplying(userId, importId, applying) {
+    let imports = await this.ctx.storage.get("automation:imports");
+    imports = Array.isArray(imports) ? imports : [];
+    const stored = imports.find(entry => entry.id === String(importId || "") && entry.userId === userId);
+    if (!stored) return false;
+    if (applying) {
+      if (stored.status !== "pending") return false;
+      stored.status = "applying";
+      stored.applyingAt = Date.now();
+    } else if (stored.status === "applying") {
+      stored.status = "pending";
+      stored.applyingAt = 0;
+    }
+    await this.ctx.storage.put("automation:imports", imports);
+    return true;
+  }
+
+  async recoverStaleAutomationImports() {
+    let imports = await this.ctx.storage.get("automation:imports");
+    imports = Array.isArray(imports) ? imports : [];
+    const cutoff = Date.now() - 2 * 60 * 1000;
+    let changed = false;
+    for (const item of imports) {
+      if (item.status === "applying" && Number(item.applyingAt || 0) < cutoff) {
+        item.status = "pending";
+        item.applyingAt = 0;
+        changed = true;
+      }
+    }
+    if (changed) await this.ctx.storage.put("automation:imports", imports);
+    return imports;
+  }
+
+  async markAutomationImportAutoAccepted(userId, importId, kind) {
+    let imports = await this.ctx.storage.get("automation:imports");
+    imports = Array.isArray(imports) ? imports : [];
+    const stored = imports.find(entry => entry.id === String(importId || "") && entry.userId === userId);
+    if (!stored) return false;
+    stored.status = "accepted";
+    stored.acceptedKind = kind === "commitment_confirmation" ? "commitment_confirmation" : (kind === "deposit" ? "deposit" : "expense");
+    stored.resolvedAt = new Date().toISOString();
+    stored.autoApproved = true;
+    stored.applyingAt = 0;
+    stored.rawText = "";
+    await this.ctx.storage.put("automation:imports", imports);
+    await this.audit("automation-import-auto-approved", { userId, importId: stored.id, acceptedKind: stored.acceptedKind });
+    return true;
   }
 
   async authFetch(request, url) {
@@ -1228,70 +1602,119 @@ export class SalaryStore extends DurableObject {
       return json({ ok: true, token: created.token, session: created.session, user: await this.publicUser(user) });
     }
     if (p === "/auth/automation/status") {
-      const owner = await this.automationOwnerFromSession(b.token);
-      if (!owner) return json({ ok: false, error: "FORBIDDEN" }, 403);
-      const link = await this.ctx.storage.get("automation:owner-link");
-      let imports = await this.ctx.storage.get("automation:imports");
-      imports = Array.isArray(imports) ? imports : [];
-      const pendingCount = imports.filter(item => item.status === "pending" && item.userId === owner.user.id).length;
-      return json({ ok: true, enabled: Boolean(link?.enabled && link?.tokenHash && link?.userId === owner.user.id), createdAt: link?.createdAt || null, rotatedAt: link?.rotatedAt || null, lastUsedAt: link?.lastUsedAt || null, pendingCount });
+      const found = await this.automationUserFromSession(b.token);
+      if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
+      const link = await this.automationLinkForUser(found.user);
+      const imports = await this.recoverStaleAutomationImports();
+      const pendingCount = imports.filter(item => item.status === "pending" && item.userId === found.user.id).length;
+      return json({ ok: true, enabled: Boolean(link?.enabled && link?.tokenHash && link?.userId === found.user.id), createdAt: link?.createdAt || null, rotatedAt: link?.rotatedAt || null, lastUsedAt: link?.lastUsedAt || null, pendingCount, autoApprove: Boolean(link?.autoApprove) });
+    }
+    if (p === "/auth/automation/templates") {
+      const found = await this.automationUserFromSession(b.token);
+      if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
+      const templates = await this.ctx.storage.get("automation:shortcut-templates") || {};
+      return json({ ok: true, bankUrl: String(templates.bankUrl || ""), walletUrl: String(templates.walletUrl || "") });
     }
     if (p === "/auth/automation/token") {
-      const owner = await this.automationOwnerFromSession(b.token);
-      if (!owner) return json({ ok: false, error: "FORBIDDEN" }, 403);
+      const found = await this.automationUserFromSession(b.token);
+      if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
       const rawToken = randomToken(36);
-      const previous = await this.ctx.storage.get("automation:owner-link");
-      const record = { userId: owner.user.id, tokenHash: await sha256(rawToken), enabled: true, createdAt: previous?.createdAt || new Date().toISOString(), rotatedAt: new Date().toISOString(), lastUsedAt: previous?.lastUsedAt || null };
-      await this.ctx.storage.put("automation:owner-link", record);
-      await this.audit("automation-token-rotated", { userId: owner.user.id });
-      return json({ ok: true, shortcutToken: rawToken, createdAt: record.createdAt, rotatedAt: record.rotatedAt });
+      const tokenHash = await sha256(rawToken);
+      const key = this.automationLinkKey(found.user.id);
+      const previous = await this.automationLinkForUser(found.user);
+      if (previous?.tokenHash) await this.ctx.storage.delete(this.automationTokenIndexKey(previous.tokenHash));
+      const record = { userId: found.user.id, tokenHash, enabled: true, autoApprove: Boolean(previous?.autoApprove), createdAt: previous?.createdAt || new Date().toISOString(), rotatedAt: new Date().toISOString(), lastUsedAt: previous?.lastUsedAt || null };
+      await this.ctx.storage.put(key, record);
+      await this.ctx.storage.put(this.automationTokenIndexKey(tokenHash), found.user.id);
+      if (found.user.role === "super_admin") await this.ctx.storage.delete("automation:owner-link");
+      await this.audit("automation-token-rotated", { userId: found.user.id });
+      return json({ ok: true, shortcutToken: rawToken, createdAt: record.createdAt, rotatedAt: record.rotatedAt, autoApprove: record.autoApprove });
     }
     if (p === "/auth/automation/revoke") {
-      const owner = await this.automationOwnerFromSession(b.token);
-      if (!owner) return json({ ok: false, error: "FORBIDDEN" }, 403);
-      await this.ctx.storage.delete("automation:owner-link");
-      await this.audit("automation-token-revoked", { userId: owner.user.id });
+      const found = await this.automationUserFromSession(b.token);
+      if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
+      const link = await this.automationLinkForUser(found.user);
+      if (link?.tokenHash) await this.ctx.storage.delete(this.automationTokenIndexKey(link.tokenHash));
+      await this.ctx.storage.delete(this.automationLinkKey(found.user.id));
+      if (found.user.role === "super_admin") await this.ctx.storage.delete("automation:owner-link");
+      await this.audit("automation-token-revoked", { userId: found.user.id });
       return json({ ok: true });
     }
+    if (p === "/auth/automation/preferences") {
+      const found = await this.automationUserFromSession(b.token);
+      if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
+      const link = await this.automationLinkForUser(found.user);
+      if (!link?.enabled || !link?.tokenHash) return json({ ok: false, error: "AUTOMATION_NOT_LINKED" }, 400);
+      link.autoApprove = Boolean(b.autoApprove);
+      await this.ctx.storage.put(this.automationLinkKey(found.user.id), link);
+      await this.audit("automation-preferences", { userId: found.user.id, autoApprove: link.autoApprove });
+      return json({ ok: true, autoApprove: link.autoApprove });
+    }
     if (p === "/auth/automation/import") {
-      const link = await this.ctx.storage.get("automation:owner-link");
       const shortcutToken = String(b.shortcutToken || "");
-      if (!link?.enabled || !link?.tokenHash || !shortcutToken || !safeEqual(await sha256(shortcutToken), link.tokenHash)) return json({ ok: false, error: "INVALID_SHORTCUT_TOKEN" }, 401);
-      const user = await this.ctx.storage.get(`user:${link.userId}`);
-      if (!user || user.role !== "super_admin" || user.status !== "active") return json({ ok: false, error: "FORBIDDEN" }, 403);
+      if (!shortcutToken) return json({ ok: false, error: "INVALID_SHORTCUT_TOKEN" }, 401);
+      const tokenHash = await sha256(shortcutToken);
+      let userId = await this.ctx.storage.get(this.automationTokenIndexKey(tokenHash));
+      let link = null;
+      if (userId) link = await this.ctx.storage.get(this.automationLinkKey(userId));
+      if (!link) {
+        const legacy = await this.ctx.storage.get("automation:owner-link");
+        if (legacy?.enabled && legacy?.tokenHash && safeEqual(tokenHash, legacy.tokenHash)) {
+          userId = legacy.userId;
+          link = { ...legacy, autoApprove: Boolean(legacy.autoApprove) };
+          await this.ctx.storage.put(this.automationLinkKey(userId), link);
+          await this.ctx.storage.put(this.automationTokenIndexKey(tokenHash), userId);
+        }
+      }
+      if (!link?.enabled || !link?.tokenHash || !safeEqual(tokenHash, link.tokenHash)) return json({ ok: false, error: "INVALID_SHORTCUT_TOKEN" }, 401);
+      const user = await this.ctx.storage.get(`user:${userId}`);
+      if (!user || user.status !== "active") return json({ ok: false, error: "FORBIDDEN" }, 403);
       link.lastUsedAt = new Date().toISOString();
-      await this.ctx.storage.put("automation:owner-link", link);
+      await this.ctx.storage.put(this.automationLinkKey(user.id), link);
       const result = await this.enqueueAutomationImport(b.payload || {}, user.id);
-      return json(result, 200);
+      let autoApplied = false;
+      let autoApplyReason = "";
+      const candidate = result?.import;
+      if (link.autoApprove && candidate?.status === "pending" && candidate?.safeToAutoApprove) {
+        const locked = await this.setAutomationImportApplying(user.id, candidate.id, true);
+        if (locked) {
+          const applied = await this.tryAutoApplyAutomationImport(user, candidate);
+          autoApplied = Boolean(applied?.ok && applied?.applied);
+          autoApplyReason = String(applied?.error || applied?.reason || "");
+          if (autoApplied) await this.markAutomationImportAutoAccepted(user.id, candidate.id, String(applied?.acceptedKind || candidate.kind || "expense"));
+          else await this.setAutomationImportApplying(user.id, candidate.id, false);
+        }
+      }
+      return json({ ...result, autoApprove: Boolean(link.autoApprove), autoApplied, autoApplyReason }, 200);
     }
     if (p === "/auth/automation/pending") {
-      const owner = await this.automationOwnerFromSession(b.token);
-      if (!owner) return json({ ok: false, error: "FORBIDDEN" }, 403);
-      let imports = await this.ctx.storage.get("automation:imports");
-      imports = Array.isArray(imports) ? imports : [];
-      const pending = imports.filter(item => item.userId === owner.user.id && item.status === "pending").slice(0, 60);
+      const found = await this.automationUserFromSession(b.token);
+      if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
+      const imports = await this.recoverStaleAutomationImports();
+      const pending = imports.filter(item => item.userId === found.user.id && item.status === "pending").slice(0, 60);
       return json({ ok: true, imports: pending, count: pending.length });
     }
     if (p === "/auth/automation/resolve") {
-      const owner = await this.automationOwnerFromSession(b.token);
-      if (!owner) return json({ ok: false, error: "FORBIDDEN" }, 403);
+      const found = await this.automationUserFromSession(b.token);
+      if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
       let imports = await this.ctx.storage.get("automation:imports");
       imports = Array.isArray(imports) ? imports : [];
-      const item = imports.find(entry => entry.id === String(b.importId || "") && entry.userId === owner.user.id);
+      const item = imports.find(entry => entry.id === String(b.importId || "") && entry.userId === found.user.id);
       if (!item) return json({ ok: false, error: "NOT_FOUND" }, 404);
       item.status = b.status === "accepted" ? "accepted" : "ignored";
-      item.acceptedKind = b.acceptedKind === "deposit" ? "deposit" : b.acceptedKind === "expense" ? "expense" : "";
+      item.acceptedKind = b.acceptedKind === "commitment_confirmation" ? "commitment_confirmation" : (b.acceptedKind === "deposit" ? "deposit" : b.acceptedKind === "expense" ? "expense" : "");
       item.resolvedAt = new Date().toISOString();
+      item.applyingAt = 0;
       item.rawText = "";
       await this.ctx.storage.put("automation:imports", imports);
-      await this.audit("automation-import-resolved", { userId: owner.user.id, importId: item.id, status: item.status, acceptedKind: item.acceptedKind });
+      await this.audit("automation-import-resolved", { userId: found.user.id, importId: item.id, status: item.status, acceptedKind: item.acceptedKind });
       return json({ ok: true });
     }
     if (p === "/auth/automation/test") {
-      const owner = await this.automationOwnerFromSession(b.token);
-      if (!owner) return json({ ok: false, error: "FORBIDDEN" }, 403);
+      const found = await this.automationUserFromSession(b.token);
+      if (!found) return json({ ok: false, error: "AUTH_REQUIRED" }, 401);
       const payload = Object.assign({ source: "bank_message", text: "Your card was debited AED 37.50 at ARABICA COFFEE on 2026-09-01" }, b.payload || {});
-      const result = await this.enqueueAutomationImport(payload, owner.user.id, "test");
+      const result = await this.enqueueAutomationImport(payload, found.user.id, "test");
       return json(result, 200);
     }
 
@@ -1460,6 +1883,21 @@ export class SalaryStore extends DurableObject {
       return json({ ok: true });
     }
     if (p.startsWith("/auth/admin/") && admin?.user?.role !== "super_admin") return json({ ok: false, error: "FORBIDDEN" }, 403);
+    if (p === "/auth/admin/automation-templates") {
+      const cleanShortcutUrl = value => {
+        const raw = String(value || "").trim();
+        if (!raw) return "";
+        if (!/^https:\/\/www\.icloud\.com\/shortcuts\/[A-Za-z0-9_-]+(?:[?#].*)?$/i.test(raw)) return null;
+        return raw.slice(0, 500);
+      };
+      const bankUrl = cleanShortcutUrl(b.bankUrl);
+      const walletUrl = cleanShortcutUrl(b.walletUrl);
+      if (bankUrl === null || walletUrl === null) return json({ ok: false, error: "INVALID_SHORTCUT_URL" }, 400);
+      const record = { bankUrl, walletUrl, updatedAt: new Date().toISOString(), updatedBy: admin.user.id };
+      await this.ctx.storage.put("automation:shortcut-templates", record);
+      await this.audit("automation-shortcut-templates", { userId: admin.user.id, hasBank: Boolean(bankUrl), hasWallet: Boolean(walletUrl) });
+      return json({ ok: true, ...record });
+    }
     if (p === "/auth/admin/push-status") {
       const vapid = await this.ensureVapid(b.subject);
       const subscriptions = await this.ctx.storage.list({ prefix: "push:owner:" });
@@ -1687,6 +2125,177 @@ export class SalaryStore extends DurableObject {
       try { server.send(JSON.stringify({ type: "ready", revision, updatedAt: updatedAt || null })); } catch (_) {}
       return new Response(null, { status: 101, webSocket: client });
     }
+    if (url.pathname === "/data/automation-apply" && request.method === "POST") {
+      const b = await request.json().catch(() => null);
+      const item = b && typeof b === "object" ? b.import : null;
+      if (!item || !item.id || !item.safeToAutoApprove) return json({ ok: false, applied: false, error: "INVALID_AUTOMATION_IMPORT" }, 400);
+      const kind = item.kind === "deposit" ? "deposit" : item.kind === "expense" ? "expense" : "";
+      const amount = Math.round(Number(item.amount || 0) * 100) / 100;
+      if (!kind || !Number.isFinite(amount) || amount <= 0) return json({ ok: false, applied: false, error: "INVALID_AUTOMATION_IMPORT" }, 400);
+
+      const state = await this.ctx.storage.get("state");
+      if (!state || typeof state !== "object") return json({ ok: true, applied: false, reason: "NO_CLOUD_STATE" });
+      if (!Array.isArray(state.expenses) || !Array.isArray(state.commitments) || !Array.isArray(state.recurringPayments)) {
+        return json({ ok: true, applied: false, reason: "STATE_NOT_READY" });
+      }
+      if (!Array.isArray(state.deposits)) state.deposits = [];
+      if (!Array.isArray(state.transactions)) state.transactions = [];
+
+      const importId = String(item.id);
+      const hasImportId = entry => String(entry?.externalImportId || "") === importId || (Array.isArray(entry?.externalImportIds) && entry.externalImportIds.some(id => String(id) === importId));
+      const alreadyApplied = state.expenses.some(hasImportId)
+        || state.deposits.some(hasImportId)
+        || state.transactions.some(hasImportId);
+      if (alreadyApplied) return json({ ok: true, applied: true, duplicate: true, reason: "ALREADY_APPLIED" });
+
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(String(item.localDate || "")) ? String(item.localDate) : automationDateKey(item.occurredAt);
+      const month = date.slice(0, 7);
+      const nowMonth = automationDateKey(new Date()).slice(0, 7);
+      const stateMonth = String(state.currentCalendarMonth || "");
+      // Do not mutate an archived/stale month in the background. The app will surface it for manual review.
+      if (!stateMonth || month !== nowMonth || stateMonth !== month) {
+        return json({ ok: true, applied: false, reason: "MONTH_REQUIRES_REVIEW", transactionMonth: month, stateMonth, nowMonth });
+      }
+
+      const occurredAt = Number.isNaN(new Date(item.occurredAt || "").getTime()) ? new Date().toISOString() : new Date(item.occurredAt).toISOString();
+      const merchant = normalizeAutomationText(item.merchant || "").slice(0, 100);
+      const sources = automationSources(item);
+      const source = String(item.source || sources[0] || "shortcut");
+      const metadata = {
+        externalImportId: importId,
+        automationSource: source,
+        automationSources: sources,
+        automationReference: String(item.reference || "").slice(0, 80),
+        automationCardLast4: String(item.cardLast4 || "").slice(-4)
+      };
+      const id = crypto.randomUUID();
+
+      // A bank/Wallet debit may be the real-world execution of an installment that Salary Manager
+      // already deducted on payday. Confirm that existing commitment instead of charging it twice.
+      if (kind === "expense") {
+        const commitmentMatch = findAutomationCommitmentMatch(state, item, date);
+        if (commitmentMatch.strict) {
+          const match = commitmentMatch.strict;
+          const commitment = match.commitment;
+          const tx = match.transaction;
+          const paydayKey = String(match.paydayKey || tx.paydayKey || tx.date || "");
+          if (!commitment.bankConfirmations || typeof commitment.bankConfirmations !== "object") commitment.bankConfirmations = {};
+          const confirmation = {
+            importId, amount, occurredAt, date, merchant, sources, source,
+            reference: String(item.reference || "").slice(0,80),
+            cardLast4: String(item.cardLast4 || "").slice(-4),
+            confirmedAt: new Date().toISOString()
+          };
+          commitment.bankConfirmations[paydayKey] = confirmation;
+          tx.bankConfirmed = true;
+          tx.bankConfirmedAt = confirmation.confirmedAt;
+          tx.bankConfirmationDate = date;
+          tx.bankConfirmationMerchant = merchant;
+          tx.bankConfirmationSources = [...new Set([...(Array.isArray(tx.bankConfirmationSources) ? tx.bankConfirmationSources : []), ...sources])];
+          tx.externalImportId = tx.externalImportId || importId;
+          tx.externalImportIds = [...new Set([...(Array.isArray(tx.externalImportIds) ? tx.externalImportIds : []), importId])];
+          tx.automationReference = tx.automationReference || confirmation.reference;
+          tx.automationCardLast4 = tx.automationCardLast4 || confirmation.cardLast4;
+
+          const current = await this.ctx.storage.get("state");
+          if (current) {
+            const historyKey = `history:${Date.now()}:${crypto.randomUUID()}`;
+            await this.ctx.storage.put(historyKey, current);
+            const history = await this.ctx.storage.list({ prefix: "history:", reverse: true, limit: 8 });
+            if (history.size > 6) { const keys = [...history.keys()].slice(6); if (keys.length) await this.ctx.storage.delete(keys); }
+          }
+          const now = new Date().toISOString();
+          const revision = Number(await this.ctx.storage.get("revision") || 0) + 1;
+          await this.ctx.storage.put("state", state);
+          await this.ctx.storage.put("updatedAt", now);
+          await this.ctx.storage.put("revision", revision);
+          const message = JSON.stringify({ type:"revision", revision, updatedAt:now });
+          for (const socket of this.ctx.getWebSockets()) { try { socket.send(message); } catch (_) {} }
+          return json({ ok:true, applied:true, acceptedKind:"commitment_confirmation", commitmentId:String(commitment.id || ""), commitmentName:String(commitment.name || ""), paydayKey, balanceChanged:false, revision, updatedAt:now });
+        }
+        if (commitmentMatch.plausible) {
+          return json({ ok:true, applied:false, reason:"POSSIBLE_COMMITMENT_REQUIRES_REVIEW", commitmentId:String(commitmentMatch.plausible.commitment?.id || ""), commitmentName:String(commitmentMatch.plausible.commitment?.name || "") });
+        }
+      }
+
+      if (kind === "deposit") {
+        const title = merchant || "إيداع من البنك";
+        state.deposits.push({
+          id,
+          title,
+          source: "تحويل وارد",
+          amount,
+          date,
+          createdAt: occurredAt,
+          ...metadata
+        });
+        state.walletBalance = Math.round((Number(state.walletBalance || 0) + amount) * 100) / 100;
+        state.walletStarted = true;
+        state.transactions.push({
+          id: crypto.randomUUID(),
+          type: "deposit",
+          amount,
+          title: "إيداع — " + title,
+          date,
+          month,
+          refId: id,
+          createdAt: occurredAt,
+          depositId: id,
+          source: "تحويل وارد",
+          ...metadata
+        });
+      } else {
+        const combined = (merchant + " " + String(item.rawText || "")).trim();
+        const category = String(item.category || automationCategoryFromText(combined) || "أخرى");
+        const title = merchant || (category === "أخرى" ? "مصروف بنكي" : category);
+        state.expenses.push({
+          id,
+          title,
+          category,
+          amount,
+          date,
+          excludeFromBudget: false,
+          createdAt: occurredAt,
+          accountMonth: month,
+          ...metadata
+        });
+        state.walletBalance = Math.round((Number(state.walletBalance || 0) - amount) * 100) / 100;
+        state.walletStarted = true;
+        state.transactions.push({
+          id: crypto.randomUUID(),
+          type: "expense",
+          amount: -amount,
+          title,
+          date,
+          month,
+          refId: id,
+          createdAt: occurredAt,
+          ...metadata
+        });
+      }
+
+      const current = await this.ctx.storage.get("state");
+      if (current) {
+        const historyKey = `history:${Date.now()}:${crypto.randomUUID()}`;
+        await this.ctx.storage.put(historyKey, current);
+        const history = await this.ctx.storage.list({ prefix: "history:", reverse: true, limit: 8 });
+        if (history.size > 6) {
+          const keys = [...history.keys()].slice(6);
+          if (keys.length) await this.ctx.storage.delete(keys);
+        }
+      }
+      const now = new Date().toISOString();
+      const revision = Number(await this.ctx.storage.get("revision") || 0) + 1;
+      await this.ctx.storage.put("state", state);
+      await this.ctx.storage.put("updatedAt", now);
+      await this.ctx.storage.put("revision", revision);
+      const message = JSON.stringify({ type: "revision", revision, updatedAt: now });
+      for (const socket of this.ctx.getWebSockets()) {
+        try { socket.send(message); } catch (_) {}
+      }
+      return json({ ok: true, applied: true, duplicate: false, kind, amount, date, revision, updatedAt: now });
+    }
+
     if (url.pathname === "/data/put" && request.method === "POST") {
       const b = await request.json().catch(() => null);
       if (!b || typeof b !== "object" || !b.state || typeof b.state !== "object") return json({ ok: false, error: "INVALID_DATA" }, 400);

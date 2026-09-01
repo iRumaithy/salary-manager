@@ -36,7 +36,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.2-statement-pdf-r3";
+      var v = "3.9.3-wallet-bank-automation-r1";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -1588,7 +1588,7 @@
       box-shadow: 0 0 0 4px rgba(20, 117, 108, .09);
     }
 
-    /* 3.9.2 r3 — voice expenses + premium monthly statements/PDF */
+    /* 3.9.3 r1 — owner-only Wallet / bank-message Shortcuts bridge */
     #expenseForm.quick-form {
       grid-template-columns: 1.5fr .72fr .82fr auto;
     }
@@ -2886,6 +2886,34 @@
     .app-lock-settings-grid { display:grid; gap:10px; margin-top:12px; }
     .app-lock-settings-grid .field { margin:0; }
 
+
+    .automation-owner-section[hidden] { display:none !important; }
+    .automation-grid { display:grid; gap:10px; }
+    .automation-connect-card { padding:14px; border:1px solid rgba(20,117,108,.18); border-radius:18px; background:linear-gradient(145deg,#f8fffd,#f6f2e9); }
+    .automation-connect-card strong { display:block; color:var(--forest); font-size:14px; }
+    .automation-connect-card p { margin:5px 0 0; color:var(--muted); font-size:11px; line-height:1.75; }
+    .automation-secret { display:grid; gap:7px; margin-top:10px; }
+    .automation-secret label { font-size:10px; color:var(--muted); font-weight:800; }
+    .automation-secret-row { display:flex; gap:7px; align-items:center; }
+    .automation-secret-row input { flex:1; min-width:0; height:43px; border:1px solid var(--line); border-radius:13px; padding:0 11px; background:#fff; color:var(--forest); font-size:11px; direction:ltr; text-align:left; }
+    .automation-steps { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .automation-step { padding:13px; border:1px solid var(--line); border-radius:17px; background:#fff; }
+    .automation-step .automation-step-icon { width:38px; height:38px; display:grid; place-items:center; border-radius:12px; margin-bottom:8px; background:var(--teal-soft); color:var(--teal); font-size:18px; }
+    .automation-step strong { display:block; font-size:13px; color:var(--forest); }
+    .automation-step p { margin:5px 0 0; color:var(--muted); font-size:10px; line-height:1.75; }
+    .automation-code { direction:ltr; text-align:left; white-space:pre-wrap; word-break:break-word; padding:10px; border-radius:13px; background:#173331; color:#f7fbfa; font:10px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .automation-pending { display:grid; gap:9px; margin-top:8px; }
+    .automation-import { display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center; padding:12px; border:1px solid var(--line); border-radius:16px; background:#fff; }
+    .automation-import-main strong { display:block; font-size:13px; color:var(--forest); }
+    .automation-import-main small { display:block; margin-top:4px; color:var(--muted); font-size:9px; line-height:1.65; }
+    .automation-import-amount { font-size:14px; font-weight:900; white-space:nowrap; }
+    .automation-import-amount.expense { color:#b8514d; }
+    .automation-import-amount.deposit { color:#16806f; }
+    .automation-import-amount.unknown { color:#6e7b78; }
+    .automation-import-actions { grid-column:1/-1; display:flex; gap:6px; flex-wrap:wrap; }
+    .automation-import-raw { grid-column:1/-1; padding:8px 10px; border-radius:11px; background:#f6f4ee; color:#667572; font-size:9px; line-height:1.6; overflow-wrap:anywhere; }
+    @media (max-width:560px) { .automation-steps { grid-template-columns:1fr; } .automation-secret-row { align-items:stretch; flex-direction:column; } .automation-secret-row .soft-btn { width:100%; } }
+
     .settings-section {
       display: grid;
       gap: 12px;
@@ -3766,7 +3794,7 @@
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.9.2" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.9.3" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
         <span class="version-badge">الإصدار <b id="appVersion">3.8.2</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
@@ -4189,8 +4217,54 @@
         <div class="settings-status" id="generalPushStatus">جارٍ التحقق من حالة الإشعارات…</div>
         <div class="settings-actions"><button class="primary-btn" id="enableGeneralPushButton" type="button">تفعيل إشعارات التحديث</button><button class="soft-btn" id="testGeneralPushButton" type="button">اختبار الإشعار على هذا الجهاز</button><button class="ghost-btn" id="disableGeneralPushButton" type="button">إيقاف إشعارات التحديث</button></div>
       </section>
+      <section class="settings-section automation-owner-section" id="automationSettingsSection" hidden>
+        <div class="settings-section-head"><div><h3>الربط التلقائي · Wallet والبنك</h3><p>تجربة للمالك فقط عبر تطبيق الاختصارات في iPhone. تصل العمليات للمراجعة أولًا ولا تغيّر الرصيد تلقائيًا.</p></div></div>
+        <div class="settings-status" id="automationSettingsStatus">الربط غير مفعّل.</div>
+        <div class="settings-actions"><button class="primary-btn" id="openAutomationSettingsButton" type="button">إعداد الربط</button></div>
+      </section>
     </div>
     <div class="modal-foot"><button class="primary-btn" type="button" data-close-dialog="settingsDialog">تم</button></div>
+  </dialog>
+
+  <dialog class="modal" id="automationDialog">
+    <div class="modal-head"><h2>الربط التلقائي</h2><button class="close-btn" type="button" data-close-dialog="automationDialog" aria-label="إغلاق">×</button></div>
+    <div class="modal-body automation-grid">
+      <div class="automation-connect-card">
+        <strong>Wallet + رسائل البنك عبر Shortcuts</strong>
+        <p>هذه نسخة تجريبية للمالك. الاختصار يرسل العملية إلى مدير الراتب كعملية «بانتظار المراجعة»، ولا يتم خصم أو إضافة أي مبلغ حتى تعتمدها بنفسك.</p>
+        <div class="settings-status" id="automationConnectionStatus">جارٍ التحقق من حالة الربط…</div>
+        <div class="automation-secret">
+          <label for="automationEndpoint">رابط الاستقبال</label>
+          <div class="automation-secret-row"><input id="automationEndpoint" readonly><button class="soft-btn" id="copyAutomationEndpointButton" type="button">نسخ الرابط</button></div>
+          <label for="automationToken">رمز الربط السري</label>
+          <div class="automation-secret-row"><input id="automationToken" readonly placeholder="أنشئ رمزًا ليظهر هنا مرة واحدة"><button class="soft-btn" id="copyAutomationTokenButton" type="button">نسخ الرمز</button></div>
+        </div>
+        <div class="settings-actions" style="margin-top:10px"><button class="primary-btn" id="rotateAutomationTokenButton" type="button">إنشاء / استبدال رمز الربط</button><button class="ghost-btn" id="revokeAutomationTokenButton" type="button">إيقاف الربط</button></div>
+      </div>
+
+      <div class="automation-steps">
+        <div class="automation-step"><div class="automation-step-icon">◈</div><strong>رسائل البنك</strong><p>في Shortcuts أنشئ Automation عند وصول رسالة من البنك، ثم أرسل Shortcut Input إلى رابط الاستقبال. استخدم source = bank_message. سيحاول مدير الراتب فهم الخصم/الإيداع والمبلغ والتاجر تلقائيًا.</p></div>
+        <div class="automation-step"><div class="automation-step-icon">⌁</div><strong>Apple Wallet</strong><p>أنشئ Automation من Transaction واختر البطاقة. أرسل ما يتيحه iOS من بيانات العملية إلى نفس الرابط مع source = wallet. إذا لم يرسل iOS المبلغ أو التاجر ستظهر العملية للمراجعة لإكمالها يدويًا.</p></div>
+      </div>
+
+      <div class="automation-connect-card">
+        <strong>صيغة POST التي يقبلها مدير الراتب</strong>
+        <p>في «Get Contents of URL» اختر POST ثم JSON. يكفي token + source + text، ويمكن إضافة amount وmerchant وtype إذا كانت متاحة في الاختصار.</p>
+        <div class="automation-code" id="automationJsonExample">{
+  "shortcutToken": "YOUR_TOKEN",
+  "source": "bank_message",
+  "text": "Shortcut Input"
+}</div>
+        <div class="settings-actions" style="margin-top:10px"><button class="soft-btn" id="testAutomationButton" type="button">إرسال عملية تجريبية</button><button class="soft-btn" id="refreshAutomationButton" type="button">تحديث العمليات</button></div>
+      </div>
+
+      <div class="automation-connect-card">
+        <strong>عمليات بانتظار المراجعة <span id="automationPendingCount">0</span></strong>
+        <p>اعتمد العملية فقط بعد مطابقتها مع Wallet أو رسالة البنك. يمنع مدير الراتب تسجيل نفس عملية الربط مرتين.</p>
+        <div class="automation-pending" id="automationPendingList"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="primary-btn" type="button" data-close-dialog="automationDialog">تم</button></div>
   </dialog>
 
   <dialog class="modal" id="notificationPromptDialog">
@@ -4235,6 +4309,16 @@
     <div class="modal-body">
       <div class="changelog-list">
         <section class="changelog-entry current">
+          <div class="changelog-version">
+            <strong>الإصدار 3.9.3</strong>
+            <time datetime="2026-09-01">1 سبتمبر 2026</time>
+          </div>
+          <ul>
+            <li>إضافة ربط تجريبي للمالك مع Apple Wallet ورسائل البنك عبر Shortcuts.</li>
+            <li>وصول العمليات كمراجعة معلقة قبل التأثير على الرصيد، مع منع التكرار واقتراح نوع العملية والتصنيف.</li>
+          </ul>
+        </section>
+        <section class="changelog-entry">
           <div class="changelog-version">
             <strong>الإصدار 3.9.2</strong>
             <time datetime="2026-09-01">1 سبتمبر 2026</time>
@@ -4870,8 +4954,8 @@
       }
 
 
-      var APP_VERSION = "3.9.2";
-      var APP_RELEASE_ID = "3.9.2-statement-pdf-r3";
+      var APP_VERSION = "3.9.3";
+      var APP_RELEASE_ID = "3.9.3-wallet-bank-automation-r1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -4900,6 +4984,9 @@
       var authState = { authenticated: false, sessionVerified: false, token: localStorage.getItem(AUTH_TOKEN_KEY) || "", user: null, backendReady: false, bootstrapRequired: false };
       try { authState.user = JSON.parse(localStorage.getItem(AUTH_USER_KEY) || "null"); } catch (e) { authState.user = null; }
       authState.authenticated = Boolean(authState.token && authState.user);
+      var automationImports = [];
+      var automationShortcutToken = "";
+      var automationStatusTimer = null;
       var STORAGE_BACKUP_KEY = "monthlySalaryManager.v1.backup";
       var STORAGE_META_KEY = "monthlySalaryManager.v1.meta";
       var storageWarningShown = false;
@@ -5507,6 +5594,8 @@
         $("#signedInAuth").hidden = !signedIn;
         $("#accountButtonLabel").textContent = signedIn ? authState.user.username : localizedText("تسجيل الدخول");
         $("#adminTab").classList.toggle("visible", signedIn && authState.user.role === "super_admin");
+        var automationSection = $("#automationSettingsSection");
+        if (automationSection) automationSection.hidden = !(signedIn && authState.user.role === "super_admin");
         if (signedIn) {
           $("#accountUsername").textContent = authState.user.username;
           $("#accountEmail").textContent = authState.user.email;
@@ -5970,6 +6059,194 @@
           showToast("تعذر رفض التحديث الآن. حاول مرة أخرى.", true);
           if (button) button.disabled = false;
         }
+      }
+
+
+      function automationEndpointUrl() {
+        return window.location.origin.replace(/\/$/, "") + "/api/automation/import";
+      }
+
+      function automationSourceLabel(source) {
+        return source === "wallet" ? "Apple Wallet" : source === "bank_message" ? "رسالة بنك" : "Shortcuts";
+      }
+
+      function automationKindLabel(kind) {
+        return kind === "expense" ? "خصم" : kind === "deposit" ? "إيداع" : "غير محدد";
+      }
+
+      function automationImportDate(item) {
+        var d = new Date(item && item.occurredAt || item && item.receivedAt || Date.now());
+        return Number.isNaN(d.getTime()) ? new Date() : d;
+      }
+
+      function updateAutomationSettingsStatus(status) {
+        var node = $("#automationSettingsStatus");
+        if (!node) return;
+        if (!authState.authenticated || authState.user?.role !== "super_admin") { node.textContent = "متاح للمالك فقط."; node.classList.remove("on"); return; }
+        if (!status || !status.enabled) { node.textContent = "الربط غير مفعّل."; node.classList.remove("on"); return; }
+        node.classList.add("on");
+        node.textContent = "الربط مفعّل" + (Number(status.pendingCount || 0) ? " · " + Number(status.pendingCount) + " عملية بانتظار المراجعة" : " · لا توجد عمليات معلقة");
+      }
+
+      async function refreshAutomationStatus(silent) {
+        if (!authState.authenticated || authState.user?.role !== "super_admin") return null;
+        try {
+          var status = await apiFetch("/api/automation/status?ts=" + Date.now());
+          updateAutomationSettingsStatus(status);
+          var connection = $("#automationConnectionStatus");
+          if (connection) {
+            connection.classList.toggle("on", Boolean(status.enabled));
+            connection.textContent = status.enabled ? "الربط مفعّل وآمن لهذا الحساب" + (status.lastUsedAt ? " · آخر استقبال " + formatDateTimeCompact(status.lastUsedAt) : "") : "الربط غير مفعّل. أنشئ رمز ربط أولًا.";
+          }
+          var count = $("#automationPendingCount");
+          if (count) count.textContent = String(Number(status.pendingCount || 0));
+          return status;
+        } catch (error) {
+          if (!silent) showToast("تعذر التحقق من الربط الآن", true);
+          return null;
+        }
+      }
+
+      function formatDateTimeCompact(value) {
+        var d = new Date(value || Date.now());
+        if (Number.isNaN(d.getTime())) return "—";
+        return d.toLocaleDateString(currentLanguage === "en" ? "en-AE" : "ar-AE", { day:"numeric", month:"short" }) + " · " + d.toLocaleTimeString(currentLanguage === "en" ? "en-AE" : "ar-AE", { hour:"2-digit", minute:"2-digit" });
+      }
+
+      async function openAutomationDialog() {
+        if (!authState.authenticated || authState.user?.role !== "super_admin") { showToast("هذه التجربة متاحة للمالك فقط", true); return; }
+        if ($("#settingsDialog") && $("#settingsDialog").open) $("#settingsDialog").close();
+        $("#automationEndpoint").value = automationEndpointUrl();
+        $("#automationToken").value = automationShortcutToken || "";
+        $("#automationDialog").showModal();
+        await refreshAutomationStatus(true);
+        await refreshAutomationPending(true);
+      }
+
+      async function rotateAutomationToken() {
+        if (!authState.authenticated || authState.user?.role !== "super_admin") return;
+        var status = await refreshAutomationStatus(true);
+        if (status && status.enabled && !localizedConfirm("إنشاء رمز جديد سيوقف الاختصار الذي يستخدم الرمز السابق. هل تريد المتابعة؟")) return;
+        try {
+          var data = await apiFetch("/api/automation/token", { method:"POST", body:"{}" });
+          automationShortcutToken = String(data.shortcutToken || "");
+          $("#automationToken").value = automationShortcutToken;
+          $("#automationJsonExample").textContent = '{\n  "shortcutToken": "' + automationShortcutToken + '",\n  "source": "bank_message",\n  "text": "Shortcut Input"\n}';
+          await refreshAutomationStatus(true);
+          showToast("تم إنشاء رمز الربط. انسخه الآن وأضفه إلى الاختصار.");
+        } catch (error) { showToast(apiErrorMessage(error.code), true); }
+      }
+
+      async function revokeAutomationToken() {
+        if (!localizedConfirm("إيقاف الربط؟ لن تستطيع الاختصارات إرسال عمليات جديدة حتى تنشئ رمزًا جديدًا.")) return;
+        try {
+          await apiFetch("/api/automation/revoke", { method:"POST", body:"{}" });
+          automationShortcutToken = "";
+          $("#automationToken").value = "";
+          $("#automationJsonExample").textContent = '{\n  "shortcutToken": "YOUR_TOKEN",\n  "source": "bank_message",\n  "text": "Shortcut Input"\n}';
+          await refreshAutomationStatus(true);
+          showToast("تم إيقاف الربط");
+        } catch (error) { showToast(apiErrorMessage(error.code), true); }
+      }
+
+      async function copyAutomationValue(value, successText) {
+        if (!value) { showToast("لا توجد قيمة لنسخها", true); return; }
+        try { await navigator.clipboard.writeText(value); showToast(successText); }
+        catch (_) { showToast("تعذر النسخ تلقائيًا. اضغط مطولًا على الحقل وانسخه يدويًا.", true); }
+      }
+
+      function renderAutomationPending() {
+        var root = $("#automationPendingList");
+        if (!root) return;
+        $("#automationPendingCount").textContent = String(automationImports.length);
+        if (!automationImports.length) { root.innerHTML = '<div class="settings-status on">لا توجد عمليات بانتظار المراجعة.</div>'; return; }
+        root.innerHTML = automationImports.map(function (item) {
+          var kind = String(item.kind || "unknown");
+          var amount = safeNumber(item.amount);
+          var amountText = amount > 0 ? (kind === "expense" ? "-" : kind === "deposit" ? "+" : "") + formatMoney(amount) : "المبلغ غير معروف";
+          var merchant = String(item.merchant || "").trim() || (kind === "deposit" ? "إيداع بنكي" : kind === "expense" ? expenseCategoryDefaultTitle(item.category || "أخرى") : "عملية بنكية جديدة");
+          var meta = automationSourceLabel(item.source) + " · " + automationKindLabel(kind) + " · " + formatDateTimeCompact(item.occurredAt || item.receivedAt);
+          if (kind === "expense" && item.category) meta += " · " + item.category;
+          var raw = String(item.rawText || "").trim();
+          var actions = '';
+          if (amount > 0 && kind === "expense") actions += '<button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="expense">اعتماد كمصروف</button>';
+          else if (amount > 0 && kind === "deposit") actions += '<button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="deposit">اعتماد كإيداع</button>';
+          else if (amount > 0) actions += '<button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="expense">كمصروف</button><button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="deposit">كإيداع</button>';
+          actions += '<button class="mini-btn" type="button" data-automation-ignore="' + escapeHTML(item.id) + '">تجاهل</button>';
+          return '<div class="automation-import"><div class="automation-import-main"><strong>' + escapeHTML(merchant) + '</strong><small>' + escapeHTML(meta) + '</small></div><div class="automation-import-amount ' + escapeHTML(kind) + '">' + escapeHTML(amountText) + '</div>' + (raw ? '<div class="automation-import-raw">' + escapeHTML(raw.slice(0,260)) + '</div>' : '') + '<div class="automation-import-actions">' + actions + '</div></div>';
+        }).join("");
+      }
+
+      async function refreshAutomationPending(silent) {
+        if (!authState.authenticated || authState.user?.role !== "super_admin") return;
+        try {
+          var data = await apiFetch("/api/automation/pending?ts=" + Date.now());
+          automationImports = Array.isArray(data.imports) ? data.imports : [];
+          renderAutomationPending();
+          updateAutomationSettingsStatus({ enabled: Boolean((await refreshAutomationStatus(true))?.enabled), pendingCount: automationImports.length });
+        } catch (error) { if (!silent) showToast("تعذر تحميل العمليات المعلقة", true); }
+      }
+
+      function hasExternalImport(importId) {
+        return (state.expenses || []).some(item => String(item.externalImportId || "") === String(importId)) || (state.deposits || []).some(item => String(item.externalImportId || "") === String(importId));
+      }
+
+      async function resolveAutomationImport(importId, status, acceptedKind) {
+        await apiFetch("/api/automation/resolve", { method:"POST", body:JSON.stringify({ importId:importId, status:status, acceptedKind:acceptedKind || "" }) });
+      }
+
+      async function acceptAutomationImport(importId, kind) {
+        var item = automationImports.find(entry => String(entry.id) === String(importId));
+        if (!item) return;
+        var amount = roundMoney(item.amount);
+        if (amount <= 0) { showToast("لم يتم التعرف على مبلغ العملية. سجّلها يدويًا ثم تجاهل الرسالة.", true); return; }
+        if (hasExternalImport(importId)) {
+          try { await resolveAutomationImport(importId, "accepted", kind); } catch (_) {}
+          await refreshAutomationPending(true);
+          showToast("هذه العملية مسجلة مسبقًا ولم تُكرر");
+          return;
+        }
+        ensureWalletCalendarCurrent(false);
+        var when = automationImportDate(item);
+        var date = toDateInput(when);
+        if (calendarMonthForDate(date) !== defaultMonth) { showToast("هذه العملية تخص شهرًا مؤرشفًا. لم يتم تعديل كشف سابق تلقائيًا؛ سجّلها يدويًا إذا لزم.", true); return; }
+        var merchant = String(item.merchant || "").trim();
+        if (kind === "deposit") {
+          if (!Array.isArray(state.deposits)) state.deposits = [];
+          var depositTitle = merchant || "إيداع من البنك";
+          var deposit = { id:makeId("deposit"), title:depositTitle, source:"تحويل وارد", amount:amount, date:date, createdAt:when.toISOString(), externalImportId:String(importId), automationSource:String(item.source || "shortcut") };
+          state.deposits.push(deposit);
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + amount);
+          state.walletStarted = true;
+          addTransaction("deposit", amount, "إيداع — " + depositTitle, date, deposit.id, { depositId:deposit.id, source:deposit.source, externalImportId:String(importId), automationSource:deposit.automationSource });
+        } else {
+          var combined = (merchant + " " + String(item.rawText || "")).trim();
+          var category = String(item.category || detectExpenseCategoryFromVoice(combined) || "أخرى");
+          var expenseTitle = merchant || voiceExpenseTitle(combined, category) || expenseCategoryDefaultTitle(category);
+          var expense = { id:makeId("expense"), title:expenseTitle, category:category, amount:amount, date:date, excludeFromBudget:false, createdAt:when.toISOString(), accountMonth:defaultMonth, externalImportId:String(importId), automationSource:String(item.source || "shortcut") };
+          state.expenses.push(expense);
+          state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - amount);
+          state.walletStarted = true;
+          addTransaction("expense", -amount, expenseTitle, date, expense.id, { externalImportId:String(importId), automationSource:expense.automationSource });
+        }
+        render();
+        try { await resolveAutomationImport(importId, "accepted", kind); }
+        catch (_) { showToast("تم تسجيل العملية محليًا، لكن تعذر تحديث قائمة المراجعة الآن. لن تُسجل مرتين.", true); return; }
+        await refreshAutomationPending(true);
+        showToast(kind === "deposit" ? "تم اعتماد الإيداع وإضافته إلى الرصيد" : "تم اعتماد المصروف وخصمه من الرصيد");
+      }
+
+      async function ignoreAutomationImport(importId) {
+        try { await resolveAutomationImport(importId, "ignored", ""); await refreshAutomationPending(true); showToast("تم تجاهل العملية"); }
+        catch (error) { showToast(apiErrorMessage(error.code), true); }
+      }
+
+      async function testAutomationImport() {
+        try {
+          await apiFetch("/api/automation/test", { method:"POST", body:JSON.stringify({ text:"Your card was debited AED 37.50 at ARABICA COFFEE", source:"bank_message" }) });
+          await refreshAutomationPending(true);
+          showToast("تم إرسال عملية تجريبية للمراجعة");
+        } catch (error) { showToast(apiErrorMessage(error.code), true); }
       }
 
       async function renderAdminUsers() {
@@ -9482,6 +9759,7 @@
           refreshAppLockSettings();
           $("#settingsDialog").showModal();
           refreshGeneralPushStatus();
+          refreshAutomationStatus(true);
         });
         $("#iconChoiceGrid").addEventListener("click", function (event) {
           var button = event.target.closest("[data-icon-choice]");
@@ -9507,6 +9785,19 @@
             showToast("اضغط مطولًا على الرابط ثم اختر «نسخ الرابط»، وبعدها افتح صفحة جديدة في المتصفح والصق الرابط هناك.", true);
           });
         }
+        $("#openAutomationSettingsButton").addEventListener("click", openAutomationDialog);
+        $("#rotateAutomationTokenButton").addEventListener("click", rotateAutomationToken);
+        $("#revokeAutomationTokenButton").addEventListener("click", revokeAutomationToken);
+        $("#copyAutomationEndpointButton").addEventListener("click", function () { copyAutomationValue(automationEndpointUrl(), "تم نسخ رابط الاستقبال"); });
+        $("#copyAutomationTokenButton").addEventListener("click", function () { copyAutomationValue(automationShortcutToken || $("#automationToken").value, "تم نسخ رمز الربط"); });
+        $("#refreshAutomationButton").addEventListener("click", function () { refreshAutomationPending(false); });
+        $("#testAutomationButton").addEventListener("click", testAutomationImport);
+        $("#automationPendingList").addEventListener("click", function (event) {
+          var accept = event.target.closest("[data-automation-accept]");
+          var ignore = event.target.closest("[data-automation-ignore]");
+          if (accept) acceptAutomationImport(accept.dataset.automationAccept, accept.dataset.automationKind);
+          else if (ignore) ignoreAutomationImport(ignore.dataset.automationIgnore);
+        });
         $("#enableGeneralPushButton").addEventListener("click", function () { enableGeneralPushNotifications(true); });
         $("#testGeneralPushButton").addEventListener("click", testGeneralPushNotifications);
         $("#disableGeneralPushButton").addEventListener("click", disableGeneralPushNotifications);
@@ -9831,6 +10122,12 @@
 
       setText("#appVersion", APP_VERSION);
       syncExpenseCategoryGrid();
+      automationStatusTimer = setInterval(function () {
+        if (authState.authenticated && authState.user?.role === "super_admin" && navigator.onLine) {
+          refreshAutomationStatus(true);
+          if ($("#automationDialog") && $("#automationDialog").open) refreshAutomationPending(true);
+        }
+      }, 30000);
       document.documentElement.lang = currentLanguage;
       document.documentElement.dir = currentLanguage === "en" ? "ltr" : "rtl";
       document.body && document.body.setAttribute("dir", document.documentElement.dir);

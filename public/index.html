@@ -36,7 +36,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.3-commitment-bank-match-r3";
+      var v = "3.9.3-targeted-preview-statement-r4";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -2000,11 +2000,25 @@
       background: var(--red);
     }
 
-    .mobile-fab {
+    .floating-action-stack {
       position: fixed;
       z-index: 40;
       right: 18px;
       bottom: calc(18px + var(--safe-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .floating-action-stack > button { pointer-events: auto; }
+
+    .mobile-fab {
+      position: relative;
+      z-index: 2;
+      right: auto;
+      bottom: auto;
       width: 54px;
       height: 54px;
       display: none;
@@ -2651,6 +2665,8 @@
     }
     .user-version-chip.current { background:var(--teal-soft); color:var(--teal); }
     .user-version-chip.outdated { background:#fff0e6; color:#a35c28; }
+    .user-preview-chip { display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:5px 8px; border-radius:999px; background:#eee8ff; color:#6650a6; font-size:9px; font-weight:900; }
+    .user-preview-chip.live { background:#e7f7ef; color:#146c5d; }
 
     .admin-device-versions { display:block; margin-top:5px; color:var(--muted); font-size:8px; line-height:1.7; }
 
@@ -2783,6 +2799,7 @@
       .edit-salary,
       .section-heading .primary-btn,
       .quick-form,
+      .floating-action-stack,
       .mobile-fab,
       .commitment-action-row,
       .expense-delete,
@@ -2927,15 +2944,21 @@
     .automation-security-note { padding:10px 12px; border-radius:14px; background:#fff7e8; border:1px solid #f2dfb8; color:#796237; font-size:10px; line-height:1.75; }
     .automation-confidence { display:inline-flex; align-items:center; gap:4px; margin-inline-start:5px; padding:2px 7px; border-radius:999px; font-size:8px; font-weight:900; background:#eef4f2; color:#60706c; }
     .automation-confidence.high { background:#e6f6ef; color:#16725f; }
-    .automation-review-fab { position:fixed; left:18px; bottom:calc(24px + env(safe-area-inset-bottom, 0px)); width:62px; height:62px; border:0; border-radius:22px; background:linear-gradient(145deg,#0f514b,#178b7e); color:#fff; display:grid; place-items:center; z-index:35; box-shadow:0 14px 34px rgba(15,81,75,.28); cursor:pointer; animation:automationFloat 2.8s ease-in-out infinite; }
+    .automation-review-fab { position:relative; left:auto; bottom:auto; width:54px; height:54px; border:0; border-radius:18px; background:linear-gradient(145deg,#0f514b,#178b7e); color:#fff; display:grid; place-items:center; z-index:1; box-shadow:0 12px 28px rgba(15,81,75,.24); cursor:pointer; animation:automationFloat 2.8s ease-in-out infinite; }
     .automation-review-fab[hidden] { display:none !important; }
     .automation-review-fab svg { width:27px; height:27px; }
     .automation-review-badge { position:absolute; top:-5px; right:-5px; min-width:22px; height:22px; padding:0 5px; display:grid; place-items:center; border-radius:999px; background:#d83b38; color:#fff; border:3px solid #f7f3ea; font-size:10px; font-weight:900; box-shadow:0 5px 12px rgba(216,59,56,.3); }
     .automation-review-badge[hidden] { display:none !important; }
     .automation-review-fab.has-pending { animation:automationFloat 2.2s ease-in-out infinite, automationAttention 1.5s ease-in-out infinite; }
+    .automation-review-dialog { width:min(520px,calc(100% - 24px)); max-height:min(72vh,680px); border-radius:24px; }
+    .automation-review-dialog .modal-body { padding:14px; }
+    .automation-review-dialog .automation-pending { max-height:52vh; overflow:auto; overscroll-behavior:contain; padding-inline-end:2px; }
+    .automation-review-dialog .automation-import { box-shadow:0 8px 20px rgba(24,55,50,.06); }
+    .automation-review-dialog .modal-foot { justify-content:space-between; }
+    .automation-review-title-meta { display:block; margin-top:4px; color:var(--muted); font-size:10px; font-weight:700; }
     @keyframes automationFloat { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-5px); } }
     @keyframes automationAttention { 0%,100% { box-shadow:0 14px 34px rgba(15,81,75,.28); } 50% { box-shadow:0 14px 34px rgba(15,81,75,.28),0 0 0 8px rgba(216,59,56,.10); } }
-    @media (max-width:560px) { .automation-steps { grid-template-columns:1fr; } .automation-secret-row { align-items:stretch; flex-direction:column; } .automation-secret-row .soft-btn { width:100%; } .automation-setup-actions { grid-template-columns:1fr; } .automation-review-fab { width:58px; height:58px; border-radius:20px; left:14px; } }
+    @media (max-width:560px) { .automation-steps { grid-template-columns:1fr; } .automation-secret-row { align-items:stretch; flex-direction:column; } .automation-secret-row .soft-btn { width:100%; } .automation-setup-actions { grid-template-columns:1fr; } .floating-action-stack { right:14px; bottom:calc(16px + var(--safe-bottom)); gap:9px; } .automation-review-fab, .mobile-fab { width:56px; height:56px; border-radius:19px; } }
 
     .settings-section {
       display: grid;
@@ -3186,37 +3209,78 @@
 
     #statementPrintRoot { display:none; }
     @media print {
-      @page { size:A4; margin:10mm; }
+      @page { size:A4; margin:9mm 9mm 11mm; }
       html, body { background:#fff !important; }
       body.statement-print-mode > *:not(#statementPrintRoot) { display:none !important; }
-      body.statement-print-mode #statementPrintRoot { display:block !important; direction:rtl; color:#173833; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-      .statement-print-sheet { width:100%; }
-      .statement-print-header { border-radius:16px; padding:18px 20px; color:#fff; background:linear-gradient(135deg,#0b4d46,#14756c); display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }
-      .statement-print-header h1 { margin:5px 0 4px; font-size:22px; }
-      .statement-print-header p { margin:0; opacity:.82; font-size:10px; }
-      .statement-print-balance { text-align:left; }
-      .statement-print-balance small { display:block; opacity:.8; font-size:9px; }
-      .statement-print-balance strong { display:block; font-size:20px; margin-top:5px; }
+      body.statement-print-mode #statementPrintRoot { display:block !important; direction:rtl; color:#173833; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      .statement-print-sheet { width:100%; color:#173833; }
+      .statement-print-header { position:relative; overflow:hidden; border-radius:19px; padding:18px 20px 16px; color:#fff; background:linear-gradient(130deg,#073f3a 0%,#0d6259 58%,#2a8d7f 100%); display:flex; justify-content:space-between; gap:18px; align-items:flex-start; box-shadow:0 9px 24px rgba(9,69,62,.16); }
+      .statement-print-header::before { content:""; position:absolute; width:145px; height:145px; border-radius:50%; background:rgba(255,255,255,.075); left:-42px; top:-74px; }
+      .statement-print-brand { position:relative; z-index:1; flex:1; min-width:0; }
+      .statement-print-kicker { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; background:rgba(255,255,255,.13); border:1px solid rgba(255,255,255,.18); font-size:7.5px; font-weight:800; letter-spacing:.15px; }
+      .statement-print-header h1 { margin:6px 0 4px; font-size:22px; letter-spacing:-.25px; }
+      .statement-print-header p { margin:0; opacity:.83; font-size:8.5px; }
+      .statement-print-docmeta { margin-top:8px; display:flex; gap:10px; flex-wrap:wrap; opacity:.72; font-size:7px; }
+      .statement-print-balance { position:relative; z-index:1; text-align:left; min-width:150px; }
+      .statement-print-balance small { display:block; opacity:.78; font-size:8px; }
+      .statement-print-balance strong { display:block; font-size:19px; margin-top:5px; }
       .statement-print-balance .statement-print-amount { color:#fff !important; }
-      .statement-print-flow { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin:10px 0; }
-      .statement-print-flow > div { border:1px solid #dfe8e5; border-radius:10px; padding:9px; background:#f8fbfa; }
-      .statement-print-flow small, .statement-print-metrics small { display:block; color:#71827e; font-size:8px; margin-bottom:4px; }
-      .statement-print-flow strong, .statement-print-metrics strong { font-size:10px; }
-      .statement-print-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin-bottom:10px; }
-      .statement-print-metrics > div { border:1px solid #e4e9e7; border-radius:10px; padding:8px; background:#fff; break-inside:avoid; }
-      .statement-print-audit { border:1px solid #cfe4de; background:#eff8f5; border-radius:10px; padding:9px 10px; margin-bottom:10px; font-size:9px; display:flex; justify-content:space-between; gap:12px; }
+      .statement-print-flow { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin:9px 0; }
+      .statement-print-flow > div { position:relative; overflow:hidden; border:1px solid #dfe8e5; border-radius:11px; padding:8px 9px; background:#f8fbfa; break-inside:avoid; }
+      .statement-print-flow > div:nth-child(2) { background:#eff9f5; border-color:#d2e9e2; }
+      .statement-print-flow > div:nth-child(3) { background:#fff4f1; border-color:#f0dcd7; }
+      .statement-print-flow > div:nth-child(4) { background:#f6f4ec; }
+      .statement-print-flow small, .statement-print-metrics small { display:block; color:#71827e; font-size:7.2px; margin-bottom:3px; }
+      .statement-print-flow strong, .statement-print-metrics strong { font-size:9.2px; }
+      .statement-print-section-head { display:flex; align-items:end; justify-content:space-between; gap:10px; margin:10px 0 6px; }
+      .statement-print-section-head h2 { margin:0; color:#184c46; font-size:11px; }
+      .statement-print-section-head span { color:#7b8986; font-size:7px; }
+      .statement-print-analytics { display:grid; grid-template-columns:1.08fr .92fr; gap:8px; margin-bottom:9px; break-inside:avoid; }
+      .statement-print-panel { border:1px solid #e1e8e6; border-radius:12px; background:#fff; padding:9px 10px; }
+      .statement-print-panel-title { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:7px; }
+      .statement-print-panel-title strong { font-size:9px; color:#214f49; }
+      .statement-print-panel-title small { font-size:6.8px; color:#7a8985; }
+      .statement-print-donut-wrap { display:grid; grid-template-columns:88px 1fr; gap:10px; align-items:center; }
+      .statement-print-donut { width:82px; height:82px; border-radius:50%; border:10px solid #dfeae7; background:#f8fbfa; display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; text-align:center; }
+      .statement-print-donut b { display:block; color:#173833; font-size:9px; line-height:1.15; }
+      .statement-print-donut span { display:block; color:#6f7f7b; font-size:6.6px; margin-top:2px; }
+      .statement-print-stack { display:flex; width:100%; height:8px; border-radius:999px; overflow:hidden; background:#edf1ef; margin-bottom:6px; }
+      .statement-print-stack i { display:block; height:100%; min-width:1px; }
+      .statement-print-legend { display:grid; gap:4px; }
+      .statement-print-legend-row { display:grid; grid-template-columns:8px minmax(0,1fr) auto; gap:6px; align-items:center; font-size:7px; color:#596b67; }
+      .statement-print-legend-dot { width:7px; height:7px; border-radius:3px; }
+      .statement-print-legend-row strong { color:#254d48; font-size:7px; white-space:nowrap; }
+      .statement-print-bars { display:grid; gap:6px; }
+      .statement-print-bar-row { display:grid; grid-template-columns:78px minmax(0,1fr) 64px; gap:6px; align-items:center; font-size:7px; color:#5e716d; }
+      .statement-print-bar-track { height:7px; border-radius:999px; background:#edf1ef; overflow:hidden; }
+      .statement-print-bar-fill { height:100%; border-radius:999px; min-width:1px; }
+      .statement-print-bar-value { text-align:left; color:#274f4a; font-weight:800; white-space:nowrap; }
+      .statement-print-metrics { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-bottom:9px; }
+      .statement-print-metrics > div { position:relative; overflow:hidden; border:1px solid #e4e9e7; border-radius:10px; padding:7px 8px; background:#fff; break-inside:avoid; min-height:38px; }
+      .statement-print-metrics > div::before { content:""; position:absolute; inset-inline-start:0; top:0; width:3px; height:100%; background:#bfd5d0; }
+      .statement-print-audit { border:1px solid #cfe4de; background:linear-gradient(90deg,#eff8f5,#f8fbfa); border-radius:11px; padding:8px 10px; margin-bottom:9px; font-size:7.5px; display:flex; justify-content:space-between; gap:12px; align-items:center; break-inside:avoid; }
       .statement-print-audit.warn { border-color:#ead7b5; background:#fff7e9; }
-      .statement-print-table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:8.5px; }
-      .statement-print-table th { background:#edf5f2; color:#355b55; text-align:right; padding:7px 6px; border-bottom:1px solid #d4e1dd; }
-      .statement-print-table td { padding:6px; border-bottom:1px solid #edf0ef; vertical-align:top; }
+      .statement-print-audit-badge { padding:4px 7px; border-radius:999px; background:#d9f1e9; color:#0f665c; font-weight:900; white-space:nowrap; }
+      .statement-print-audit.warn .statement-print-audit-badge { background:#f7dfb3; color:#805815; }
+      .statement-print-transactions-section { break-before:page; page-break-before:always; padding-top:1mm; }
+      .statement-print-ledger-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; padding:0 1px 7px; border-bottom:2px solid #184c46; margin-bottom:7px; }
+      .statement-print-ledger-head strong { display:block; color:#184c46; font-size:13px; }
+      .statement-print-ledger-head small { display:block; color:#7b8986; font-size:7px; margin-top:3px; }
+      .statement-print-ledger-ref { text-align:left; white-space:nowrap; color:#5f716d; font-size:7px; }
+      .statement-print-table { width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; font-size:7.5px; border:1px solid #e1e8e6; border-radius:11px; overflow:hidden; }
+      .statement-print-table thead { display:table-header-group; }
+      .statement-print-table th { background:#eaf3f0; color:#355b55; text-align:right; padding:6.5px 6px; border-bottom:1px solid #d4e1dd; font-weight:900; }
+      .statement-print-table td { padding:5.5px 6px; border-bottom:1px solid #edf0ef; vertical-align:top; }
+      .statement-print-table tbody tr:nth-child(even) td { background:#fbfcfb; }
+      .statement-print-table tbody tr:last-child td { border-bottom:0; }
       .statement-print-table th:nth-child(1), .statement-print-table td:nth-child(1) { width:22%; }
       .statement-print-table th:nth-child(3), .statement-print-table td:nth-child(3), .statement-print-table th:nth-child(4), .statement-print-table td:nth-child(4) { width:18%; text-align:left; white-space:nowrap; }
-      .statement-print-plus { color:#14756c; font-weight:800; }
-      .statement-print-minus { color:#b84d47; font-weight:800; }
+      .statement-print-plus { color:#14756c; font-weight:900; }
+      .statement-print-minus { color:#b84d47; font-weight:900; }
       .statement-print-amount { white-space:nowrap; }
       .statement-print-amount bdi { direction:ltr; unicode-bidi:isolate; }
-      .statement-print-footer { display:flex; justify-content:space-between; gap:12px; color:#778581; font-size:7.5px; margin-top:10px; padding-top:8px; border-top:1px solid #e5e9e7; }
-      .statement-print-table tr { break-inside:avoid; }
+      .statement-print-footer { display:grid; grid-template-columns:1fr auto; gap:12px; color:#778581; font-size:6.7px; margin-top:8px; padding-top:7px; border-top:1px solid #e5e9e7; }
+      .statement-print-table tr, .statement-print-panel, .statement-print-flow > div, .statement-print-metrics > div { break-inside:avoid; }
     }
     @media (max-width: 760px) { .statement-flow-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .statement-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     @media (max-width: 620px) { .payday-choice-grid { grid-template-columns:1fr; } .statement-card summary { grid-template-columns:minmax(0,1fr) auto auto; padding:15px; } .statement-body { padding:14px; } .statement-hero-top { gap:10px; } .statement-hero-balance strong { font-size:1.2rem; } .statement-metrics { grid-template-columns:1fr 1fr; } }
@@ -3826,11 +3890,13 @@
       <span class="storage-note" id="storageNote">سجّل الدخول لمزامنة بياناتك بين أجهزتك</span>
     </footer>
 
-    <button class="mobile-fab" id="mobileFab" type="button" aria-label="إضافة عنصر">+</button>
-    <button class="automation-review-fab" id="automationReviewFab" type="button" aria-label="مراجعة المعاملات البنكية" title="مراجعة المعاملات" hidden>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.1 4.2h9.8l-1.6-1.6 1.4-1.4L20.7 5l-4 3.8-1.4-1.4 1.6-1.6H7.1V4.2Zm9.8 14H7.1l1.6 1.6-1.4 1.4L3.3 17l4-3.8 1.4 1.4-1.6 1.6h9.8v2Z"/></svg>
-      <span class="automation-review-badge" id="automationReviewBadge" hidden>0</span>
-    </button>
+    <div class="floating-action-stack" id="floatingActionStack" aria-label="إجراءات سريعة">
+      <button class="automation-review-fab" id="automationReviewFab" type="button" aria-label="مراجعة المعاملات البنكية" title="مراجعة المعاملات" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.1 4.2h9.8l-1.6-1.6 1.4-1.4L20.7 5l-4 3.8-1.4-1.4 1.6-1.6H7.1V4.2Zm9.8 14H7.1l1.6 1.6-1.4 1.4L3.3 17l4-3.8 1.4 1.4-1.6 1.6h9.8v2Z"/></svg>
+        <span class="automation-review-badge" id="automationReviewBadge" hidden>0</span>
+      </button>
+      <button class="mobile-fab" id="mobileFab" type="button" aria-label="إضافة عنصر">+</button>
+    </div>
   </div>
 
   <dialog class="modal" id="salaryDialog">
@@ -4322,6 +4388,14 @@
     <div class="modal-foot"><button class="primary-btn" type="button" data-close-dialog="automationDialog">تم</button></div>
   </dialog>
 
+  <dialog class="modal automation-review-dialog" id="automationReviewDialog">
+    <div class="modal-head"><div><h2>اعتماد المعاملات</h2><span class="automation-review-title-meta" id="automationReviewDialogMeta">راجع العمليات القادمة من البنك وWallet فقط.</span></div><button class="close-btn" type="button" data-close-dialog="automationReviewDialog" aria-label="إغلاق">×</button></div>
+    <div class="modal-body">
+      <div class="automation-pending" id="automationReviewList"></div>
+    </div>
+    <div class="modal-foot"><button class="ghost-btn" id="automationReviewRefreshButton" type="button">تحديث</button><button class="primary-btn" type="button" data-close-dialog="automationReviewDialog">تم</button></div>
+  </dialog>
+
   <dialog class="modal" id="notificationPromptDialog">
     <div class="modal-head"><h2>إشعارات التحديثات</h2><button class="close-btn" type="button" data-close-dialog="notificationPromptDialog" aria-label="إغلاق">×</button></div>
     <div class="modal-body">
@@ -4370,10 +4444,12 @@
           </div>
           <ul>
             <li>إضافة ربط تجريبي مع Apple Wallet ورسائل البنك عبر Shortcuts، برمز ثابت خاص بكل حساب.</li>
-            <li>إضافة زر عائم لمراجعة المعاملات مع شارة حمراء عند وجود عمليات معلقة.</li>
+            <li>جمع أزرار الإضافة واعتماد المعاملات في زاوية واحدة ثابتة، مع نافذة مراجعة سريعة للمعاملات فقط.</li>
             <li>إضافة اعتماد تلقائي اختياري للعمليات الموثوقة، مع تجاهل رسائل OTP ورموز التحقق.</li>
             <li>دمج عملية Wallet مع رسالة البنك المطابقة ومنع الخصم أو الإيداع المكرر.</li>
             <li>مطابقة خصومات البنك مع الأقساط والسلف التي خُصمت عند الراتب وتأكيد تنفيذها دون خصمها مرة ثانية.</li>
+            <li>إمكانية إتاحة النسخة التجريبية لمستخدم محدد مع المالك دون نشرها لبقية المستخدمين.</li>
+            <li>ترقية كشف الحساب PDF بتصميم تنفيذي راقٍ ورسومات إنفوغرافي وتدقيق بصري للحركات.</li>
             <li>تبسيط إعداد الاختصار بزر ينسخ رمز الربط ويفتح Shortcuts لإكمال الربط مرة واحدة.</li>
           </ul>
         </section>
@@ -5014,7 +5090,7 @@
 
 
       var APP_VERSION = "3.9.3";
-      var APP_RELEASE_ID = "3.9.3-commitment-bank-match-r3";
+      var APP_RELEASE_ID = "3.9.3-targeted-preview-statement-r4";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -5607,6 +5683,9 @@
           BAD_RESPONSE: "استجاب الخادم بصورة غير متوقعة. أعد تحميل الصفحة وحاول مرة أخرى.",
           AUTH_RUNTIME_ERROR: "حدث خطأ داخل خدمة الحسابات.",
           DATA_RUNTIME_ERROR: "حدث خطأ داخل خدمة مزامنة البيانات.",
+          RELEASE_REJECTED: "تم رفض هذا الإصدار ولا يمكن إتاحته للاختبار.",
+          ALREADY_PUBLISHED: "هذا الإصدار منشور بالفعل للمستخدمين.",
+          CANNOT_TARGET_OWNER: "حساب المالك يملك النسخة التجريبية بالفعل.",
           SERVER_ERROR: "حدث خطأ داخلي في الخادم. تحقق من إعدادات Variables and Secrets في Cloudflare ثم حاول مرة أخرى."
         };
         return localizedText(map[code] || "تعذر إتمام العملية. حاول مرة أخرى.");
@@ -6459,11 +6538,13 @@
 
       function renderAutomationPending() {
         var root = $("#automationPendingList");
-        if (!root) return;
-        $("#automationPendingCount").textContent = String(automationImports.length);
+        var reviewRoot = $("#automationReviewList");
+        if (!root && !reviewRoot) return;
+        if ($("#automationPendingCount")) $("#automationPendingCount").textContent = String(automationImports.length);
+        if ($("#automationReviewDialogMeta")) $("#automationReviewDialogMeta").textContent = automationImports.length ? automationImports.length + " معاملة بانتظار الاعتماد" : "لا توجد معاملات معلقة حاليًا.";
         updateAutomationReviewFab(automationImports.length, true);
-        if (!automationImports.length) { root.innerHTML = '<div class="settings-status on">لا توجد عمليات بانتظار المراجعة.</div>'; return; }
-        root.innerHTML = automationImports.map(function (item) {
+        if (!automationImports.length) { var empty='<div class="settings-status on">لا توجد عمليات بانتظار المراجعة.</div>'; if(root) root.innerHTML=empty; if(reviewRoot) reviewRoot.innerHTML=empty; return; }
+        var rendered = automationImports.map(function (item) {
           var kind = String(item.kind || "unknown");
           var amount = safeNumber(item.amount);
           var amountText = amount > 0 ? (kind === "expense" ? "-" : kind === "deposit" ? "+" : "") + formatMoney(amount) : "المبلغ غير معروف";
@@ -6495,6 +6576,8 @@
           actions += '<button class="mini-btn" type="button" data-automation-ignore="' + escapeHTML(item.id) + '">تجاهل</button>';
           return '<div class="automation-import"><div class="automation-import-main"><strong>' + escapeHTML(merchant) + '<span class="automation-confidence' + confidenceClass + '">' + escapeHTML(confidenceText) + '</span></strong><small>' + escapeHTML(meta) + '</small></div><div class="automation-import-amount ' + escapeHTML(kind) + '">' + escapeHTML(amountText) + '</div>' + (raw ? '<div class="automation-import-raw">' + escapeHTML(raw.slice(0,260)) + '</div>' : '') + '<div class="automation-import-actions">' + actions + '</div></div>';
         }).join("");
+        if (root) root.innerHTML = rendered;
+        if (reviewRoot) reviewRoot.innerHTML = rendered;
       }
 
       async function refreshAutomationPending(silent) {
@@ -6640,11 +6723,16 @@
             var versionLabel = '<span class="user-version-chip' + (owner ? ' current' : versionClass) + '">الإصدار: ' + escapeHTML(versionText) + versionStatusText + '</span>';
             var knownDevices = Array.isArray(user.deviceVersions) ? user.deviceVersions : [];
             var deviceVersionLine = knownDevices.length > 1 ? '<span class="admin-device-versions">الأجهزة: ' + knownDevices.slice(0,4).map(function (device) { return escapeHTML(String(device.deviceLabel || "جهاز")) + ' — ' + escapeHTML(String(device.version || "غير معروف")); }).join(' · ') + '</span>' : '';
+            var previewAssigned = !owner && String(user.targetedPreviewReleaseId || "") === String(data.stagedReleaseId || "") && Boolean(data.stagedReleaseId);
+            var previewRunning = previewAssigned && String(user.currentAppReleaseId || "") === String(data.stagedReleaseId || "");
+            var previewLabel = previewAssigned ? '<span class="user-preview-chip' + (previewRunning ? ' live' : '') + '">' + (previewRunning ? 'يختبر الآن ' : 'نسخة تجريبية متاحة: ') + escapeHTML(data.stagedVersion || '') + '</span>' : '';
             return '<div class="admin-user">' +
-              '<div class="admin-user-main"><strong>' + escapeHTML(user.username) + (owner ? ' · المالك' : '') + '</strong><span>' + escapeHTML(user.email) + ' · ' + (user.status === 'active' ? 'نشط' : 'موقوف') + ' · ' + Number(user.activeSessions || 0) + ' جلسة نشطة</span>' + versionLabel + deviceVersionLine + reset + lockReset + '</div>' +
+              '<div class="admin-user-main"><strong>' + escapeHTML(user.username) + (owner ? ' · المالك' : '') + '</strong><span>' + escapeHTML(user.email) + ' · ' + (user.status === 'active' ? 'نشط' : 'موقوف') + ' · ' + Number(user.activeSessions || 0) + ' جلسة نشطة</span>' + versionLabel + previewLabel + deviceVersionLine + reset + lockReset + '</div>' +
               '<div class="admin-user-actions">' +
                 (!owner ? '<button class="mini-btn mark-paid" type="button" data-admin-reset="' + escapeHTML(user.id) + '">رمز إعادة تعيين</button>' : '') +
                 (!owner && user.appLockResetRequested ? '<button class="mini-btn mark-paid" type="button" data-admin-lock-reset="' + escapeHTML(user.id) + '">إلغاء رمز قفل التطبيق</button>' : '') +
+                (!owner && data.stagedReleaseId && data.stagedReleaseId !== data.publishedReleaseId && !previewAssigned ? '<button class="mini-btn mark-paid" type="button" data-admin-preview-update="' + escapeHTML(user.id) + '">إتاحة ' + escapeHTML(data.stagedVersion || APP_VERSION) + ' تجريبيًا</button>' : '') +
+                (!owner && previewAssigned ? '<button class="mini-btn" type="button" data-admin-preview-revoke="' + escapeHTML(user.id) + '">إلغاء النسخة التجريبية</button>' : '') +
                 (!owner && (!user.onPublishedVersion || user.hasKnownOutdatedDevice) ? '<button class="mini-btn mark-paid" type="button" data-admin-send-update="' + escapeHTML(user.id) + '">إرسال تحديث ' + escapeHTML(data.publishedVersion || '') + '</button>' : '') +
                 (!owner ? '<button class="mini-btn" type="button" data-admin-status="' + escapeHTML(user.id) + '" data-status="' + (user.status === 'active' ? 'suspended' : 'active') + '">' + (user.status === 'active' ? 'إيقاف الحساب' : 'تفعيل الحساب') + '</button>' : '') +
                 (!owner ? '<button class="mini-btn" type="button" data-admin-logout="' + escapeHTML(user.id) + '">تسجيل خروج من كل الأجهزة</button>' : '') +
@@ -8425,9 +8513,42 @@
         return '<span class="statement-print-amount' + cls + '"><bdi dir="ltr">' + escapeHTML(sign + formatAmount(Math.abs(amount))) + '</bdi> <span>' + escapeHTML(unit) + '</span></span>';
       }
 
+      function statementOutflowBreakdown(st) {
+        var groups = [
+          { key:"commitments", label:"الأقساط والسلف", amount:0, color:"#b95a54" },
+          { key:"recurring", label:"المدفوعات الثابتة", amount:0, color:"#d09a3d" },
+          { key:"expenses", label:"المصروفات", amount:0, color:"#d97870" },
+          { key:"savings", label:"تحويلات المدخرات", amount:0, color:"#6689bd" },
+          { key:"other", label:"حركات أخرى", amount:0, color:"#7b8c88" }
+        ];
+        var map = {}; groups.forEach(function (g) { map[g.key]=g; });
+        statementTransactionRows(st).forEach(function (row) {
+          if (row.amount >= 0) return;
+          var type = String(row.item && row.item.type || "");
+          var key = type === "commitment" ? "commitments" : type === "recurring" ? "recurring" : type === "expense" ? "expenses" : (type === "savings_transfer" || type === "savings_plan") ? "savings" : "other";
+          map[key].amount = roundMoney(map[key].amount + Math.abs(row.amount));
+        });
+        return groups.filter(function (g) { return g.amount > 0; });
+      }
+
+      function statementDonutPrintHTML(breakdown, total) {
+        if (!total || !breakdown.length) return '<div class="statement-print-panel"><div class="statement-print-panel-title"><strong>توزيع المبالغ الخارجة</strong><small>لا توجد مبالغ خارجة</small></div></div>';
+        var stack = breakdown.map(function (g) { var pct=Math.max(0,Math.min(100,(g.amount/total)*100)); return '<i style="width:'+pct.toFixed(2)+'%;background:'+escapeHTML(g.color)+'"></i>'; }).join('');
+        var legend=breakdown.map(function (g) { var pct=total ? Math.round(g.amount/total*100) : 0; return '<div class="statement-print-legend-row"><span class="statement-print-legend-dot" style="background:'+escapeHTML(g.color)+'"></span><span>'+escapeHTML(g.label)+' · '+pct+'%</span><strong>'+statementPrintAmountHTML(g.amount,"out")+'</strong></div>'; }).join('');
+        return '<div class="statement-print-panel"><div class="statement-print-panel-title"><strong>توزيع المبالغ الخارجة</strong><small>تحليل حسب نوع الحركة</small></div><div class="statement-print-donut-wrap"><div class="statement-print-donut"><b>'+escapeHTML(formatAmount(total))+'</b><span>إجمالي الخروج</span></div><div><div class="statement-print-stack">'+stack+'</div><div class="statement-print-legend">'+legend+'</div></div></div></div>';
+      }
+
+      function statementBarsPrintHTML(breakdown, total) {
+        var max=Math.max.apply(null,[1].concat(breakdown.map(function(g){return g.amount;})));
+        var rows=breakdown.length ? breakdown.map(function(g){ var width=Math.max(2,g.amount/max*100); return '<div class="statement-print-bar-row"><span>'+escapeHTML(g.label)+'</span><div class="statement-print-bar-track"><div class="statement-print-bar-fill" style="width:'+width.toFixed(1)+'%;background:'+escapeHTML(g.color)+'"></div></div><span class="statement-print-bar-value">'+escapeHTML(formatAmount(g.amount))+'</span></div>'; }).join('') : '<div style="font-size:7px;color:#7a8985">لا توجد مبالغ خارجة خلال هذا الشهر.</div>';
+        var top=breakdown.slice().sort(function(a,b){return b.amount-a.amount;})[0];
+        return '<div class="statement-print-panel"><div class="statement-print-panel-title"><strong>مقارنة بنود الخروج</strong><small>'+(top ? 'الأعلى: '+escapeHTML(top.label) : '—')+'</small></div><div class="statement-print-bars">'+rows+'</div></div>';
+      }
+
       function buildStatementPrintHTML(key, st) {
         var audit = statementAuditData(st);
         var rows = audit.rows.slice().reverse();
+        var breakdown = statementOutflowBreakdown(st);
         var metrics = [
           ["الرواتب المضافة", st.salaryTotal || 0, "in"],
           ["الإيداعات", st.depositsTotal || 0, "signed"],
@@ -8450,12 +8571,18 @@
           return '<tr><td>' + escapeHTML(moment) + '</td><td>' + escapeHTML(item.title || "عملية") + '</td><td class="' + cls + '">' + statementPrintAmountHTML(row.amount, row.amount >= 0 ? "in" : "out") + '</td><td>' + statementPrintAmountHTML(row.balanceAfter, "") + '</td></tr>';
         }).join("") : '<tr><td colspan="4">لا توجد حركات مالية مسجلة في هذا الشهر.</td></tr>';
         var auditText = audit.matches ? "مطابق - لا يوجد فرق حسابي" : "فرق " + formatMoney(Math.abs(audit.difference));
-        return '<section class="statement-print-sheet"><header class="statement-print-header"><div><small>مدير الراتب</small><h1>كشف حساب ' + escapeHTML(formatMonth(key)) + '</h1><p>' + escapeHTML(statementPeriodText(key)) + '</p></div><div class="statement-print-balance"><small>الرصيد الختامي</small><strong>' + statementPrintAmountHTML(audit.closing, "") + '</strong></div></header>' +
+        var netFlow = roundSignedMoney(audit.inflows - audit.outflows);
+        var docId = "SM-" + String(key || "").replace("-", "") + "-" + String(st && st.archivedAt ? new Date(st.archivedAt).getTime() : Date.now()).slice(-6);
+        return '<section class="statement-print-sheet"><header class="statement-print-header"><div class="statement-print-brand"><span class="statement-print-kicker">تقرير مالي شهري · مدير الراتب</span><h1>كشف حساب ' + escapeHTML(formatMonth(key)) + '</h1><p>' + escapeHTML(statementPeriodText(key)) + '</p><div class="statement-print-docmeta"><span>مرجع التقرير: ' + escapeHTML(docId) + '</span><span>عدد الحركات: ' + audit.rows.length + '</span><span>صافي الحركة: ' + statementPrintAmountHTML(netFlow, "signed") + '</span></div></div><div class="statement-print-balance"><small>الرصيد الختامي المعتمد</small><strong>' + statementPrintAmountHTML(audit.closing, "") + '</strong><small style="margin-top:7px">إجمالي المدخرات</small><strong style="font-size:13px">' + statementPrintAmountHTML(st.savingsBalanceAtClose || 0, "") + '</strong></div></header>' +
           '<div class="statement-print-flow"><div><small>رصيد البداية</small><strong>' + statementPrintAmountHTML(audit.opening, "") + '</strong></div><div><small>إجمالي الداخل</small><strong>' + statementPrintAmountHTML(audit.inflows, "in") + '</strong></div><div><small>إجمالي الخارج</small><strong>' + statementPrintAmountHTML(audit.outflows, "out") + '</strong></div><div><small>الرصيد الختامي</small><strong>' + statementPrintAmountHTML(audit.closing, "") + '</strong></div></div>' +
+          '<div class="statement-print-section-head"><h2>الملخص التحليلي</h2><span>قراءة بصرية مبنية على الحركات الفعلية المحفوظة</span></div>' +
+          '<div class="statement-print-analytics">' + statementDonutPrintHTML(breakdown, audit.outflows) + statementBarsPrintHTML(breakdown, audit.outflows) + '</div>' +
+          '<div class="statement-print-section-head"><h2>المؤشرات المالية</h2><span>تفصيل مصادر الداخل والخروج والمدخرات</span></div>' +
           '<div class="statement-print-metrics">' + metricHtml + '</div>' +
-          '<div class="statement-print-audit' + (audit.matches ? '' : ' warn') + '"><span><strong>تدقيق الرصيد:</strong> ' + escapeHTML(auditText) + '</span><span>المتوقع: ' + statementPrintAmountHTML(audit.expected, "") + '</span></div>' +
+          '<div class="statement-print-audit' + (audit.matches ? '' : ' warn') + '"><span><strong>تدقيق الرصيد:</strong> ' + escapeHTML(auditText) + ' · الرصيد المتوقع ' + statementPrintAmountHTML(audit.expected, "") + '</span><span class="statement-print-audit-badge">' + (audit.matches ? 'مطابق ✓' : 'يحتاج مراجعة') + '</span></div>' +
+          '<div class="statement-print-transactions-section"><div class="statement-print-ledger-head"><div><strong>سجل الحركات المالية</strong><small>تفاصيل ' + escapeHTML(formatMonth(key)) + ' · مرتبة زمنيًا مع الرصيد بعد كل حركة</small></div><span class="statement-print-ledger-ref">مرجع التقرير: ' + escapeHTML(docId) + '</span></div>' +
           '<table class="statement-print-table"><thead><tr><th>التاريخ والوقت</th><th>العملية</th><th>المبلغ</th><th>الرصيد بعد العملية</th></tr></thead><tbody>' + txRows + '</tbody></table>' +
-          '<footer class="statement-print-footer"><span>تم إنشاء هذا الكشف من البيانات المحفوظة في مدير الراتب.</span><span>تاريخ الإنشاء: ' + escapeHTML(formatDisplayDateObject(new Date(), true) + ' · ' + formatClockWithSeconds(new Date())) + '</span></footer></section>';
+          '<footer class="statement-print-footer"><span>أُنشئ هذا الكشف من البيانات المحفوظة في مدير الراتب. تدقيق الرصيد يعتمد على الحركات المسجلة ولا يمثل كشفًا صادرًا عن البنك.</span><span>تاريخ الإنشاء: ' + escapeHTML(formatDisplayDateObject(new Date(), true) + ' · ' + formatClockWithSeconds(new Date())) + '</span></footer></div></section>';
       }
 
       function cleanupStatementPrint() {
@@ -10182,15 +10309,21 @@
         $("#prepareWalletShortcutButton").addEventListener("click", function () { prepareShortcutAssistant("wallet"); });
         $("#saveAutomationTemplateUrlsButton").addEventListener("click", saveAutomationTemplateUrls);
         $("#automationAutoApproveToggle").addEventListener("change", function (event) { setAutomationAutoApprove(Boolean(event.target.checked)); });
-        $("#automationReviewFab").addEventListener("click", async function () { await openAutomationDialog(); setTimeout(function () { var card = $("#automationPendingCard"); if (card) card.scrollIntoView({ behavior:"smooth", block:"start" }); }, 120); });
-        $("#refreshAutomationButton").addEventListener("click", function () { refreshAutomationPending(false); });
-        $("#testAutomationButton").addEventListener("click", testAutomationImport);
-        $("#automationPendingList").addEventListener("click", function (event) {
+        function handleAutomationReviewAction(event) {
           var accept = event.target.closest("[data-automation-accept]");
           var ignore = event.target.closest("[data-automation-ignore]");
           if (accept) acceptAutomationImport(accept.dataset.automationAccept, accept.dataset.automationKind, accept.dataset.automationCommitmentId || "");
           else if (ignore) ignoreAutomationImport(ignore.dataset.automationIgnore);
+        }
+        $("#automationReviewFab").addEventListener("click", async function () {
+          await refreshAutomationPending(true);
+          $("#automationReviewDialog").showModal();
         });
+        $("#automationReviewRefreshButton").addEventListener("click", function () { refreshAutomationPending(false); });
+        $("#refreshAutomationButton").addEventListener("click", function () { refreshAutomationPending(false); });
+        $("#testAutomationButton").addEventListener("click", testAutomationImport);
+        $("#automationPendingList").addEventListener("click", handleAutomationReviewAction);
+        $("#automationReviewList").addEventListener("click", handleAutomationReviewAction);
         $("#enableGeneralPushButton").addEventListener("click", function () { enableGeneralPushNotifications(true); });
         $("#testGeneralPushButton").addEventListener("click", testGeneralPushNotifications);
         $("#disableGeneralPushButton").addEventListener("click", disableGeneralPushNotifications);
@@ -10320,6 +10453,8 @@
           var reset = event.target.closest("[data-admin-reset]");
           var lockReset = event.target.closest("[data-admin-lock-reset]");
           var sendUpdate = event.target.closest("[data-admin-send-update]");
+          var previewUpdate = event.target.closest("[data-admin-preview-update]");
+          var previewRevoke = event.target.closest("[data-admin-preview-revoke]");
           var status = event.target.closest("[data-admin-status]");
           var logout = event.target.closest("[data-admin-logout]");
           if (reset) generateResetCode(reset.dataset.adminReset);
@@ -10327,6 +10462,22 @@
             try {
               await apiFetch("/api/admin/reset-app-lock", { method: "POST", body: JSON.stringify({ userId: lockReset.dataset.adminLockReset }) });
               showToast("تم إلغاء رمز قفل التطبيق للمستخدم. سيُطلب منه إنشاء رمز جديد.");
+              renderAdminUsers();
+            } catch (error) { showToast(apiErrorMessage(error.code), true); }
+          }
+          if (previewUpdate) {
+            try {
+              var previewResult = await apiFetch("/api/admin/send-user-preview", { method:"POST", body:JSON.stringify({ userId:previewUpdate.dataset.adminPreviewUpdate }) });
+              var previewCopied = false;
+              if (previewResult.manualUpdateUrl) { try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(previewResult.manualUpdateUrl); previewCopied = true; } } catch (_) {} }
+              showToast(Number(previewResult.sent || 0) > 0 ? "تمت إتاحة النسخة التجريبية للمستخدم وإرسال الإشعار" : (previewCopied ? "تمت إتاحة النسخة التجريبية وتم نسخ رابط الاختبار" : "تمت إتاحة النسخة التجريبية لهذا المستخدم"));
+              renderAdminUsers();
+            } catch (error) { showToast(apiErrorMessage(error.code), true); }
+          }
+          if (previewRevoke) {
+            try {
+              await apiFetch("/api/admin/revoke-user-preview", { method:"POST", body:JSON.stringify({ userId:previewRevoke.dataset.adminPreviewRevoke }) });
+              showToast("تم إلغاء وصول المستخدم للنسخة التجريبية");
               renderAdminUsers();
             } catch (error) { showToast(apiErrorMessage(error.code), true); }
           }

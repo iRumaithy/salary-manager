@@ -36,7 +36,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.1-finance-integrity-r2";
+      var v = "3.9.2-voice-expenses-r1";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -1586,6 +1586,218 @@
     .field textarea:focus {
       border-color: var(--teal);
       box-shadow: 0 0 0 4px rgba(20, 117, 108, .09);
+    }
+
+    /* 3.9.2 r1 — quick expense categories + voice capture */
+    #expenseForm.quick-form {
+      grid-template-columns: 1.5fr .72fr .82fr auto;
+    }
+
+    .expense-quick-capture {
+      grid-column: 1 / -1;
+      padding: 17px;
+      border: 1px solid rgba(20, 117, 108, .12);
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 92% 4%, rgba(20,117,108,.11), transparent 31%),
+        linear-gradient(145deg, #fbfdfc 0%, #f5f8f7 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.86);
+    }
+
+    .expense-quick-capture-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 13px;
+    }
+
+    .expense-quick-capture-copy strong {
+      display: block;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: -.25px;
+    }
+
+    .expense-quick-capture-copy span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.65;
+    }
+
+    .expense-voice-button {
+      display: inline-grid;
+      grid-template-columns: 34px auto 20px;
+      align-items: center;
+      gap: 9px;
+      min-width: 214px;
+      padding: 8px 10px;
+      border: 1px solid rgba(20,117,108,.18);
+      border-radius: 16px;
+      color: var(--ink);
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 8px 22px rgba(21,49,46,.06);
+      cursor: pointer;
+      text-align: start;
+      transition: transform .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+
+    .expense-voice-button:hover { transform: translateY(-1px); border-color: rgba(20,117,108,.34); }
+    .expense-voice-button:active { transform: translateY(0); }
+    .expense-voice-button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    .expense-voice-button.is-listening {
+      border-color: rgba(198,92,77,.36);
+      background: #fff8f5;
+      box-shadow: 0 9px 24px rgba(198,92,77,.10);
+    }
+
+    .expense-voice-mic {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      color: #fff;
+      background: linear-gradient(145deg, #13776e, #0d5e57);
+      box-shadow: 0 7px 16px rgba(20,117,108,.18);
+    }
+
+    .expense-voice-button.is-listening .expense-voice-mic {
+      background: linear-gradient(145deg, #d96d5b, #b74e40);
+      animation: expenseVoicePulse 1.15s ease-in-out infinite;
+    }
+
+    .expense-voice-mic svg { width: 18px; height: 18px; }
+    .expense-voice-copy strong { display:block; font-size:10px; font-weight:900; }
+    .expense-voice-copy small { display:block; margin-top:2px; color:var(--muted); font-size:8px; white-space:nowrap; }
+
+    .expense-voice-bars {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      height: 22px;
+    }
+
+    .expense-voice-bars i {
+      width: 2px;
+      height: 6px;
+      border-radius: 99px;
+      background: #8da39f;
+    }
+
+    .expense-voice-button.is-listening .expense-voice-bars i { background:#c65c4d; animation: expenseVoiceBar .72s ease-in-out infinite; }
+    .expense-voice-button.is-listening .expense-voice-bars i:nth-child(2) { animation-delay:.12s; }
+    .expense-voice-button.is-listening .expense-voice-bars i:nth-child(3) { animation-delay:.24s; }
+
+    @keyframes expenseVoicePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+    @keyframes expenseVoiceBar { 0%,100%{height:5px} 50%{height:17px} }
+
+    .expense-voice-status {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 31px;
+      margin: 0 0 12px;
+      padding: 7px 10px;
+      border-radius: 11px;
+      color: #49645e;
+      background: rgba(224,242,237,.68);
+      font-size: 9px;
+      line-height: 1.55;
+    }
+
+    .expense-voice-status[hidden] { display:none !important; }
+    .expense-voice-status.is-error { color:#994b42; background:#fff0ec; }
+    .expense-voice-status.is-listening { color:#8d4a3f; background:#fff4ef; }
+
+    .expense-category-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .expense-category-choice {
+      min-width: 0;
+      min-height: 86px;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 7px;
+      padding: 9px 5px;
+      border: 1px solid #e4e5e0;
+      border-radius: 16px;
+      color: #50615d;
+      background: rgba(255,255,255,.82);
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(21,49,46,.025);
+      transition: transform .17s ease, border-color .17s ease, background .17s ease, box-shadow .17s ease;
+    }
+
+    .expense-category-choice:hover { transform:translateY(-1px); border-color:color-mix(in srgb, var(--cat-accent, #14756c) 35%, #e4e5e0); }
+    .expense-category-choice.is-selected {
+      border-color: color-mix(in srgb, var(--cat-accent, #14756c) 52%, transparent);
+      background: color-mix(in srgb, var(--cat-soft, #e0f2ed) 78%, #fff);
+      box-shadow: 0 7px 20px color-mix(in srgb, var(--cat-accent, #14756c) 11%, transparent);
+    }
+
+    .expense-category-choice span:last-child {
+      overflow: hidden;
+      max-width: 100%;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 8px;
+      font-weight: 850;
+    }
+
+    .expense-category-icon {
+      width: 37px;
+      height: 37px;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      color: var(--cat-accent, #14756c);
+      background: var(--cat-soft, #e0f2ed);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.55);
+    }
+
+    .expense-category-icon svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .expense-category-select-field { display:none !important; }
+
+    .expense-description-hint {
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 600;
+    }
+
+    @media (max-width: 980px) {
+      .expense-category-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+      #expenseForm.quick-form { grid-template-columns: 1fr 1fr; }
+      #expenseForm.quick-form .field:first-of-type { grid-column:1/-1; }
+      #expenseForm.quick-form .primary-btn { grid-column:1/-1; }
+    }
+
+    @media (max-width: 620px) {
+      .expense-quick-capture { padding:13px; border-radius:18px; }
+      .expense-quick-capture-head { align-items:stretch; flex-direction:column; }
+      .expense-voice-button { width:100%; min-width:0; grid-template-columns:34px 1fr 22px; }
+      .expense-category-grid { grid-template-columns: repeat(3, minmax(0,1fr)); gap:7px; }
+      .expense-category-choice { min-height:82px; border-radius:15px; }
+      .expense-category-choice span:last-child { font-size:9px; }
+      #expenseForm.quick-form { grid-template-columns:1fr; }
+      #expenseForm.quick-form .field:first-of-type,
+      #expenseForm.quick-form .primary-btn { grid-column:auto; }
     }
 
     .expense-table {
@@ -3139,18 +3351,89 @@
         <article class="panel form-panel">
           <form class="quick-form" id="expenseForm">
             <input id="expenseId" name="id" type="hidden">
-            <div class="field">
-              <label for="expenseTitle">وصف المصروف</label>
-              <input id="expenseTitle" name="title" type="text" maxlength="80" placeholder="مثال: مشتريات المنزل" required>
+
+            <div class="expense-quick-capture" id="expenseQuickCapture">
+              <div class="expense-quick-capture-head">
+                <div class="expense-quick-capture-copy">
+                  <strong>إضافة مصروف سريع</strong>
+                  <span>اختر التصنيف أو سجّل المصروف بصوتك، ثم راجع المبلغ واضغط حفظ.</span>
+                </div>
+                <button class="expense-voice-button" id="expenseVoiceButton" type="button" aria-pressed="false">
+                  <span class="expense-voice-mic" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"></path></svg>
+                  </span>
+                  <span class="expense-voice-copy"><strong id="expenseVoiceButtonLabel">سجّل بصوتك</strong><small>مثال: «خمسين درهم بترول»</small></span>
+                  <span class="expense-voice-bars" aria-hidden="true"><i></i><i></i><i></i></span>
+                </button>
+              </div>
+              <div class="expense-voice-status" id="expenseVoiceStatus" role="status" aria-live="polite" hidden></div>
+
+              <div class="expense-category-grid" id="expenseCategoryGrid" aria-label="تصنيفات المصروف">
+                <button class="expense-category-choice" type="button" data-expense-category="طعام" style="--cat-accent:#c66445;--cat-soft:#fff0e8" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3v8M4.5 3v4.5A3 3 0 0 0 7.5 10.5H9.5V3M7.5 10.5V21M16 3v18M16 3c3 2.2 4.5 5 4.5 8H16"></path></svg></span><span>مطاعم</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="مشتريات" style="--cat-accent:#3a7c67;--cat-soft:#e9f5ef" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16l-1.4 12H5.4L4 7Z"></path><path d="M8 9V6a4 4 0 0 1 8 0v3"></path></svg></span><span>بقالة</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="مواصلات" style="--cat-accent:#b87928;--cat-soft:#fbf1dc" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 17h14l-1-6-2-4H8l-2 4-1 6Z"></path><path d="M7 17v2M17 17v2M7.5 13h.01M16.5 13h.01M3 11h3M18 11h3"></path></svg></span><span>وقود وتنقل</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="فواتير" style="--cat-accent:#2d7088;--cat-soft:#e8f3f7" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"></path><path d="M9 8h6M9 12h6M9 16h3"></path></svg></span><span>فواتير</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="اتصالات" style="--cat-accent:#526cb3;--cat-soft:#eef0fb" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"></rect><path d="M10 6h4M11 18h2"></path></svg></span><span>اتصالات</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="صحة" style="--cat-accent:#b84f62;--cat-soft:#fbecef" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 8.5c0 5-8 10-8 10s-8-5-8-10A4.5 4.5 0 0 1 12 5.7 4.5 4.5 0 0 1 20 8.5Z"></path><path d="M9 11h2l1-2 1.5 4 1-2H17"></path></svg></span><span>صحة</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="ترفيه" style="--cat-accent:#705a9b;--cat-soft:#f0ecf8" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 9h10a4 4 0 0 1 3.7 5.5l-1.2 3a2 2 0 0 1-3.2.8L14 16h-4l-2.3 2.3a2 2 0 0 1-3.2-.8l-1.2-3A4 4 0 0 1 7 9Z"></path><path d="M8 12v3M6.5 13.5h3M15.5 12.5h.01M18 14h.01"></path></svg></span><span>ترفيه</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="قهوة" style="--cat-accent:#8a6448;--cat-soft:#f5eee8" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h11v7a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8Z"></path><path d="M16 10h2a2.5 2.5 0 0 1 0 5h-2M8 3c1 1 .2 2 1.2 3M12 3c1 1 .2 2 1.2 3"></path></svg></span><span>قهوة</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="ملابس" style="--cat-accent:#8c5b7d;--cat-soft:#f7edf4" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 4-5 3 3 5 2-1v9h6v-9l2 1 3-5-5-3a3 3 0 0 1-6 0Z"></path></svg></span><span>تسوق وملابس</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="منزل" style="--cat-accent:#50736c;--cat-soft:#eaf1ef" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"></path><path d="M5 10v10h14V10M9 20v-6h6v6"></path></svg></span><span>منزل وإيجار</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="سفر" style="--cat-accent:#3d83a2;--cat-soft:#eaf5f9" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 11 8-2 5-6 2 1-3 6 5 2v2l-6-.5-3 6-2-1 1-6-7 .5v-2Z"></path></svg></span><span>سفر</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="تعليم" style="--cat-accent:#5d5aa2;--cat-soft:#efeffa" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 8 9-5 9 5-9 5-9-5Z"></path><path d="M7 11v5c3 2 7 2 10 0v-5M21 9v6"></path></svg></span><span>تعليم</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="هدايا" style="--cat-accent:#bc6b63;--cat-soft:#fbeeea" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10h16v10H4V10ZM3 7h18v3H3V7ZM12 7v13"></path><path d="M12 7H8.5A2.5 2.5 0 1 1 11 4.5L12 7Zm0 0h3.5A2.5 2.5 0 1 0 13 4.5L12 7Z"></path></svg></span><span>هدايا</span>
+                </button>
+                <button class="expense-category-choice" type="button" data-expense-category="أخرى" style="--cat-accent:#657477;--cat-soft:#eef1f1" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="18" cy="12" r="1.5"></circle></svg></span><span>أخرى</span>
+                </button>
+              </div>
             </div>
+
             <div class="field">
+              <label for="expenseTitle">وصف المصروف <span class="expense-description-hint">(اختياري)</span></label>
+              <input id="expenseTitle" name="title" type="text" maxlength="80" placeholder="مثال: محطة أدنوك — أو اتركه فارغًا">
+            </div>
+            <div class="field expense-category-select-field" aria-hidden="true">
               <label for="expenseCategory">التصنيف</label>
-              <select id="expenseCategory" name="category">
+              <select id="expenseCategory" name="category" tabindex="-1">
                 <option value="مشتريات">مشتريات</option>
                 <option value="طعام">طعام ومقاهي</option>
                 <option value="مواصلات">مواصلات</option>
                 <option value="فواتير">فواتير</option>
+                <option value="اتصالات">اتصالات</option>
+                <option value="صحة">صحة</option>
                 <option value="ترفيه">ترفيه</option>
+                <option value="قهوة">قهوة</option>
+                <option value="ملابس">ملابس</option>
+                <option value="منزل">منزل وإيجار</option>
+                <option value="سفر">سفر</option>
+                <option value="تعليم">تعليم</option>
+                <option value="هدايا">هدايا</option>
                 <option value="أخرى">أخرى</option>
               </select>
             </div>
@@ -3395,7 +3678,7 @@
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.9.1" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.9.2" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
         <span class="version-badge">الإصدار <b id="appVersion">3.8.2</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
@@ -3865,14 +4148,15 @@
       <div class="changelog-list">
         <section class="changelog-entry current">
           <div class="changelog-version">
-            <strong>الإصدار 3.9.1</strong>
-            <time datetime="2026-08-24">24 أغسطس 2026</time>
+            <strong>الإصدار 3.9.2</strong>
+            <time datetime="2026-09-01">1 سبتمبر 2026</time>
           </div>
           <ul>
             <li>تحسين دقة الرصيد والحسابات عند نزول الراتب وتعديل المبالغ.</li>
             <li>إضافة الأقساط المشتركة ومتابعة حصة كل مشارك.</li>
             <li>إعادة المدفوعات الثابتة إلى «بانتظار الدفع» مع كل راتب جديد.</li>
             <li>إظهار إصدار كل مستخدم للمالك مع إمكانية إرسال التحديث لمستخدم محدد.</li>
+            <li>إضافة تسجيل المصروف بالصوت وتصنيفات سريعة بأيقونات جديدة دون الحاجة لكتابة الوصف.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -4448,6 +4732,24 @@
         });
       }
 
+      EN_TRANSLATIONS["إضافة مصروف سريع"] = "Quick expense";
+      EN_TRANSLATIONS["اختر التصنيف أو سجّل المصروف بصوتك، ثم راجع المبلغ واضغط حفظ."] = "Choose a category or record the expense by voice, then review the amount and save.";
+      EN_TRANSLATIONS["سجّل بصوتك"] = "Record by voice";
+      EN_TRANSLATIONS["مثال: «خمسين درهم بترول»"] = "Example: “fifty dirhams fuel”";
+      EN_TRANSLATIONS["وصف المصروف"] = "Expense description";
+      EN_TRANSLATIONS["(اختياري)"] = "(optional)";
+      EN_TRANSLATIONS["مطاعم"] = "Dining";
+      EN_TRANSLATIONS["بقالة"] = "Groceries";
+      EN_TRANSLATIONS["وقود وتنقل"] = "Fuel & transport";
+      EN_TRANSLATIONS["اتصالات"] = "Telecom";
+      EN_TRANSLATIONS["صحة"] = "Health";
+      EN_TRANSLATIONS["قهوة"] = "Coffee";
+      EN_TRANSLATIONS["تسوق وملابس"] = "Shopping & clothing";
+      EN_TRANSLATIONS["منزل وإيجار"] = "Home & rent";
+      EN_TRANSLATIONS["سفر"] = "Travel";
+      EN_TRANSLATIONS["تعليم"] = "Education";
+      EN_TRANSLATIONS["هدايا"] = "Gifts";
+
       function applyLanguage(language, rerender) {
         currentLanguage = language === "en" ? "en" : "ar";
         try { localStorage.setItem(LANGUAGE_KEY, currentLanguage); } catch (_) {}
@@ -4473,8 +4775,8 @@
       }
 
 
-      var APP_VERSION = "3.9.1";
-      var APP_RELEASE_ID = "3.9.1-finance-integrity-r2";
+      var APP_VERSION = "3.9.2";
+      var APP_RELEASE_ID = "3.9.2-voice-expenses-r1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -4562,7 +4864,15 @@
         "طعام": "ط",
         "مواصلات": "ن",
         "فواتير": "ف",
+        "اتصالات": "ا",
+        "صحة": "ص",
         "ترفيه": "ت",
+        "قهوة": "ق",
+        "ملابس": "ل",
+        "منزل": "ب",
+        "سفر": "س",
+        "تعليم": "ع",
+        "هدايا": "هـ",
         "أخرى": "أ"
       };
 
@@ -8130,6 +8440,255 @@
         showToast(left > 0 ? "تمت إضافة الاسترداد إلى الرصيد الحالي · المتبقي " + formatMoney(left) : "تم استرداد المبلغ كاملًا وإضافته إلى الرصيد الحالي");
       }
 
+      var expenseVoiceRecognition = null;
+      var expenseVoiceListening = false;
+
+      function voiceLocaleText(ar, en) {
+        return currentLanguage === "en" ? en : ar;
+      }
+
+      function normalizeArabicSpeechText(value) {
+        return String(value || "")
+          .replace(/[٠-٩]/g, function (digit) { return "٠١٢٣٤٥٦٧٨٩".indexOf(digit); })
+          .replace(/[۰-۹]/g, function (digit) { return "۰۱۲۳۴۵۶۷۸۹".indexOf(digit); })
+          .replace(/[ًٌٍَُِّْـ]/g, "")
+          .replace(/[أإآ]/g, "ا")
+          .replace(/ؤ/g, "و")
+          .replace(/ئ/g, "ي")
+          .replace(/ى/g, "ي")
+          .replace(/ة/g, "ه")
+          .replace(/[،؛]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+          .toLowerCase();
+      }
+
+      var VOICE_NUMBER_VALUES = {
+        "صفر":0,"واحد":1,"واحده":1,"احد":1,"اثنين":2,"اثنان":2,"اثنتين":2,"ثنين":2,
+        "ثلاثه":3,"ثلاث":3,"اربعه":4,"اربع":4,"خمسه":5,"خمس":5,"سته":6,"ست":6,
+        "سبعه":7,"سبع":7,"ثمانيه":8,"ثمان":8,"تسعه":9,"تسع":9,
+        "عشره":10,"عشر":10,"احدعشر":11,"احدعشره":11,"اثناعشر":12,"اثنعشر":12,"اثناعشره":12,
+        "ثلاثتعشر":13,"ثلاثهعشر":13,"اربعطعشر":14,"اربعهعشر":14,"خمسطعشر":15,"خمسهعشر":15,
+        "ستعشر":16,"ستهعشر":16,"سبعتعشر":17,"سبعهعشر":17,"ثمنتعشر":18,"ثمانيهعشر":18,"تسعتعشر":19,"تسعهعشر":19,
+        "عشرين":20,"ثلاثين":30,"اربعين":40,"خمسين":50,"ستين":60,"سبعين":70,"ثمانين":80,"تسعين":90,
+        "مئه":100,"مايه":100,"ميه":100,"مئتين":200,"مايتين":200,"ميتين":200,
+        "ثلاثمئه":300,"ثلاثميه":300,"اربعمئه":400,"اربعميه":400,"خمسمئه":500,"خمسميه":500,
+        "ستمئه":600,"ستميه":600,"سبعمئه":700,"سبعميه":700,"ثمانمئه":800,"ثمانميه":800,"تسعمئه":900,"تسعميه":900
+      };
+
+      function voiceNumberToken(token) {
+        var normalized = normalizeArabicSpeechText(token).replace(/^و(?=.)/, "");
+        return Object.prototype.hasOwnProperty.call(VOICE_NUMBER_VALUES, normalized) ? VOICE_NUMBER_VALUES[normalized] : null;
+      }
+
+      function prepareArabicNumberPhrases(text) {
+        return normalizeArabicSpeechText(text)
+          .replace(/احد\s+عشر(?:ه)?/g, "احدعشر")
+          .replace(/اث(?:نا|ني|نين)\s+عشر(?:ه)?/g, "اثناعشر")
+          .replace(/ثلاث(?:ه)?\s+عشر(?:ه)?/g, "ثلاثهعشر")
+          .replace(/اربع(?:ه)?\s+عشر(?:ه)?/g, "اربعهعشر")
+          .replace(/خمس(?:ه)?\s+عشر(?:ه)?/g, "خمسهعشر")
+          .replace(/ست(?:ه)?\s+عشر(?:ه)?/g, "ستهعشر")
+          .replace(/سبع(?:ه)?\s+عشر(?:ه)?/g, "سبعهعشر")
+          .replace(/ثمان(?:يه)?\s+عشر(?:ه)?/g, "ثمانيهعشر")
+          .replace(/تسع(?:ه)?\s+عشر(?:ه)?/g, "تسعهعشر");
+      }
+
+      function parseSpokenExpenseAmount(text) {
+        var normalized = prepareArabicNumberPhrases(text);
+        var digitMatch = normalized.match(/(?:^|\s)(\d{1,8}(?:[\.,]\d{1,2})?)(?=\s|$)/);
+        if (digitMatch) {
+          var numeric = Number(String(digitMatch[1]).replace(",", "."));
+          if (Number.isFinite(numeric) && numeric > 0) return roundMoney(numeric);
+        }
+
+        var tokens = normalized.split(/\s+/).filter(Boolean);
+        var total = 0;
+        var current = 0;
+        var fraction = 0;
+        var found = false;
+        tokens.forEach(function (raw) {
+          var token = raw.replace(/^و(?=.)/, "");
+          if (token === "نص" || token === "نصف") { fraction += .5; found = true; return; }
+          if (token === "الفين" || token === "الفان") { total += 2000; current = 0; found = true; return; }
+          if (token === "الف" || token === "الاف") {
+            total += (current || 1) * 1000;
+            current = 0;
+            found = true;
+            return;
+          }
+          var value = voiceNumberToken(token);
+          if (value == null) return;
+          found = true;
+          if (value === 100 && current > 0 && current < 10) current *= 100;
+          else current += value;
+        });
+        var result = total + current + fraction;
+        return found && result > 0 ? roundMoney(result) : 0;
+      }
+
+      function detectExpenseCategoryFromVoice(text) {
+        var speech = normalizeArabicSpeechText(text);
+        var rules = [
+          { value:"قهوة", words:["قهوه","كوفي","كافيه","كابتشينو","لاتيه","اسبريسو","شاي"] },
+          { value:"مواصلات", words:["بترول","بنزين","وقود","ادنوك","محطه","تاكسي","تكسي","اوبر","كريم","مواقف","سالك","سياره","مترو","باص","مواصلات"] },
+          { value:"مشتريات", words:["بقاله","سوبرماركت","سوبر ماركت","جمعيه","كارفور","لولو","مشتريات","مقاضي","تموين"] },
+          { value:"طعام", words:["مطعم","اكل","غدا","غداء","عشا","عشاء","فطور","وجبه","برجر","بيتزا"] },
+          { value:"اتصالات", words:["اتصالات","انترنت","نت","دو ","هاتف","تلفون","موبايل","جوال"] },
+          { value:"صحة", words:["صيدليه","دواء","علاج","مستشفي","عياده","طبيب","دكتور","صحه"] },
+          { value:"فواتير", words:["فاتوره","فواتير","كهرباء","ماء","تامين","رسوم"] },
+          { value:"ترفيه", words:["سينما","فلم","فيلم","لعبه","العاب","ترفيه","بولينج"] },
+          { value:"ملابس", words:["ملابس","ثوب","قميص","حذاء","احذيه","عطر","عطور","تسوق"] },
+          { value:"منزل", words:["ايجار","بيت","منزل","اثاث","صيانة","صيانه"] },
+          { value:"سفر", words:["سفر","طيران","فندق","فنادق","حجز","تذكره","تذاكر"] },
+          { value:"تعليم", words:["تعليم","مدرسه","جامعه","دوره","كورس","كتاب","كتب"] },
+          { value:"هدايا", words:["هديه","هدايا","تبرع","صدقه"] }
+        ];
+        for (var i = 0; i < rules.length; i += 1) {
+          for (var j = 0; j < rules[i].words.length; j += 1) {
+            if (speech.indexOf(rules[i].words[j]) !== -1) return rules[i].value;
+          }
+        }
+        return "أخرى";
+      }
+
+      function voiceExpenseTitle(text, category) {
+        var currency = new Set(["درهم","دراهم","درهما","درهمين","aed"]);
+        var fillers = new Set(["دفعت","دفعة","صرفت","صرف","مصروف","مبلغ","بمبلغ","بقيمة","بقميه","قيمه","على","حق"]);
+        var tokens = String(text || "").replace(/[،؛]/g, " ").split(/\s+/).filter(Boolean);
+        var cleaned = tokens.filter(function (raw) {
+          var norm = normalizeArabicSpeechText(raw).replace(/^و(?=.)/, "");
+          if (!norm) return false;
+          if (/^\d+(?:[\.,]\d+)?$/.test(norm)) return false;
+          if (currency.has(norm) || fillers.has(norm)) return false;
+          if (norm === "الف" || norm === "الاف" || norm === "الفين" || norm === "الفان" || norm === "نص" || norm === "نصف") return false;
+          if (voiceNumberToken(norm) != null) return false;
+          return true;
+        }).join(" ").replace(/^و+|و+$/g, "").trim();
+        if (cleaned) return cleaned.slice(0, 80);
+        var defaults = { "طعام":"مطاعم", "مشتريات":"بقالة", "مواصلات":"وقود وتنقل", "فواتير":"فواتير", "اتصالات":"اتصالات", "صحة":"صحة", "ترفيه":"ترفيه", "قهوة":"قهوة", "ملابس":"تسوق وملابس", "منزل":"منزل وإيجار", "سفر":"سفر", "تعليم":"تعليم", "هدايا":"هدايا", "أخرى":"مصروف" };
+        return defaults[category] || "مصروف";
+      }
+
+      function expenseCategoryDefaultTitle(category) {
+        var labels = { "طعام":"مطاعم", "مشتريات":"بقالة ومشتريات", "مواصلات":"وقود وتنقل", "فواتير":"فواتير", "اتصالات":"اتصالات", "صحة":"صحة", "ترفيه":"ترفيه", "قهوة":"قهوة", "ملابس":"تسوق وملابس", "منزل":"منزل وإيجار", "سفر":"سفر", "تعليم":"تعليم", "هدايا":"هدايا", "أخرى":"مصروف" };
+        return labels[String(category || "أخرى")] || "مصروف";
+      }
+
+      function syncExpenseCategoryGrid() {
+        var select = $("#expenseCategory");
+        var value = select ? String(select.value || "مشتريات") : "مشتريات";
+        $all("#expenseCategoryGrid [data-expense-category]").forEach(function (button) {
+          var selected = String(button.dataset.expenseCategory || "") === value;
+          button.classList.toggle("is-selected", selected);
+          button.setAttribute("aria-pressed", selected ? "true" : "false");
+        });
+      }
+
+      function selectExpenseCategory(value) {
+        var select = $("#expenseCategory");
+        if (!select) return;
+        var exists = Array.prototype.some.call(select.options, function (option) { return option.value === value; });
+        select.value = exists ? value : "أخرى";
+        syncExpenseCategoryGrid();
+      }
+
+      function setExpenseVoiceStatus(message, mode) {
+        var root = $("#expenseVoiceStatus");
+        if (!root) return;
+        root.hidden = !message;
+        root.textContent = String(message || "");
+        root.classList.toggle("is-error", mode === "error");
+        root.classList.toggle("is-listening", mode === "listening");
+      }
+
+      function setExpenseVoiceListening(listening) {
+        expenseVoiceListening = Boolean(listening);
+        var button = $("#expenseVoiceButton");
+        var label = $("#expenseVoiceButtonLabel");
+        if (button) {
+          button.classList.toggle("is-listening", expenseVoiceListening);
+          button.setAttribute("aria-pressed", expenseVoiceListening ? "true" : "false");
+        }
+        if (label) label.textContent = expenseVoiceListening ? voiceLocaleText("أستمع الآن…", "Listening…") : voiceLocaleText("سجّل بصوتك", "Record by voice");
+      }
+
+      function applyExpenseVoiceTranscript(transcript) {
+        var heard = String(transcript || "").trim();
+        if (!heard) return;
+        var amount = parseSpokenExpenseAmount(heard);
+        var category = detectExpenseCategoryFromVoice(heard);
+        var title = voiceExpenseTitle(heard, category);
+        selectExpenseCategory(category);
+        if (title) $("#expenseTitle").value = title;
+        if (amount > 0) $("#expenseAmount").value = amount.toFixed(2);
+        $("#expenseDate").value = normalizeExpenseDate($("#expenseDate").value || "");
+        updateSharedExpenseForm();
+        if (amount > 0) {
+          setExpenseVoiceStatus(voiceLocaleText("سمعت: «" + heard + "» — تم تجهيز " + formatMoney(amount) + " ضمن «" + expenseCategoryDefaultTitle(category) + "». راجع ثم اضغط حفظ.", "Heard: “" + heard + "” — prepared " + formatMoney(amount) + ". Review and save."), "success");
+          try { navigator.vibrate && navigator.vibrate(22); } catch (_) {}
+        } else {
+          setExpenseVoiceStatus(voiceLocaleText("سمعت: «" + heard + "»، لكن لم أتعرف على المبلغ. يمكنك قوله مثل «خمسين درهم بترول» أو إدخال المبلغ يدويًا.", "I heard: “" + heard + "”, but could not detect the amount. You can enter it manually."), "error");
+        }
+      }
+
+      function ensureExpenseVoiceRecognition() {
+        var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!Recognition) return null;
+        if (expenseVoiceRecognition) return expenseVoiceRecognition;
+        var recognition = new Recognition();
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+        recognition.lang = currentLanguage === "en" ? "en-AE" : "ar-AE";
+        var latestTranscript = "";
+        recognition.onstart = function () {
+          latestTranscript = "";
+          setExpenseVoiceListening(true);
+          setExpenseVoiceStatus(voiceLocaleText("تحدث الآن… مثال: خمسين درهم بترول", "Speak now… for example: fifty dirhams fuel"), "listening");
+        };
+        recognition.onresult = function (event) {
+          var combined = "";
+          for (var i = 0; i < event.results.length; i += 1) combined += event.results[i][0].transcript + " ";
+          latestTranscript = combined.trim() || latestTranscript;
+          if (latestTranscript) setExpenseVoiceStatus(voiceLocaleText("سمعت: «" + latestTranscript + "»", "Heard: “" + latestTranscript + "”"), "listening");
+        };
+        recognition.onerror = function (event) {
+          var code = String(event && event.error || "");
+          var message = code === "not-allowed" || code === "service-not-allowed"
+            ? voiceLocaleText("اسمح لمدير الراتب باستخدام الميكروفون من إعدادات المتصفح ثم حاول مرة أخرى.", "Allow microphone access in browser settings and try again.")
+            : code === "no-speech"
+              ? voiceLocaleText("لم أسمع كلامًا واضحًا. اضغط الميكروفون وحاول مرة أخرى.", "No clear speech was detected. Try again.")
+              : voiceLocaleText("تعذر إكمال التسجيل الصوتي. يمكنك إدخال المصروف يدويًا.", "Voice input could not be completed. You can enter the expense manually.");
+          setExpenseVoiceStatus(message, "error");
+        };
+        recognition.onend = function () {
+          setExpenseVoiceListening(false);
+          if (latestTranscript) {
+            applyExpenseVoiceTranscript(latestTranscript);
+            latestTranscript = "";
+          }
+        };
+        expenseVoiceRecognition = recognition;
+        return recognition;
+      }
+
+      function toggleExpenseVoiceRecognition() {
+        var recognition = ensureExpenseVoiceRecognition();
+        if (!recognition) {
+          setExpenseVoiceStatus(voiceLocaleText("التسجيل الصوتي غير متاح في هذا المتصفح. استخدم Safari/Chrome محدثًا أو أدخل المصروف يدويًا.", "Voice input is not available in this browser. Use an updated browser or enter the expense manually."), "error");
+          return;
+        }
+        recognition.lang = currentLanguage === "en" ? "en-AE" : "ar-AE";
+        try {
+          if (expenseVoiceListening) recognition.stop();
+          else recognition.start();
+        } catch (_) {
+          try { recognition.stop(); } catch (__) {}
+          setExpenseVoiceListening(false);
+        }
+      }
+
       function resetExpenseForm() {
         var form = $("#expenseForm");
         if (!form) return;
@@ -8138,6 +8697,8 @@
         $("#expenseDate").value = normalizeExpenseDate("");
         $("#expenseSubmitButton").textContent = "حفظ المصروف";
         $("#expenseCancelEditButton").hidden = true;
+        setExpenseVoiceStatus("", "");
+        selectExpenseCategory("مشتريات");
         if ($("#expenseParticipantNames")) { $("#expenseParticipantNames").innerHTML = ""; $("#expenseParticipantNames").dataset.count = ""; }
         updateSharedExpenseForm();
       }
@@ -8151,6 +8712,8 @@
         $("#expenseId").value = item.id;
         $("#expenseTitle").value = item.title || "";
         $("#expenseCategory").value = item.category || "أخرى";
+        syncExpenseCategoryGrid();
+        setExpenseVoiceStatus("", "");
         $("#expenseAmount").value = roundMoney(item.amount).toFixed(2);
         $("#expenseDate").value = item.date || toDateInput(new Date());
         $("#expenseFromReserved").checked = Boolean(item.excludeFromBudget);
@@ -8219,11 +8782,11 @@
         var amount = roundMoney(data.get("amount"));
         var sharedValues = sharedExpenseValues(data, amount);
         if (data.get("sharedExpense") === "on" && !sharedValues) { showToast("أدخل مبلغًا صحيحًا وحدد عدد المشاركين", true); return; }
-        var title = String(data.get("title") || "").trim();
         var category = String(data.get("category") || "أخرى");
+        var title = String(data.get("title") || "").trim() || expenseCategoryDefaultTitle(category);
         var date = String(data.get("date") || "");
         var excludeFromBudget = data.get("excludeFromBudget") === "on";
-        if (!title || amount <= 0 || !date) { showToast("أكمل وصف المصروف والمبلغ والتاريخ", true); return; }
+        if (amount <= 0 || !date) { showToast("أكمل مبلغ المصروف والتاريخ", true); return; }
         if (calendarMonthForDate(date) !== defaultMonth) {
           showToast("تسجيل وتعديل المصروفات متاح للشهر الحالي فقط. الشهور السابقة محفوظة في كشف الحساب.", true);
           return;
@@ -8630,6 +9193,14 @@
         $("#recurringForm").addEventListener("submit", submitRecurring);
         $("#expenseForm").addEventListener("submit", submitExpense);
         $("#expenseCancelEditButton").addEventListener("click", resetExpenseForm);
+        $("#expenseCategoryGrid").addEventListener("click", function (event) {
+          var button = event.target.closest("[data-expense-category]");
+          if (!button) return;
+          selectExpenseCategory(button.dataset.expenseCategory);
+          try { navigator.vibrate && navigator.vibrate(12); } catch (_) {}
+        });
+        $("#expenseCategory").addEventListener("change", syncExpenseCategoryGrid);
+        $("#expenseVoiceButton").addEventListener("click", toggleExpenseVoiceRecognition);
         $("#expenseReimbursementForm").addEventListener("submit", submitExpenseReimbursement);
         $("#expenseShared").addEventListener("change", updateSharedExpenseForm);
         $("#expenseAmount").addEventListener("input", updateSharedExpenseForm);
@@ -8936,8 +9507,8 @@
 
         $("#mobileFab").addEventListener("click", function () {
           if (activeView === "expensesView") {
-            $("#expenseTitle").focus();
-            $("#expenseForm").scrollIntoView({ behavior: "smooth", block: "center" });
+            $("#expenseForm").scrollIntoView({ behavior: "smooth", block: "start" });
+            setTimeout(function () { $("#expenseAmount").focus(); }, 180);
           } else if (activeView === "depositsView") {
             $("#depositTitle").focus();
             $("#depositForm").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -8997,6 +9568,7 @@
       setInterval(updateHeaderDateTime, 1000);
 
       setText("#appVersion", APP_VERSION);
+      syncExpenseCategoryGrid();
       document.documentElement.lang = currentLanguage;
       document.documentElement.dir = currentLanguage === "en" ? "ltr" : "rtl";
       document.body && document.body.setAttribute("dir", document.documentElement.dir);

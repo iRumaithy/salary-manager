@@ -1,4 +1,4 @@
-const CACHE = "salary-manager-v3.9.1-finance-integrity-r2";
+const CACHE = "salary-manager-v3.9.2-voice-expenses-r1";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = [

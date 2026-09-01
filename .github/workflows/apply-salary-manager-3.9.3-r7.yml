@@ -1,0 +1,430 @@
+name: Apply Salary Manager 3.9.3 r7 Auto-Approve Fix
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.3-r7.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Apply Salary Manager 3.9.3 r7
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          OLD_RELEASE = "3.9.3-expense-insights-voice-wallet-r6"
+          NEW_RELEASE = "3.9.3-autoapprove-sync-race-r7"
+
+          def read(path):
+              return Path(path).read_text(encoding="utf-8")
+
+          def write(path, text):
+              Path(path).write_text(text, encoding="utf-8")
+
+          def replace_once(text, old, new, label, already=None):
+              if old in text:
+                  return text.replace(old, new, 1)
+              if already and already in text:
+                  print(label + ": already applied")
+                  return text
+              raise SystemExit("Patch failed: " + label)
+
+          # ------------------------------------------------------------
+          # public/index.html
+          # ------------------------------------------------------------
+          index_path = "public/index.html"
+          index = read(index_path)
+          index = index.replace(OLD_RELEASE, NEW_RELEASE)
+
+          index = replace_once(
+              index,
+              '        var snapshot = JSON.stringify({ state: state });',
+              '        var snapshot = JSON.stringify({ state: state, baseRevision: cloudRevision });',
+              "cloud snapshot base revision",
+              'var snapshot = JSON.stringify({ state: state, baseRevision: cloudRevision });'
+          )
+
+          old_saved = '''          var saved = await apiFetch("/api/data", { method: "PUT", body: snapshot });
+                    cloudRevision = Math.max(cloudRevision, Number(saved.revision || 0));
+                    lastSavedSeq = Math.max(lastSavedSeq, sentSeq);
+                    setSyncStatus(liveSyncSocket && liveSyncSocket.readyState === 1 ? "مزامنة فورية مفعّلة" : "تمت المزامنة", true);
+                    if (!silent) showToast("تم حفظ بياناتك ومزامنتها مع أجهزتك");
+                    return true;'''
+          new_saved = '''          var saved = await apiFetch("/api/data", { method: "PUT", body: snapshot });
+                    cloudRevision = Math.max(cloudRevision, Number(saved.revision || 0));
+                    lastSavedSeq = Math.max(lastSavedSeq, sentSeq);
+                    var mergedAutomationChanges = Math.max(0, Number(saved.mergedAutomationChanges || 0));
+                    if (mergedAutomationChanges > 0) {
+                      await syncFromCloud({ silent:true, background:true, force:true, reason:"automation-merge-after-save" });
+                    }
+                    setSyncStatus(liveSyncSocket && liveSyncSocket.readyState === 1 ? "مزامنة فورية مفعّلة" : "تمت المزامنة", true);
+                    if (!silent) showToast("تم حفظ بياناتك ومزامنتها مع أجهزتك");
+                    return true;'''
+          index = replace_once(
+              index,
+              old_saved,
+              new_saved,
+              "refresh merged automatic transaction",
+              'reason:"automation-merge-after-save"'
+          )
+
+          anchor = '''            <li>إضافة إنفوغرافي احترافي حي للمصروفات حسب التصنيف أسفل «توزيع الراتب»، مع إدراجه في كشف الحساب الشهري ونسخة PDF.</li>'''
+          addition = '''            <li>إصلاح اختفاء بعض المصروفات بعد الاعتماد التلقائي عند تزامن وصول العملية مع الحفظ الفوري أو المزامنة من جهاز آخر.</li>
+                      <li>إضافة حماية من تعارض المراجعات تحفظ عمليات Apple Wallet ورسائل البنك المضافة على الخادم وتدمجها مع أحدث تغييرات الجهاز بدل الكتابة فوقها.</li>'''
+          if "إصلاح اختفاء بعض المصروفات بعد الاعتماد التلقائي" not in index:
+              index = replace_once(index, anchor, anchor + "\n" + addition, "r7 changelog")
+
+          write(index_path, index)
+
+          # ------------------------------------------------------------
+          # public/sw.js
+          # ------------------------------------------------------------
+          sw_path = "public/sw.js"
+          sw = read(sw_path).replace(OLD_RELEASE, NEW_RELEASE)
+          write(sw_path, sw)
+
+          # ------------------------------------------------------------
+          # src/worker.js
+          # ------------------------------------------------------------
+          worker_path = "src/worker.js"
+          worker = read(worker_path)
+
+          worker = replace_once(
+              worker,
+              'const RELEASE_ID = "3.9.3-expense-insights-voice-wallet-r6";',
+              'const RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";',
+              "worker release id",
+              'const RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";'
+          )
+
+          old_release_tail = '''  "3.9.3-shortcuts-merchant-preview-r5"
+          ]);'''
+          new_release_tail = '''  "3.9.3-shortcuts-merchant-preview-r5",
+            "3.9.3-expense-insights-voice-wallet-r6"
+          ]);'''
+          worker = replace_once(
+              worker,
+              old_release_tail,
+              new_release_tail,
+              "previous r6 staged release",
+              '"3.9.3-expense-insights-voice-wallet-r6"\n]);'
+          )
+
+          old_put = '''    if (url.pathname === "/data/put" && request.method === "POST") {
+                const b = await request.json().catch(() => null);
+                if (!b || typeof b !== "object" || !b.state || typeof b.state !== "object") return json({ ok: false, error: "INVALID_DATA" }, 400);
+                if (!Array.isArray(b.state.commitments) || !Array.isArray(b.state.recurringPayments) || !Array.isArray(b.state.expenses)) return json({ ok: false, error: "INVALID_DATA" }, 400);
+                const now = new Date().toISOString();
+                const current = await this.ctx.storage.get("state");
+                if (current) {
+                  const historyKey = `history:${Date.now()}:${crypto.randomUUID()}`;
+                  await this.ctx.storage.put(historyKey, current);
+                  const history = await this.ctx.storage.list({ prefix: "history:", reverse: true, limit: 8 });
+                  if (history.size > 6) {
+                    const keys = [...history.keys()].slice(6);
+                    if (keys.length) await this.ctx.storage.delete(keys);
+                  }
+                }
+                const revision = Number(await this.ctx.storage.get("revision") || 0) + 1;
+                await this.ctx.storage.put("state", b.state);
+                await this.ctx.storage.put("updatedAt", now);
+                await this.ctx.storage.put("revision", revision);
+                const message = JSON.stringify({ type: "revision", revision, updatedAt: now });
+                for (const socket of this.ctx.getWebSockets()) {
+                  try { socket.send(message); } catch (_) {}
+                }
+                return json({ ok: true, updatedAt: now, revision });
+              }'''
+
+          new_put = r'''    if (url.pathname === "/data/put" && request.method === "POST") {
+                const b = await request.json().catch(() => null);
+                if (!b || typeof b !== "object" || !b.state || typeof b.state !== "object") return json({ ok: false, error: "INVALID_DATA" }, 400);
+                if (!Array.isArray(b.state.commitments) || !Array.isArray(b.state.recurringPayments) || !Array.isArray(b.state.expenses)) return json({ ok: false, error: "INVALID_DATA" }, 400);
+
+                const now = new Date().toISOString();
+                const current = await this.ctx.storage.get("state");
+                const currentRevision = Number(await this.ctx.storage.get("revision") || 0);
+                const baseRevisionRaw = Number(b.baseRevision);
+                const hasBaseRevision = Number.isFinite(baseRevisionRaw) && baseRevisionRaw >= 0;
+                const staleSave = Boolean(current && hasBaseRevision && baseRevisionRaw < currentRevision);
+                const nextState = b.state;
+
+                if (!Array.isArray(nextState.deposits)) nextState.deposits = [];
+                if (!Array.isArray(nextState.transactions)) nextState.transactions = [];
+                let mergedAutomationChanges = 0;
+                let mergedAutomationImports = 0;
+                let automationBalanceDelta = 0;
+
+                if (staleSave) {
+                  const importIdsOf = entry => {
+                    const ids = [];
+                    const one = String(entry?.externalImportId || "");
+                    if (one) ids.push(one);
+                    if (Array.isArray(entry?.externalImportIds)) {
+                      for (const raw of entry.externalImportIds) {
+                        const id = String(raw || "");
+                        if (id && !ids.includes(id)) ids.push(id);
+                      }
+                    }
+                    return ids;
+                  };
+                  const overlaps = (ids, set) => ids.some(id => set.has(id));
+                  const allIncomingImportIds = new Set();
+                  for (const row of [...nextState.expenses, ...nextState.deposits, ...nextState.transactions]) {
+                    for (const id of importIdsOf(row)) allIncomingImportIds.add(id);
+                  }
+
+                  const incomingExpenseIds = new Set(nextState.expenses.map(row => String(row?.id || "")));
+                  const incomingDepositIds = new Set(nextState.deposits.map(row => String(row?.id || "")));
+
+                  for (const expense of Array.isArray(current.expenses) ? current.expenses : []) {
+                    const ids = importIdsOf(expense);
+                    if (!ids.length) continue;
+                    const idSet = new Set(ids);
+                    const exists = incomingExpenseIds.has(String(expense?.id || "")) ||
+                      nextState.expenses.some(row => overlaps(importIdsOf(row), idSet));
+                    if (exists) continue;
+
+                    const wasCompletelyMissing = !overlaps(ids, allIncomingImportIds);
+                    nextState.expenses.push(structuredClone(expense));
+                    incomingExpenseIds.add(String(expense?.id || ""));
+                    for (const id of ids) allIncomingImportIds.add(id);
+                    if (wasCompletelyMissing && !expense.excludeFromBudget) {
+                      automationBalanceDelta -= Math.abs(Number(expense.amount || 0));
+                    }
+                    mergedAutomationImports += 1;
+                    mergedAutomationChanges += 1;
+                  }
+
+                  for (const deposit of Array.isArray(current.deposits) ? current.deposits : []) {
+                    const ids = importIdsOf(deposit);
+                    if (!ids.length) continue;
+                    const idSet = new Set(ids);
+                    const exists = incomingDepositIds.has(String(deposit?.id || "")) ||
+                      nextState.deposits.some(row => overlaps(importIdsOf(row), idSet));
+                    if (exists) continue;
+
+                    const wasCompletelyMissing = !overlaps(ids, allIncomingImportIds);
+                    nextState.deposits.push(structuredClone(deposit));
+                    incomingDepositIds.add(String(deposit?.id || ""));
+                    for (const id of ids) allIncomingImportIds.add(id);
+                    if (wasCompletelyMissing) automationBalanceDelta += Math.abs(Number(deposit.amount || 0));
+                    mergedAutomationImports += 1;
+                    mergedAutomationChanges += 1;
+                  }
+
+                  for (const currentTx of Array.isArray(current.transactions) ? current.transactions : []) {
+                    const ids = importIdsOf(currentTx);
+                    if (!ids.length) continue;
+                    const target = nextState.transactions.find(row => String(row?.id || "") === String(currentTx?.id || ""));
+                    if (!target) {
+                      nextState.transactions.push(structuredClone(currentTx));
+                      for (const id of ids) allIncomingImportIds.add(id);
+                      mergedAutomationChanges += 1;
+                      continue;
+                    }
+
+                    const before = JSON.stringify({
+                      externalImportId:target.externalImportId,
+                      externalImportIds:target.externalImportIds,
+                      bankConfirmed:target.bankConfirmed,
+                      bankConfirmedAt:target.bankConfirmedAt,
+                      bankConfirmationDate:target.bankConfirmationDate,
+                      bankConfirmationMerchant:target.bankConfirmationMerchant,
+                      bankConfirmationSources:target.bankConfirmationSources,
+                      automationReference:target.automationReference,
+                      automationCardLast4:target.automationCardLast4,
+                      automationSource:target.automationSource,
+                      automationSources:target.automationSources
+                    });
+
+                    if (currentTx.externalImportId) target.externalImportId = target.externalImportId || currentTx.externalImportId;
+                    target.externalImportIds = [...new Set([
+                      ...(Array.isArray(target.externalImportIds) ? target.externalImportIds : []),
+                      ...(Array.isArray(currentTx.externalImportIds) ? currentTx.externalImportIds : []),
+                      ...(currentTx.externalImportId ? [currentTx.externalImportId] : [])
+                    ])];
+                    if (currentTx.bankConfirmed) target.bankConfirmed = true;
+                    if (currentTx.bankConfirmedAt) target.bankConfirmedAt = currentTx.bankConfirmedAt;
+                    if (currentTx.bankConfirmationDate) target.bankConfirmationDate = currentTx.bankConfirmationDate;
+                    if (currentTx.bankConfirmationMerchant) target.bankConfirmationMerchant = currentTx.bankConfirmationMerchant;
+                    target.bankConfirmationSources = [...new Set([
+                      ...(Array.isArray(target.bankConfirmationSources) ? target.bankConfirmationSources : []),
+                      ...(Array.isArray(currentTx.bankConfirmationSources) ? currentTx.bankConfirmationSources : [])
+                    ])];
+                    if (currentTx.automationReference) target.automationReference = target.automationReference || currentTx.automationReference;
+                    if (currentTx.automationCardLast4) target.automationCardLast4 = target.automationCardLast4 || currentTx.automationCardLast4;
+                    if (currentTx.automationSource) target.automationSource = target.automationSource || currentTx.automationSource;
+                    target.automationSources = [...new Set([
+                      ...(Array.isArray(target.automationSources) ? target.automationSources : []),
+                      ...(Array.isArray(currentTx.automationSources) ? currentTx.automationSources : [])
+                    ])];
+
+                    const after = JSON.stringify({
+                      externalImportId:target.externalImportId,
+                      externalImportIds:target.externalImportIds,
+                      bankConfirmed:target.bankConfirmed,
+                      bankConfirmedAt:target.bankConfirmedAt,
+                      bankConfirmationDate:target.bankConfirmationDate,
+                      bankConfirmationMerchant:target.bankConfirmationMerchant,
+                      bankConfirmationSources:target.bankConfirmationSources,
+                      automationReference:target.automationReference,
+                      automationCardLast4:target.automationCardLast4,
+                      automationSource:target.automationSource,
+                      automationSources:target.automationSources
+                    });
+                    if (before !== after) mergedAutomationChanges += 1;
+                  }
+
+                  const currentCommitments = Array.isArray(current.commitments) ? current.commitments : [];
+                  for (const currentCommitment of currentCommitments) {
+                    const confirmations = currentCommitment && typeof currentCommitment.bankConfirmations === "object"
+                      ? currentCommitment.bankConfirmations : null;
+                    if (!confirmations || !Object.keys(confirmations).length) continue;
+                    const target = nextState.commitments.find(row => String(row?.id || "") === String(currentCommitment?.id || ""));
+                    if (!target) continue;
+                    const before = JSON.stringify(target.bankConfirmations || {});
+                    target.bankConfirmations = {
+                      ...(target.bankConfirmations && typeof target.bankConfirmations === "object" ? target.bankConfirmations : {}),
+                      ...structuredClone(confirmations)
+                    };
+                    if (before !== JSON.stringify(target.bankConfirmations)) mergedAutomationChanges += 1;
+                  }
+
+                  if (Math.abs(automationBalanceDelta) >= 0.005) {
+                    nextState.walletBalance = Math.round((Number(nextState.walletBalance || 0) + automationBalanceDelta) * 100) / 100;
+                    nextState.walletStarted = true;
+                    mergedAutomationChanges += 1;
+                  }
+                }
+
+                if (current) {
+                  const historyKey = `history:${Date.now()}:${crypto.randomUUID()}`;
+                  await this.ctx.storage.put(historyKey, current);
+                  const history = await this.ctx.storage.list({ prefix: "history:", reverse: true, limit: 8 });
+                  if (history.size > 6) {
+                    const keys = [...history.keys()].slice(6);
+                    if (keys.length) await this.ctx.storage.delete(keys);
+                  }
+                }
+
+                const revision = currentRevision + 1;
+                await this.ctx.storage.put("state", nextState);
+                await this.ctx.storage.put("updatedAt", now);
+                await this.ctx.storage.put("revision", revision);
+                const message = JSON.stringify({ type: "revision", revision, updatedAt: now });
+                for (const socket of this.ctx.getWebSockets()) {
+                  try { socket.send(message); } catch (_) {}
+                }
+                return json({
+                  ok:true,
+                  updatedAt:now,
+                  revision,
+                  staleSaveMerged:staleSave && mergedAutomationChanges > 0,
+                  mergedAutomationChanges,
+                  mergedAutomationImports
+                });
+              }'''
+
+          worker = replace_once(
+              worker,
+              old_put,
+              new_put,
+              "automation-safe data put",
+              "staleSaveMerged:staleSave && mergedAutomationChanges > 0"
+          )
+
+          write(worker_path, worker)
+
+          checks = {
+              "public/index.html": [
+                  NEW_RELEASE,
+                  "baseRevision: cloudRevision",
+                  'reason:"automation-merge-after-save"',
+                  "إصلاح اختفاء بعض المصروفات بعد الاعتماد التلقائي"
+              ],
+              "public/sw.js": [NEW_RELEASE],
+              "src/worker.js": [
+                  NEW_RELEASE,
+                  '"3.9.3-expense-insights-voice-wallet-r6"',
+                  "const staleSave = Boolean(current && hasBaseRevision && baseRevisionRaw < currentRevision);",
+                  "mergedAutomationChanges",
+                  "mergedAutomationImports",
+                  "automationBalanceDelta",
+                  "staleSaveMerged:staleSave && mergedAutomationChanges > 0"
+              ]
+          }
+          for path, needles in checks.items():
+              text = read(path)
+              missing = [needle for needle in needles if needle not in text]
+              if missing:
+                  raise SystemExit("Validation failed in " + path + ": " + repr(missing))
+
+          print("Salary Manager 3.9.3 r7 auto-approve race fix applied successfully.")
+          PY
+
+      - name: Validate Worker JavaScript
+        run: node --check src/worker.js
+
+      - name: Validate inline JavaScript
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path("public/index.html").read_text(encoding="utf-8")
+          blocks = re.findall(r"<script(?:\s[^>]*)?>(.*?)</script>", text, flags=re.S|re.I)
+          inline = "\n".join(block for block in blocks if block.strip())
+          Path("/tmp/salary-inline-r7.js").write_text(inline, encoding="utf-8")
+          PY
+          node --check /tmp/salary-inline-r7.js
+
+      - name: Commit patched source
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No source changes to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add public/index.html public/sw.js src/worker.js
+            git commit -m "Fix auto-approved transaction disappearing during sync"
+            git push
+          fi
+
+      - name: Deploy patched build to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+          secrets: |
+            AUTH_PEPPER
+            OWNER_BOOTSTRAP_TOKEN
+        env:
+          AUTH_PEPPER: ${{ secrets.AUTH_PEPPER }}
+          OWNER_BOOTSTRAP_TOKEN: ${{ secrets.OWNER_BOOTSTRAP_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "### Salary Manager 3.9.3 r7" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Fixes auto-approved expenses that could briefly appear then disappear" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Local saves now include the cloud base revision" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Server preserves newer Wallet/bank imports when an older save arrives" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Balance and ledger are preserved with the automatic transaction" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Bank installment confirmation metadata is protected" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Device reloads the merged server state immediately" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Deployed staged r7 build for owner review" >> "$GITHUB_STEP_SUMMARY"

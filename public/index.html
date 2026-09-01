@@ -36,7 +36,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.3-expense-insights-voice-wallet-r6";
+      var v = "3.9.3-autoapprove-sync-race-r7";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -4560,6 +4560,8 @@
             <li>توسعة تصنيفات المصروفات بخيارات واقعية مثل مغسلة الملابس والعناية الشخصية وصيانة السيارة والخدمات المنزلية والتوصيل والعائلة والحيوانات الأليفة والمناسبات.</li>
             <li>رفع دقة التسجيل الصوتي باختيار أفضل نتيجة من عدة احتمالات وربط الكلمات اليومية بالتصنيف المناسب.</li>
             <li>إضافة إنفوغرافي احترافي حي للمصروفات حسب التصنيف أسفل «توزيع الراتب»، مع إدراجه في كشف الحساب الشهري ونسخة PDF.</li>
+            <li>إصلاح اختفاء بعض المصروفات بعد الاعتماد التلقائي عند تزامن وصول العملية مع الحفظ الفوري أو المزامنة من جهاز آخر.</li>
+            <li>إضافة حماية من تعارض المراجعات تحفظ عمليات Apple Wallet ورسائل البنك المضافة على الخادم وتدمجها مع أحدث تغييرات الجهاز بدل الكتابة فوقها.</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -5209,7 +5211,7 @@
 
 
       var APP_VERSION = "3.9.3";
-      var APP_RELEASE_ID = "3.9.3-expense-insights-voice-wallet-r6";
+      var APP_RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -5951,12 +5953,16 @@
         cloudSaveBusy = true;
         if (cloudSaveTimer) { clearTimeout(cloudSaveTimer); cloudSaveTimer = null; }
         var sentSeq = localChangeSeq;
-        var snapshot = JSON.stringify({ state: state });
+        var snapshot = JSON.stringify({ state: state, baseRevision: cloudRevision });
         try {
           setSyncStatus("جارٍ الحفظ الفوري…", true);
           var saved = await apiFetch("/api/data", { method: "PUT", body: snapshot });
           cloudRevision = Math.max(cloudRevision, Number(saved.revision || 0));
           lastSavedSeq = Math.max(lastSavedSeq, sentSeq);
+          var mergedAutomationChanges = Math.max(0, Number(saved.mergedAutomationChanges || 0));
+          if (mergedAutomationChanges > 0) {
+            await syncFromCloud({ silent:true, background:true, force:true, reason:"automation-merge-after-save" });
+          }
           setSyncStatus(liveSyncSocket && liveSyncSocket.readyState === 1 ? "مزامنة فورية مفعّلة" : "تمت المزامنة", true);
           if (!silent) showToast("تم حفظ بياناتك ومزامنتها مع أجهزتك");
           return true;

@@ -1,4 +1,4 @@
-const CACHE = "salary-manager-v3.9.3-expense-insights-voice-wallet-r6";
+const CACHE = "salary-manager-v3.9.3-autoapprove-sync-race-r7";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = [

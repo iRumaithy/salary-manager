@@ -36,7 +36,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.2-voice-expenses-r1";
+      var v = "3.9.2-voice-expenses-r2";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -1588,7 +1588,7 @@
       box-shadow: 0 0 0 4px rgba(20, 117, 108, .09);
     }
 
-    /* 3.9.2 r1 — quick expense categories + voice capture */
+    /* 3.9.2 r2 — quick expense categories + order-independent voice capture */
     #expenseForm.quick-form {
       grid-template-columns: 1.5fr .72fr .82fr auto;
     }
@@ -4156,7 +4156,7 @@
             <li>إضافة الأقساط المشتركة ومتابعة حصة كل مشارك.</li>
             <li>إعادة المدفوعات الثابتة إلى «بانتظار الدفع» مع كل راتب جديد.</li>
             <li>إظهار إصدار كل مستخدم للمالك مع إمكانية إرسال التحديث لمستخدم محدد.</li>
-            <li>إضافة تسجيل المصروف بالصوت وتصنيفات سريعة بأيقونات جديدة دون الحاجة لكتابة الوصف.</li>
+            <li>إضافة تسجيل المصروف بالصوت مع فهم المبلغ قبل أو بعد التصنيف وكلمات شائعة مثل «كوفي» = «قهوة».</li>
           </ul>
         </section>
         <section class="changelog-entry">
@@ -4776,7 +4776,7 @@
 
 
       var APP_VERSION = "3.9.2";
-      var APP_RELEASE_ID = "3.9.2-voice-expenses-r1";
+      var APP_RELEASE_ID = "3.9.2-voice-expenses-r2";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -8451,6 +8451,8 @@
         return String(value || "")
           .replace(/[٠-٩]/g, function (digit) { return "٠١٢٣٤٥٦٧٨٩".indexOf(digit); })
           .replace(/[۰-۹]/g, function (digit) { return "۰۱۲۳۴۵۶۷۸۹".indexOf(digit); })
+          .replace(/[٫]/g, ".")
+          .replace(/[٬]/g, "")
           .replace(/[ًٌٍَُِّْـ]/g, "")
           .replace(/[أإآ]/g, "ا")
           .replace(/ؤ/g, "و")
@@ -8496,9 +8498,13 @@
 
       function parseSpokenExpenseAmount(text) {
         var normalized = prepareArabicNumberPhrases(text);
-        var digitMatch = normalized.match(/(?:^|\s)(\d{1,8}(?:[\.,]\d{1,2})?)(?=\s|$)/);
-        if (digitMatch) {
-          var numeric = Number(String(digitMatch[1]).replace(",", "."));
+        // Speech engines on iPhone may return the amount before or after the category,
+        // and can join it directly to the currency (for example: 50د.إ or 50درهم).
+        // Read the first positive numeric amount anywhere in the transcript instead of
+        // requiring whitespace around it, so phrase order does not matter.
+        var digitMatches = normalized.match(/\d{1,8}(?:[\.,]\d{1,2})?/g) || [];
+        for (var d = 0; d < digitMatches.length; d += 1) {
+          var numeric = Number(String(digitMatches[d]).replace(",", "."));
           if (Number.isFinite(numeric) && numeric > 0) return roundMoney(numeric);
         }
 
@@ -8530,7 +8536,7 @@
       function detectExpenseCategoryFromVoice(text) {
         var speech = normalizeArabicSpeechText(text);
         var rules = [
-          { value:"قهوة", words:["قهوه","كوفي","كافيه","كابتشينو","لاتيه","اسبريسو","شاي"] },
+          { value:"قهوة", words:["قهوه","قهوة","كوفي","كوفيه","كوفي شوب","كوفيشوب","كافي","كافيه","كافيهات","coffee","كابتشينو","لاتيه","اسبريسو","شاي"] },
           { value:"مواصلات", words:["بترول","بنزين","وقود","ادنوك","محطه","تاكسي","تكسي","اوبر","كريم","مواقف","سالك","سياره","مترو","باص","مواصلات"] },
           { value:"مشتريات", words:["بقاله","سوبرماركت","سوبر ماركت","جمعيه","كارفور","لولو","مشتريات","مقاضي","تموين"] },
           { value:"طعام", words:["مطعم","اكل","غدا","غداء","عشا","عشاء","فطور","وجبه","برجر","بيتزا"] },

@@ -1,9 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.9.4";
-const RELEASE_ID = "3.9.4-smart-visuals-dark-cards-r1";
-const UPDATE_SIGNAL_VERSION = "3.9.4\u200B";
+const VERSION = "3.9.3";
+const RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";
+const UPDATE_SIGNAL_VERSION = "3.9.3\u200B";
 const PREVIOUS_PUBLISHED_VERSION = "3.8.6";
 const PREVIOUS_RELEASE_ID = "3.8.6";
 const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
@@ -46,8 +46,7 @@ const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
   "3.9.3-commitment-bank-match-r3",
   "3.9.3-targeted-preview-statement-r4",
   "3.9.3-shortcuts-merchant-preview-r5",
-  "3.9.3-expense-insights-voice-wallet-r6",
-  "3.9.3-autoapprove-sync-race-r7"
+  "3.9.3-expense-insights-voice-wallet-r6"
 ]);
 const SESSION_MS = 10 * 365 * 24 * 60 * 60 * 1000;
 const PBKDF2_ITERATIONS = 100000;
@@ -150,12 +149,6 @@ function automationCategoryFromText(value) {
     ["توصيل", ["delivery","courier","local delivery","توصيل","مندوب"]],
     ["أطفال وعائلة", ["baby","kids","nursery","toys","اطفال","أطفال","حضانة","حضانه","العاب اطفال"]],
     ["حيوانات أليفة", ["pet shop","pets","veterinary","vet","بيطري","حيوانات أليفة","حيوانات اليفة"]],
-    ["فندق", ["hotel","resort","hilton","marriott","booking","stay","inn","فندق"]],
-    ["سينما", ["cinema","vox","movie","movies","ريل سينما","سينما"]],
-    ["اشتراكات", ["subscription","netflix","spotify","apple.com","google storage","icloud","اشتراك","رسوم اشتراك"]],
-    ["مواقف", ["parking","park","mparking","mawaqif","مواقف"]],
-    ["رياضة", ["gym","fitness","sport","sports","crossfit","رياضة","نادي"]],
-    ["رسوم حكومية", ["rta","government","moi","شرطة","دارب","تم","tamm","رسوم حكومية"]],
     ["مناسبات", ["flowers","flower shop","party","event","wedding","ورد","زهور","حفلة","حفله","عرس","زفاف","مناسبة"]],
     ["قهوة", ["coffee","cafe","café","starbucks","كوفي","كافيه","قهوة","لاتيه","espresso","اسبريسو"]],
     ["مواصلات", ["adnoc","enoc","fuel","petrol","gas station","uber","careem","taxi","parking","salik","ادنوك","اينوك","بترول","بنزين","وقود","تاكسي","كريم","اوبر","مواقف","سالك"]],

@@ -1,0 +1,687 @@
+name: Apply Salary Manager 3.9.4 Clean Rebuild
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.4-clean-r2.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-stage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout stable main
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact stable r7 starting point
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'var APP_VERSION = "3.9.3";' public/index.html
+          grep -q 'var APP_RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";' public/index.html
+          grep -q 'const VERSION = "3.9.3";' src/worker.js
+          grep -q 'const RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";' src/worker.js
+          grep -q 'salary-manager-v3.9.3-autoapprove-sync-race-r7' public/sw.js
+
+      - name: Archive exact stable r7 before changing anything
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public/releases/3.9.3-autoapprove-sync-race-r7
+          cp public/index.html public/releases/3.9.3-autoapprove-sync-race-r7/app.html
+          cp public/index.html public/releases/3.9.3-autoapprove-sync-race-r7/index.html
+          cp public/sw.js public/releases/3.9.3-autoapprove-sync-race-r7/sw.js
+
+      - name: Prepare clean 3.9.4 patch 1/4
+        shell: bash
+        run: |
+          cat > /tmp/salary-manager-394-clean.py <<'SALARY394_PART_1_X9'
+          from pathlib import Path
+          import re
+          
+          INDEX = Path("public/index.html")
+          WORKER = Path("src/worker.js")
+          SW = Path("public/sw.js")
+          PACKAGE = Path("package.json")
+          NOTIFY = Path(".github/workflows/notify-owner-after-deploy.yml")
+          
+          OLD_RELEASE = "3.9.3-autoapprove-sync-race-r7"
+          NEW_RELEASE = "3.9.4-clean-rebuild-r1"
+          
+          def read(path):
+              return path.read_text(encoding="utf-8")
+          
+          def write(path, text):
+              path.write_text(text, encoding="utf-8")
+          
+          def require(text, needle, label):
+              if needle not in text:
+                  raise SystemExit("Patch failed — missing " + label)
+          
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit("Patch failed — missing " + label)
+              return text.replace(old, new, 1)
+          
+          index = read(INDEX)
+          
+          require(index, 'var APP_VERSION = "3.9.3";', "APP_VERSION r7")
+          require(index, 'var APP_RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";', "APP_RELEASE_ID r7")
+          index = index.replace(OLD_RELEASE, NEW_RELEASE)
+          index = replace_once(index, 'var APP_VERSION = "3.9.3";', 'var APP_VERSION = "3.9.4";', "APP_VERSION")
+          
+          theme_boot = r'''  <script id="appThemePrepaint">
+              (function () {
+                try {
+                  var mode = localStorage.getItem("monthlySalaryManager.theme.v394");
+                  if (mode === "dark") document.documentElement.setAttribute("data-app-theme", "dark");
+                } catch (_) {}
+              })();
+            </script>
+          '''
+          theme_anchor = '  <meta name="theme-color" content="#123f3b">\n'
+          if 'id="appThemePrepaint"' not in index:
+              index = replace_once(index, theme_anchor, theme_anchor + theme_boot, "theme prepaint anchor")
+          
+          theme_button = r'''          <button class="ghost-btn theme-toggle-compact" id="themeToggleButton" type="button" title="تفعيل الوضع الليلي" aria-label="تفعيل الوضع الليلي">
+                      <span class="theme-toggle-icon" id="themeToggleIcon" aria-hidden="true"></span>
+                    </button>
+          '''
+          if 'id="themeToggleButton"' not in index:
+              refresh_anchor = '          <button class="ghost-btn" id="refreshPageButton"'
+              require(index, refresh_anchor, "refresh button anchor")
+              index = index.replace(refresh_anchor, theme_button + refresh_anchor, 1)
+          
+          card_settings = r'''      <section class="settings-section salary-card-appearance-section" id="salaryCardAppearanceSection">
+                  <div class="settings-section-head">
+                    <div>
+                      <h3>مظهر بطاقة الراتب</h3>
+                      <p>الكلاسيكي يبقي البطاقة الحالية كما هي. التصاميم البنكية تضيف رقاقة EMV ذهبية واقعية وشهرًا حاليًا بصيغة MM/YY.</p>
+                    </div>
+                  </div>
+                  <div class="salary-card-style-grid" id="salaryCardStyleGrid">
+                    <button class="salary-card-style-choice" type="button" data-salary-card-style="classic">
+                      <span class="salary-card-mini preview-classic"><i></i></span><strong>كلاسيكي</strong><small>التصميم الحالي</small>
+                    </button>
+                    <button class="salary-card-style-choice" type="button" data-salary-card-style="emerald">
+                      <span class="salary-card-mini preview-emerald"><i></i></span><strong>Emerald</strong><small>أخضر مصرفي</small>
+                    </button>
+                    <button class="salary-card-style-choice" type="button" data-salary-card-style="obsidian">
+                      <span class="salary-card-mini preview-obsidian"><i></i></span><strong>Obsidian</strong><small>أسود فاخر</small>
+                    </button>
+                    <button class="salary-card-style-choice" type="button" data-salary-card-style="midnight">
+                      <span class="salary-card-mini preview-midnight"><i></i></span><strong>Midnight</strong><small>كحلي عميق</small>
+                    </button>
+                    <button class="salary-card-style-choice" type="button" data-salary-card-style="ivory">
+                      <span class="salary-card-mini preview-ivory"><i></i></span><strong>Ivory</strong><small>عاجي راقٍ</small>
+                    </button>
+                    <button class="salary-card-style-choice" type="button" data-salary-card-style="burgundy">
+                      <span class="salary-card-mini preview-burgundy"><i></i></span><strong>Burgundy</strong><small>عنابي فاخر</small>
+                    </button>
+                  </div>
+                  <div class="settings-status" id="salaryCardStyleStatus">يمكن تغيير التصميم في أي وقت دون التأثير على بيانات الراتب.</div>
+                </section>
+          
+          '''
+          if 'id="salaryCardStyleGrid"' not in index:
+              notification_anchor = '''      <section class="settings-section">
+                  <div class="settings-section-head"><div><h3>إشعارات التحديثات</h3>'''
+              require(index, notification_anchor, "settings notification section")
+              index = index.replace(notification_anchor, card_settings + notification_anchor, 1)
+          
+          old_current = '''        <section class="changelog-entry current">
+                    <div class="changelog-version">
+                      <strong>الإصدار 3.9.3</strong>'''
+          new_current = '''        <section class="changelog-entry current">
+                    <div class="changelog-version">
+                      <strong>الإصدار 3.9.4</strong>
+                      <time datetime="2026-09-04">4 سبتمبر 2026</time>
+                    </div>
+                    <ul>
+                      <li>استبدال أحرف المصروفات بأيقونات SVG مرتبطة بنوع العملية واسم التاجر، دون تغيير بنية صف المصروف.</li>
+                      <li>إضافة تمييز بصري ذكي لأنشطة مثل الفندق والسينما والمغسلة والقهوة والمطعم والوقود والمواقف والصحة والتوصيل.</li>
+                      <li>إضافة وضع ليلي منظم بألوان أخضر داكن وفحمي مع زر قمر/شمس صغير ومتناسق في الشريط العلوي.</li>
+                      <li>إضافة تصاميم مصرفية اختيارية لبطاقة الراتب من الإعدادات، مع الإبقاء على التصميم الكلاسيكي الأصلي.</li>
+                      <li>التصاميم المصرفية تستخدم رقاقة EMV ذهبية مفصلة وشهرًا حاليًا بصيغة MM/YY، وتخفي موعد الراتب القديم داخل البطاقة لمنع التداخل.</li>
+                      <li>عند إيقاف الاعتماد التلقائي يمكن اختيار أيقونة العملية البنكية أو Wallet قبل اعتمادها، ويحفظ الاختيار داخل المصروف.</li>
+                      <li>إنشاء أرشيف كامل للإصدار المستقر 3.9.3 r7 قبل التحديث لضمان الرجوع الآمن عند رفض النسخة التجريبية.</li>
+                    </ul>
+                  </section>
+                  <section class="changelog-entry">
+                    <div class="changelog-version">
+                      <strong>الإصدار 3.9.3</strong>'''
+          index = replace_once(index, old_current, new_current, "3.9.3 changelog current entry")
+          
+          css = r'''
+              /* 3.9.4 Clean Rebuild — scoped visuals only */
+              .theme-toggle-compact{width:42px;min-width:42px;height:42px;min-height:42px;padding:0;flex:0 0 42px}
+              .theme-toggle-icon{width:19px;height:19px;display:grid;place-items:center}
+              .theme-toggle-icon svg{width:19px;height:19px;display:block;fill:none;stroke:currentColor;stroke-width:1.85;stroke-linecap:round;stroke-linejoin:round}
+          
+              .expense-category.expense-category-visual{display:grid;place-items:center;overflow:hidden;font-size:0}
+              .expense-category.expense-category-visual svg{width:23px;height:23px;display:block;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+          
+              .automation-visual-editor{display:grid;grid-template-columns:34px auto minmax(120px,1fr);align-items:center;gap:8px;margin-top:10px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:rgba(255,253,249,.72);color:var(--muted);font-size:10px;font-weight:800}
+              .automation-visual-preview{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;color:var(--teal);background:var(--teal-soft)}
+              .automation-visual-preview svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+              .automation-visual-editor select{width:100%;min-height:36px;padding:5px 9px;border:1px solid var(--line);border-radius:10px;color:var(--ink);background:var(--paper);font-size:11px;font-weight:800}
+          
+              .salary-card-style-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:13px}
+              .salary-card-style-choice{appearance:none;min-width:0;padding:9px;border:1px solid var(--line);border-radius:15px;color:var(--ink);background:var(--paper);cursor:pointer;text-align:center;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+              .salary-card-style-choice:active{transform:scale(.98)}
+              .salary-card-style-choice.is-active{border-color:var(--teal);box-shadow:0 0 0 2px rgba(20,117,108,.12)}
+              .salary-card-style-choice strong,.salary-card-style-choice small{display:block}
+              .salary-card-style-choice strong{margin-top:7px;font-size:11px}
+              .salary-card-style-choice small{margin-top:2px;color:var(--muted);font-size:9px}
+              .salary-card-mini{position:relative;display:block;width:100%;aspect-ratio:1.62/1;overflow:hidden;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+              .salary-card-mini i{position:absolute;top:10px;left:10px;width:23px;height:17px;border-radius:4px;background:linear-gradient(90deg,transparent 31%,rgba(100,70,10,.42) 31% 35%,transparent 35% 65%,rgba(100,70,10,.42) 65% 69%,transparent 69%),linear-gradient(#f7e5a0,#c99725);box-shadow:inset 0 0 0 1px rgba(115,80,10,.28),0 2px 4px rgba(0,0,0,.12)}
+              .preview-classic{background:linear-gradient(135deg,#123f3b,#0f5c55)}
+              .preview-emerald{background:linear-gradient(135deg,#063b36,#087167)}
+              .preview-obsidian{background:linear-gradient(135deg,#0d1112,#2c3233)}
+              .preview-midnight{background:linear-gradient(135deg,#0b1526,#183d5b)}
+              .preview-ivory{background:linear-gradient(135deg,#f1efe5,#bfc4c0)}
+              .preview-burgundy{background:linear-gradient(135deg,#42101f,#823146)}
+          
+              .salary-card.salary-card-bank{isolation:isolate;min-height:275px;padding-top:88px;border:1px solid rgba(255,255,255,.11);box-shadow:0 22px 52px rgba(12,35,32,.19)}
+              .salary-card.salary-card-bank .hero-kicker{position:absolute;top:27px;right:28px;max-width:52%;margin:0;z-index:4}
+              .salary-card.salary-card-bank .salary-payday-chip{display:none!important}
+              .salary-card.salary-card-bank .bank-card-hardware{position:absolute;top:21px;left:25px;z-index:5;display:flex;align-items:center;gap:10px;direction:ltr}
+              .bank-card-emv{width:57px;height:43px;display:block;filter:drop-shadow(0 4px 6px rgba(0,0,0,.16))}
+              .bank-card-current-month{min-width:48px;color:rgba(255,255,255,.88);font-family:ui-monospace,"SFMono-Regular",Menlo,Monaco,monospace;font-size:13px;font-weight:800;letter-spacing:.08em;text-shadow:0 1px 2px rgba(0,0,0,.18)}
+              .salary-card.salary-card-bank::before{content:"";position:absolute;inset:0;z-index:-2;pointer-events:none;background:linear-gradient(118deg,rgba(255,255,255,.085),transparent 25%,transparent 70%,rgba(255,255,255,.045)),radial-gradient(circle at 82% 11%,rgba(255,255,255,.09),transparent 28%)}
+              .salary-card-style-emerald{background:linear-gradient(135deg,#063a35 0%,#087269 56%,#0b4b45 100%)}
+              .salary-card-style-obsidian{background:linear-gradient(135deg,#0b0f10 0%,#272d2e 55%,#121718 100%)}
+              .salary-card-style-midnight{background:linear-gradient(135deg,#0b1424 0%,#163d5d 58%,#10283c 100%)}
+              .salary-card-style-burgundy{background:linear-gradient(135deg,#3d0d1c 0%,#7f2d42 57%,#4b1022 100%)}
+              .salary-card-style-ivory{color:#172f2c;background:linear-gradient(135deg,#f2f0e8 0%,#d6d9d3 52%,#aeb7b5 100%);border-color:rgba(23,51,49,.12)}
+              .salary-card-style-ivory .hero-kicker,.salary-card-style-ivory .salary-label,.salary-card-style-ivory .bank-card-current-month{color:rgba(23,47,44,.67);text-shadow:none}
+              .salary-card-style-ivory .salary-value{color:#173331}
+              .salary-card-style-ivory .live-dot{background:#14756c;box-shadow:0 0 0 5px rgba(20,117,108,.11)}
+              .salary-card-style-ivory .edit-salary{color:#173331;border-color:rgba(23,51,49,.14);background:rgba(255,255,255,.30)}
+          
+              html[data-app-theme="dark"]{color-scheme:dark;--ink:#eef5f2;--muted:#9caaa6;--line:#2a3a37;--paper:#172321;--canvas:#0d1514;--forest:#174d47;--teal:#45aa98;--teal-soft:#1c3934;--coral:#ee8a69;--coral-soft:#3a2823;--gold:#d8b45b;--gold-soft:#342f22;--red:#f08a83;--shadow:0 18px 48px rgba(0,0,0,.28)}
+              html[data-app-theme="dark"] body{background:radial-gradient(circle at 88% 2%,rgba(69,170,152,.09),transparent 25rem),radial-gradient(circle at 5% 35%,rgba(216,180,91,.055),transparent 22rem),var(--canvas)}
+              html[data-app-theme="dark"] .topbar{background:rgba(13,21,20,.91);border-bottom-color:rgba(255,255,255,.055)}
+              html[data-app-theme="dark"] .month-control,html[data-app-theme="dark"] .ghost-btn{color:var(--ink);background:rgba(23,35,33,.88);border-color:var(--line)}
+              html[data-app-theme="dark"] .ghost-btn:hover,html[data-app-theme="dark"] .icon-btn:hover{background:#21302d;border-color:#3b4a47}
+          SALARY394_PART_1_X9
+
+      - name: Prepare clean 3.9.4 patch 2/4
+        shell: bash
+        run: |
+          cat >> /tmp/salary-manager-394-clean.py <<'SALARY394_PART_2_X9'
+              html[data-app-theme="dark"] .panel,html[data-app-theme="dark"] .available-card,html[data-app-theme="dark"] .summary-card,html[data-app-theme="dark"] .tabs,html[data-app-theme="dark"] dialog.modal,html[data-app-theme="dark"] .settings-section,html[data-app-theme="dark"] .account-card,html[data-app-theme="dark"] .admin-user,html[data-app-theme="dark"] .automation-import,html[data-app-theme="dark"] .automation-connect-card,html[data-app-theme="dark"] .statement-card,html[data-app-theme="dark"] .expense-item,html[data-app-theme="dark"] .commitment-card,html[data-app-theme="dark"] .recurring-card,html[data-app-theme="dark"] .upcoming-item,html[data-app-theme="dark"] .backup-menu{color:var(--ink);background-color:var(--paper);border-color:var(--line)}
+              html[data-app-theme="dark"] .expense-category-row,html[data-app-theme="dark"] .expense-category-empty,html[data-app-theme="dark"] .automation-visual-editor,html[data-app-theme="dark"] .payment-note,html[data-app-theme="dark"] .shared-expense-panel,html[data-app-theme="dark"] .shared-expense-summary,html[data-app-theme="dark"] .shared-split-summary-box,html[data-app-theme="dark"] .reimbursement-item,html[data-app-theme="dark"] .auth-tabs,html[data-app-theme="dark"] .pwa-note,html[data-app-theme="dark"] .install-followup-note{color:var(--ink);background-color:#14201e;border-color:var(--line)}
+              html[data-app-theme="dark"] .field input,html[data-app-theme="dark"] .field select,html[data-app-theme="dark"] .field textarea,html[data-app-theme="dark"] .automation-visual-editor select{color:var(--ink);background-color:#101b19;border-color:var(--line)}
+              html[data-app-theme="dark"] .menu-btn{color:var(--ink)}
+              html[data-app-theme="dark"] .danger-btn{color:#f2a09a;background:#3b2423}
+              html[data-app-theme="dark"] .soft-btn{color:#9ce0d4;background:#1c3934}
+              html[data-app-theme="dark"] .expense-category-donut::after{background:var(--paper);border-color:var(--line)}
+              html[data-app-theme="dark"] .salary-card-style-choice{color:var(--ink);background:var(--paper);border-color:var(--line)}
+              html[data-app-theme="dark"] .salary-card-style-choice.is-active{border-color:var(--teal)}
+              html[data-app-theme="dark"] .modal-head,html[data-app-theme="dark"] .modal-foot{border-color:var(--line)}
+          
+              @media(max-width:620px){
+                .salary-card-style-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+                .salary-card.salary-card-bank{min-height:286px;padding:88px 22px 22px}
+                .salary-card.salary-card-bank .hero-kicker{top:24px;right:22px;max-width:48%}
+                .salary-card.salary-card-bank .bank-card-hardware{top:19px;left:20px;gap:8px}
+                .bank-card-emv{width:53px;height:40px}
+                .bank-card-current-month{font-size:12px;min-width:43px}
+                .automation-visual-editor{grid-template-columns:32px 1fr}
+                .automation-visual-editor>span:nth-child(2){display:none}
+              }
+          '''
+          index = replace_once(index, '\n  </style>', '\n' + css + '\n  </style>', "head style closing tag")
+          
+          helpers = r'''
+                /* 3.9.4 Clean Rebuild — integrated appearance and transaction visuals */
+                var APP_THEME_KEY_394 = "monthlySalaryManager.theme.v394";
+                var SALARY_CARD_STYLE_KEY_394 = "monthlySalaryManager.salaryCardStyle.v394";
+                var MERCHANT_VISUAL_PREFS_KEY_394 = "monthlySalaryManager.merchantVisualPrefs.v394";
+                var SALARY_CARD_STYLES_394 = ["classic","emerald","obsidian","midnight","ivory","burgundy"];
+                var automationPendingVisualOverrides = Object.create(null);
+          
+                var expenseVisualIcons = {
+                  shopping:'<svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 11H6.2L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
+                  restaurant:'<svg viewBox="0 0 24 24"><path d="M6 3v8M4 3v5a2 2 0 0 0 4 0V3M12 3v18M17 3c2 2 2 5 0 7h-2V3Z"/></svg>',
+                  coffee:'<svg viewBox="0 0 24 24"><path d="M5 8h10v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8Z"/><path d="M15 9h2a2.5 2.5 0 0 1 0 5h-2M8 3v2M12 3v2"/></svg>',
+                  fuel:'<svg viewBox="0 0 24 24"><path d="M4 6h10v14H4Z"/><path d="M6 9h6M14 9h2l3 3v5a2 2 0 0 0 4 0v-6l-2-2"/></svg>',
+                  laundry:'<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="13" r="4.5"/><path d="M8 6h.01M11 6h5"/></svg>',
+                  cinema:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="m4 7 3-4M9 7l3-4M14 7l3-4M19 7l2-3"/></svg>',
+                  hotel:'<svg viewBox="0 0 24 24"><path d="M4 20V5h9v15M13 10h7v10"/><path d="M7 8h2M7 12h2M16 13h2M16 17h2"/></svg>',
+                  parking:'<svg viewBox="0 0 24 24"><path d="M7 21V3h6a4 4 0 0 1 0 8H7"/></svg>',
+                  telecom:'<svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M10 5h4M11 18h2"/></svg>',
+                  health:'<svg viewBox="0 0 24 24"><path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 11c0 5.6-7 10-7 10Z"/><path d="M9 12h2l1-2 1 4 1-2h2"/></svg>',
+                  delivery:'<svg viewBox="0 0 24 24"><path d="M3 7h11v10H3ZM14 11h4l3 3v3h-7Z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+                  salon:'<svg viewBox="0 0 24 24"><circle cx="6" cy="7" r="3"/><circle cx="6" cy="17" r="3"/><path d="M8.5 8.5 21 3M8.5 15.5 21 21M10 12h4"/></svg>',
+                  sport:'<svg viewBox="0 0 24 24"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10"/></svg>',
+                  government:'<svg viewBox="0 0 24 24"><path d="m3 9 9-5 9 5M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18"/></svg>',
+                  travel:'<svg viewBox="0 0 24 24"><path d="m2 16 8-4V5l2-2 2 2v7l8 4v2l-8-2v4l2 2v1l-4-1-4 1v-1l2-2v-4l-8 2v-2Z"/></svg>',
+                  home:'<svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>',
+                  gift:'<svg viewBox="0 0 24 24"><path d="M4 10h16v10H4ZM12 10v10M4 14h16"/><path d="M12 10H8a2 2 0 1 1 0-4c2 0 4 4 4 4ZM12 10h4a2 2 0 1 0 0-4c-2 0-4 4-4 4Z"/></svg>',
+                  pets:'<svg viewBox="0 0 24 24"><circle cx="7" cy="7" r="2"/><circle cx="17" cy="7" r="2"/><circle cx="5" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><path d="M12 11c-3 0-5 3-5 5.3 0 2.1 2.1 3.2 5 1.7 2.9 1.5 5 .4 5-1.7C17 14 15 11 12 11Z"/></svg>',
+                  education:'<svg viewBox="0 0 24 24"><path d="m3 8 9-5 9 5-9 5-9-5Z"/><path d="M7 11v5c3 2 7 2 10 0v-5M21 9v6"/></svg>',
+                  bills:'<svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>',
+                  family:'<svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c.4-4 2.2-6 5-6s4.6 2 5 6M13 20c.2-3 1.6-4.7 4-4.7 2.3 0 3.7 1.7 4 4.7"/></svg>',
+                  other:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>'
+                };
+          
+                var expenseCategoryVisualFallback = {
+                  "مشتريات":"shopping","طعام":"restaurant","مواصلات":"fuel","فواتير":"bills","اتصالات":"telecom","صحة":"health","ترفيه":"cinema","قهوة":"coffee","ملابس":"shopping","منزل":"home","سفر":"travel","تعليم":"education","هدايا":"gift","مغسلة ملابس":"laundry","عناية شخصية":"salon","صيانة سيارة":"fuel","خدمات منزلية":"home","توصيل":"delivery","أطفال وعائلة":"family","حيوانات أليفة":"pets","مناسبات":"gift","أخرى":"other"
+                };
+          
+                var expenseMerchantVisualRules = [
+                  {key:"fuel",words:["adnoc","ادنوك","enoc","eppco","petrol","fuel","gas station","بنزين","وقود","محطة"]},
+                  {key:"laundry",words:["laundry","dry clean","dryclean","laundromat","مغسلة","مغسله","دراي كلين"]},
+                  {key:"cinema",words:["vox","reel cinema","reel cinemas","cinema","movie","سينما","ريل"]},
+                  {key:"hotel",words:["hotel","resort","hilton","marriott","booking","rotana","فندق","منتجع"]},
+                  {key:"coffee",words:["starbucks","arabica","coffee","cafe","café","كوفي","قهوة","كافيه"]},
+                  {key:"delivery",words:["talabat","deliveroo","careem food","noon food","delivery","طلبات","توصيل"]},
+                  {key:"restaurant",words:["restaurant","burger","grill","shawarma","pizza","مطعم","برجر","شاورما","بيتزا"]},
+                  {key:"parking",words:["parking","mawaqif","مواقف"]},
+                  {key:"telecom",words:["etisalat","e&","du telecom","virgin mobile","telecom","اتصالات"]},
+                  {key:"health",words:["pharmacy","hospital","clinic","medical","صيدلية","مستشفى","عيادة"]},
+                  {key:"salon",words:["salon","barber","spa","beauty","صالون","حلاق","سبا"]},
+                  {key:"sport",words:["gym","fitness","crossfit","sports","نادي رياضي","رياضة","جيم"]},
+                  {key:"government",words:["tamm","darb","rta","moi","government","رسوم حكومية"]},
+                  {key:"travel",words:["airways","airline","emirates","etihad","airport","طيران","مطار"]},
+                  {key:"pets",words:["pet shop","pets","veterinary","vet","بيطري","حيوانات"]}
+                ];
+          
+                function normalizeExpenseVisualText(value){return String(value||"").toLowerCase().replace(/[أإآ]/g,"ا").replace(/\s+/g," ").trim()}
+                function merchantVisualPrefKey(value){return normalizeExpenseVisualText(value).replace(/\b(?:abu dhabi|dubai|sharjah|ajman|uae|ae)\b/g," ").replace(/[0-9*#._-]+/g," ").replace(/\s+/g," ").trim().slice(0,80)}
+                function readMerchantVisualPrefs(){try{var x=JSON.parse(localStorage.getItem(MERCHANT_VISUAL_PREFS_KEY_394)||"{}");return x&&typeof x==="object"?x:{}}catch(_){return{}}}
+                function merchantVisualPreference(title){var key=merchantVisualPrefKey(title);if(!key)return"";var value=String(readMerchantVisualPrefs()[key]||"");return expenseVisualIcons[value]?value:""}
+                function rememberMerchantVisualPreference(title,visualKey){var key=merchantVisualPrefKey(title);if(!key||!expenseVisualIcons[visualKey])return;try{var prefs=readMerchantVisualPrefs();prefs[key]=visualKey;var keys=Object.keys(prefs);if(keys.length>120)delete prefs[keys[0]];localStorage.setItem(MERCHANT_VISUAL_PREFS_KEY_394,JSON.stringify(prefs))}catch(_){}}
+                function inferExpenseVisualKey(title,category){var pref=merchantVisualPreference(title);if(pref)return pref;var text=normalizeExpenseVisualText(title);for(var i=0;i<expenseMerchantVisualRules.length;i++){var rule=expenseMerchantVisualRules[i];for(var j=0;j<rule.words.length;j++){if(text.indexOf(normalizeExpenseVisualText(rule.words[j]))!==-1)return rule.key}}return expenseCategoryVisualFallback[String(category||"أخرى")]||"other"}
+                function resolveExpenseVisualKey(title,category,explicitKey){explicitKey=String(explicitKey||"");if(expenseVisualIcons[explicitKey])return explicitKey;return inferExpenseVisualKey(title,category)}
+                function expenseVisualSvg(item){var key=resolveExpenseVisualKey(item&&item.title,item&&item.category,item&&item.visualIcon);return expenseVisualIcons[key]||expenseVisualIcons.other}
+          
+                function automationVisualOptions(selected){
+                  var options=[["auto","تلقائي"],["shopping","مشتريات"],["restaurant","مطعم"],["coffee","قهوة"],["fuel","وقود"],["laundry","مغسلة"],["cinema","سينما"],["hotel","فندق"],["parking","مواقف"],["telecom","اتصالات"],["health","صحة / صيدلية"],["delivery","توصيل"],["salon","عناية شخصية"],["sport","رياضة"],["government","جهة حكومية"],["travel","سفر"],["home","منزل"],["gift","هدية / مناسبة"],["pets","حيوانات أليفة"],["education","تعليم"],["bills","فاتورة"],["family","عائلة"],["other","أخرى"]];
+                  return options.map(function(row){return '<option value="'+row[0]+'"'+(row[0]===selected?' selected':'')+'>'+row[1]+'</option>'}).join("")
+                }
+                function automationVisualEditorHTML(item,title,category){
+                  var id=String(item&&item.id||"");var selected=String(automationPendingVisualOverrides[id]||"auto");var previewKey=selected!=="auto"?selected:inferExpenseVisualKey(title,category);
+                  return '<label class="automation-visual-editor"><span class="automation-visual-preview" data-automation-visual-preview="'+escapeHTML(id)+'">'+(expenseVisualIcons[previewKey]||expenseVisualIcons.other)+'</span><span>أيقونة العملية</span><select data-automation-visual-select="'+escapeHTML(id)+'">'+automationVisualOptions(selected)+'</select></label>'
+                }
+          
+                function themeIconSvg(mode){
+                  if(mode==="dark")return '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
+                  return '<svg viewBox="0 0 24 24"><path d="M20.2 15.4A8.5 8.5 0 0 1 8.6 3.8 8.7 8.7 0 1 0 20.2 15.4Z"/></svg>'
+                }
+                function getAppTheme394(){try{return localStorage.getItem(APP_THEME_KEY_394)==="dark"?"dark":"light"}catch(_){return"light"}}
+                function applyAppTheme394(mode,persist){
+                  mode=mode==="dark"?"dark":"light";
+          SALARY394_PART_2_X9
+
+      - name: Prepare clean 3.9.4 patch 3/4
+        shell: bash
+        run: |
+          cat >> /tmp/salary-manager-394-clean.py <<'SALARY394_PART_3_X9'
+                  if(mode==="dark")document.documentElement.setAttribute("data-app-theme","dark");else document.documentElement.removeAttribute("data-app-theme");
+                  if(persist!==false)try{localStorage.setItem(APP_THEME_KEY_394,mode)}catch(_){}
+                  var icon=$("#themeToggleIcon"),button=$("#themeToggleButton");if(icon)icon.innerHTML=themeIconSvg(mode);
+                  if(button){var label=mode==="dark"?"العودة للوضع النهاري":"تفعيل الوضع الليلي";button.title=label;button.setAttribute("aria-label",label)}
+                  var meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute("content",mode==="dark"?"#0d1514":"#123f3b")
+                }
+          
+                function bankCardEmvSvg(){
+                  return '<svg class="bank-card-emv" viewBox="0 0 64 48" aria-hidden="true"><defs><linearGradient id="emvGold394" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1b5"/><stop offset=".24" stop-color="#e9c95d"/><stop offset=".54" stop-color="#bf8e1e"/><stop offset=".76" stop-color="#e5c157"/><stop offset="1" stop-color="#f5dfa0"/></linearGradient><linearGradient id="emvShine394" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".55" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#6b4705" stop-opacity=".12"/></linearGradient></defs><rect x="1.5" y="1.5" width="61" height="45" rx="8" fill="url(#emvGold394)" stroke="#9e7113" stroke-width="1.2"/><path d="M21 2v44M43 2v44M2 15h14c3.4 0 5-1.8 5-5.2V2M62 15H48c-3.4 0-5-1.8-5-5.2V2M2 33h14c3.4 0 5 1.8 5 5.2V46M62 33H48c-3.4 0-5 1.8-5 5.2V46M21 24h22" fill="none" stroke="#94670f" stroke-width="1.25"/><path d="M2.5 23h18.5M43 23h18.5M31.9 2v44" fill="none" stroke="#ba8b22" stroke-width=".72"/><rect x="3.2" y="3.2" width="57.6" height="41.6" rx="6.4" fill="url(#emvShine394)" opacity=".62"/></svg>'
+                }
+                function currentBankCardMonth394(){var d=new Date();return String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getFullYear()).slice(-2)}
+                function getSalaryCardStyle394(){var style="";try{style=localStorage.getItem(SALARY_CARD_STYLE_KEY_394)||""}catch(_){}return SALARY_CARD_STYLES_394.indexOf(style)!==-1?style:"classic"}
+                function syncSalaryCardStyleChoices394(style){
+                  style=style||getSalaryCardStyle394();
+                  $all("[data-salary-card-style]").forEach(function(button){var active=button.dataset.salaryCardStyle===style;button.classList.toggle("is-active",active);button.setAttribute("aria-pressed",active?"true":"false")});
+                  var status=$("#salaryCardStyleStatus");if(status)status.textContent=style==="classic"?"التصميم الكلاسيكي مفعّل؛ بطاقة الراتب الأصلية كما هي.":"التصميم المصرفي مفعّل. الرقم "+currentBankCardMonth394()+" يمثل الشهر الحالي فقط."
+                }
+                function applySalaryCardStyle394(style,persist){
+                  style=SALARY_CARD_STYLES_394.indexOf(style)!==-1?style:"classic";
+                  if(persist!==false)try{localStorage.setItem(SALARY_CARD_STYLE_KEY_394,style)}catch(_){}
+                  var card=$(".salary-card");if(!card)return;
+                  SALARY_CARD_STYLES_394.forEach(function(name){card.classList.remove("salary-card-style-"+name)});
+                  card.classList.remove("salary-card-bank");
+                  var hardware=card.querySelector(".bank-card-hardware");
+                  if(style==="classic"){if(hardware)hardware.remove();syncSalaryCardStyleChoices394(style);return}
+                  card.classList.add("salary-card-bank","salary-card-style-"+style);
+                  if(!hardware){hardware=document.createElement("div");hardware.className="bank-card-hardware";hardware.innerHTML=bankCardEmvSvg()+'<span class="bank-card-current-month" aria-label="الشهر الحالي">'+currentBankCardMonth394()+'</span>';card.appendChild(hardware)}
+                  else{var month=hardware.querySelector(".bank-card-current-month");if(month)month.textContent=currentBankCardMonth394()}
+                  syncSalaryCardStyleChoices394(style)
+                }
+                function refreshSalaryCardMonth394(){var month=document.querySelector(".bank-card-current-month");if(month)month.textContent=currentBankCardMonth394()}
+                function initAppearance394(){applyAppTheme394(getAppTheme394(),false);applySalaryCardStyle394(getSalaryCardStyle394(),false)}
+          
+          '''
+          index = replace_once(index, '      function $(selector) {', helpers + '      function $(selector) {', "JS helper anchor")
+          
+          old_expense_icon = '''            '<div class="expense-category">' + escapeHTML(expenseSymbols[item.category] || "أ") + '</div>' +'''
+          new_expense_icon = '''            '<div class="expense-category expense-category-visual" title="' + escapeHTML(item.category || "أخرى") + '">' + expenseVisualSvg(item) + '</div>' +'''
+          index = replace_once(index, old_expense_icon, new_expense_icon, "expense list letter icon")
+          
+          old_pending_return = '''          actions += '<button class="mini-btn" type="button" data-automation-ignore="' + escapeHTML(item.id) + '">تجاهل</button>';
+                    return '<div class="automation-import"><div class="automation-import-main"><strong>' + escapeHTML(merchant) + '<span class="automation-confidence' + confidenceClass + '">' + escapeHTML(confidenceText) + '</span></strong><small>' + escapeHTML(meta) + '</small></div><div class="automation-import-amount ' + escapeHTML(kind) + '">' + escapeHTML(amountText) + '</div>' + (raw ? '<div class="automation-import-raw">' + escapeHTML(raw.slice(0,260)) + '</div>' : '') + '<div class="automation-import-actions">' + actions + '</div></div>';'''
+          new_pending_return = '''          actions += '<button class="mini-btn" type="button" data-automation-ignore="' + escapeHTML(item.id) + '">تجاهل</button>';
+                    var visualEditor = (!automationAutoApproveEnabled && kind === "expense") ? automationVisualEditorHTML(item, merchant, item.category || "أخرى") : "";
+                    return '<div class="automation-import"><div class="automation-import-main"><strong>' + escapeHTML(merchant) + '<span class="automation-confidence' + confidenceClass + '">' + escapeHTML(confidenceText) + '</span></strong><small>' + escapeHTML(meta) + '</small></div><div class="automation-import-amount ' + escapeHTML(kind) + '">' + escapeHTML(amountText) + '</div>' + (raw ? '<div class="automation-import-raw">' + escapeHTML(raw.slice(0,260)) + '</div>' : '') + visualEditor + '<div class="automation-import-actions">' + actions + '</div></div>';'''
+          index = replace_once(index, old_pending_return, new_pending_return, "pending visual editor")
+          
+          old_expense_creation = '''          var combined = (merchant + " " + String(item.rawText || "")).trim();
+                    var category = String(item.category || detectExpenseCategoryFromVoice(combined) || "أخرى");
+                    var expenseTitle = merchant || voiceExpenseTitle(combined, category) || expenseCategoryDefaultTitle(category);
+                    var expense = { id:makeId("expense"), title:expenseTitle, category:category, amount:amount, date:date, excludeFromBudget:false, createdAt:when.toISOString(), accountMonth:defaultMonth, externalImportId:importId, automationSource:String(item.source || "shortcut"), automationSources:Array.isArray(item.sources) ? item.sources.slice() : [String(item.source || "shortcut")] };'''
+          new_expense_creation = '''          var combined = (merchant + " " + String(item.rawText || "")).trim();
+                    var category = String(item.category || detectExpenseCategoryFromVoice(combined) || "أخرى");
+                    var expenseTitle = merchant || voiceExpenseTitle(combined, category) || expenseCategoryDefaultTitle(category);
+                    var visualOverride = String(automationPendingVisualOverrides[importId] || "");
+                    if (visualOverride && visualOverride !== "auto") rememberMerchantVisualPreference(expenseTitle, visualOverride);
+                    var visualIcon = resolveExpenseVisualKey(expenseTitle, category, visualOverride === "auto" ? "" : visualOverride);
+                    var expense = { id:makeId("expense"), title:expenseTitle, category:category, visualIcon:visualIcon, amount:amount, date:date, excludeFromBudget:false, createdAt:when.toISOString(), accountMonth:defaultMonth, externalImportId:importId, automationSource:String(item.source || "shortcut"), automationSources:Array.isArray(item.sources) ? item.sources.slice() : [String(item.source || "shortcut")] };
+                    delete automationPendingVisualOverrides[importId];'''
+          index = replace_once(index, old_expense_creation, new_expense_creation, "accepted expense visual persistence")
+          
+          language_listener = '''        $("#languageToggleButton").addEventListener("click", function () {
+                    applyLanguage(currentLanguage === "en" ? "ar" : "en", true);
+                  });
+          '''
+          theme_listener = language_listener + '''
+                  $("#themeToggleButton").addEventListener("click", function () {
+                    var next = getAppTheme394() === "dark" ? "light" : "dark";
+                    applyAppTheme394(next, true);
+                    showToast(next === "dark" ? "تم تفعيل الوضع الليلي" : "تم تفعيل الوضع النهاري");
+                  });
+          '''
+          index = replace_once(index, language_listener, theme_listener, "theme button listener")
+          
+          settings_open_old = '''          prepareIconSettings();
+                    refreshAppLockSettings();
+                    $("#settingsDialog").showModal();'''
+          settings_open_new = '''          prepareIconSettings();
+                    refreshAppLockSettings();
+                    syncSalaryCardStyleChoices394();
+                    $("#settingsDialog").showModal();'''
+          index = replace_once(index, settings_open_old, settings_open_new, "settings style sync")
+          
+          icon_grid_listener = '''        $("#iconChoiceGrid").addEventListener("click", function (event) {
+                    var button = event.target.closest("[data-icon-choice]");
+                    if (button) selectPendingIcon(button.dataset.iconChoice);
+                  });
+          '''
+          card_grid_listener = icon_grid_listener + '''
+                  $("#salaryCardStyleGrid").addEventListener("click", function (event) {
+                    var button = event.target.closest("[data-salary-card-style]");
+                    if (!button) return;
+                    applySalaryCardStyle394(button.dataset.salaryCardStyle, true);
+                    showToast(button.dataset.salaryCardStyle === "classic" ? "تم اعتماد البطاقة الكلاسيكية" : "تم اعتماد تصميم البطاقة");
+                  });
+          '''
+          index = replace_once(index, icon_grid_listener, card_grid_listener, "card style listener")
+          
+          automation_click_listeners = '''        $("#automationPendingList").addEventListener("click", handleAutomationReviewAction);
+                  $("#automationReviewList").addEventListener("click", handleAutomationReviewAction);'''
+          automation_change_listeners = automation_click_listeners + r'''
+                  function handleAutomationVisualChange(event) {
+                    var select = event.target.closest("[data-automation-visual-select]");
+                    if (!select) return;
+                    var id = String(select.dataset.automationVisualSelect || "");
+                    var value = String(select.value || "auto");
+                    automationPendingVisualOverrides[id] = value;
+                    var row = select.closest(".automation-import");
+                    var item = automationImports.find(function(entry) { return String(entry.id) === id; });
+                    if (row && item) {
+                      var title = String(item.merchant || "").trim() || expenseCategoryDefaultTitle(item.category || "أخرى");
+                      var key = value !== "auto" ? value : inferExpenseVisualKey(title, item.category || "أخرى");
+                      var preview = row.querySelector("[data-automation-visual-preview]");
+                      if (preview) preview.innerHTML = expenseVisualIcons[key] || expenseVisualIcons.other;
+                    }
+                  }
+                  $("#automationPendingList").addEventListener("change", handleAutomationVisualChange);
+                  $("#automationReviewList").addEventListener("change", handleAutomationVisualChange);'''
+          index = replace_once(index, automation_click_listeners, automation_change_listeners, "automation visual change listeners")
+          
+          ignore_old = '''      async function ignoreAutomationImport(importId) {
+                  try { await resolveAutomationImport(importId, "ignored", ""); await refreshAutomationPending(true); showToast("تم تجاهل العملية"); }'''
+          ignore_new = '''      async function ignoreAutomationImport(importId) {
+                  delete automationPendingVisualOverrides[String(importId || "")];
+                  try { await resolveAutomationImport(importId, "ignored", ""); await refreshAutomationPending(true); showToast("تم تجاهل العملية"); }'''
+          index = replace_once(index, ignore_old, ignore_new, "automation override cleanup")
+          
+          index = replace_once(index, '''        renderStatements();
+                  saveState();''', '''        renderStatements();
+                  refreshSalaryCardMonth394();
+                  saveState();''', "bank card month refresh")
+          
+          SALARY394_PART_3_X9
+
+      - name: Prepare clean 3.9.4 patch 4/4
+        shell: bash
+        run: |
+          cat >> /tmp/salary-manager-394-clean.py <<'SALARY394_PART_4_X9'
+          index = replace_once(index, '''      bindEvents();
+                updateSharedExpenseForm();''', '''      bindEvents();
+                initAppearance394();
+                updateSharedExpenseForm();''', "appearance initialization")
+          
+          for needle in [
+              'var APP_VERSION = "3.9.4";',
+              'var APP_RELEASE_ID = "3.9.4-clean-rebuild-r1";',
+              'id="themeToggleButton"',
+              'id="salaryCardStyleGrid"',
+              '3.9.4 Clean Rebuild — scoped visuals only',
+              'function expenseVisualSvg(item)',
+              'function applyAppTheme394',
+              'function applySalaryCardStyle394',
+              'data-automation-visual-select',
+              'visualIcon:visualIcon',
+              'expense-category expense-category-visual'
+          ]:
+              require(index, needle, needle)
+          
+          if old_expense_icon in index:
+              raise SystemExit("Validation failed — old expense letter renderer still present")
+          if index.count('id="themeToggleButton"') != 1:
+              raise SystemExit("Validation failed — theme button duplicated")
+          if index.count('id="salaryCardStyleGrid"') != 1:
+              raise SystemExit("Validation failed — card style grid duplicated")
+          
+          write(INDEX, index)
+          
+          worker = read(WORKER)
+          for before, after in [
+              ('const VERSION = "3.9.3";','const VERSION = "3.9.4";'),
+              ('const RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";','const RELEASE_ID = "3.9.4-clean-rebuild-r1";'),
+              ('const UPDATE_SIGNAL_VERSION = "3.9.3\\u200B";','const UPDATE_SIGNAL_VERSION = "3.9.4\\u200B";'),
+              ('const PREVIOUS_PUBLISHED_VERSION = "3.8.6";','const PREVIOUS_PUBLISHED_VERSION = "3.9.3";'),
+              ('const PREVIOUS_RELEASE_ID = "3.8.6";','const PREVIOUS_RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";')
+          ]:
+              worker = replace_once(worker, before, after, before)
+          
+          accidental = worker.split('const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([',1)[1].split(']);',1)[0]
+          if OLD_RELEASE in accidental:
+              raise SystemExit("Safety failure — stable r7 must not be accidental")
+          write(WORKER, worker)
+          
+          sw = read(SW)
+          sw = replace_once(sw, 'const CACHE = "salary-manager-v3.9.3-autoapprove-sync-race-r7";', 'const CACHE = "salary-manager-v3.9.4-clean-rebuild-r1";', "service worker cache")
+          write(SW, sw)
+          
+          package = read(PACKAGE)
+          package = re.sub(r'"version"\s*:\s*"[^"]+"', '"version": "3.9.4"', package, count=1)
+          require(package, '"version": "3.9.4"', "package version")
+          write(PACKAGE, package)
+          
+          notify = r'''name: Notify owner after deploy
+          
+          on:
+            push:
+              branches: [main]
+              paths:
+                - "public/**"
+                - "src/**"
+                - "package.json"
+                - "wrangler.jsonc"
+          
+          permissions:
+            contents: read
+          
+          jobs:
+            wait-for-cloudflare:
+              runs-on: ubuntu-latest
+              timeout-minutes: 12
+              steps:
+                - uses: actions/checkout@v4
+                - name: Read expected build
+                  id: expected
+                  shell: bash
+                  run: |
+                    VERSION=$(node -p "require('./package.json').version")
+                    RELEASE_ID=$(python3 - <<'PY'
+                    import re
+                    from pathlib import Path
+                    text=Path("src/worker.js").read_text(encoding="utf-8")
+                    m=re.search(r'const RELEASE_ID = "([^"]+)";',text)
+                    if not m: raise SystemExit("RELEASE_ID not found")
+                    print(m.group(1))
+                    PY
+                    )
+                    echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+                    echo "release_id=$RELEASE_ID" >> "$GITHUB_OUTPUT"
+          
+                - name: Wait for exact deployed Worker and trigger owner review
+                  env:
+                    EXPECTED_VERSION: 3.9.4
+                    EXPECTED_RELEASE_ID: 3.9.4-clean-rebuild-r1
+                  run: |
+                    set -e
+                    URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+                    for i in $(seq 1 120); do
+                      BODY=$(curl -fsS --max-time 8 "${URL}?deploy_check=$(date +%s)" || true)
+                      echo "$BODY"
+                      if echo "$BODY" | grep -q "\"version\":\"${EXPECTED_VERSION}\"" && echo "$BODY" | grep -q "\"stagedReleaseId\":\"${EXPECTED_RELEASE_ID}\""; then
+                        echo "Exact release ${EXPECTED_RELEASE_ID} is live."
+                        exit 0
+                      fi
+                      sleep 5
+                    done
+                    exit 1
+          '''
+          write(NOTIFY, notify)
+          
+          print("3.9.4 Clean Rebuild patch prepared successfully.")
+          SALARY394_PART_4_X9
+
+      - name: Apply clean 3.9.4 rebuild
+        shell: bash
+        run: python3 /tmp/salary-manager-394-clean.py
+
+      - name: Validate JavaScript
+        shell: bash
+        run: |
+          node --check src/worker.js
+          node --check public/sw.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text=Path("public/index.html").read_text(encoding="utf-8")
+          blocks=re.findall(r"<script(?:\s[^>]*)?>(.*?)</script>",text,flags=re.S|re.I)
+          Path("/tmp/salary-394-inline.js").write_text("\n".join(x for x in blocks if x.strip()),encoding="utf-8")
+          PY
+          node --check /tmp/salary-394-inline.js
+
+      - name: Structural and rollback safety tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f public/releases/3.9.3-autoapprove-sync-race-r7/app.html
+          test -f public/releases/3.9.3-autoapprove-sync-race-r7/index.html
+          test -f public/releases/3.9.3-autoapprove-sync-race-r7/sw.js
+          grep -q '3.9.3-autoapprove-sync-race-r7' public/releases/3.9.3-autoapprove-sync-race-r7/app.html
+          grep -q 'salary-manager-v3.9.3-autoapprove-sync-race-r7' public/releases/3.9.3-autoapprove-sync-race-r7/sw.js
+          grep -q 'var APP_VERSION = "3.9.4";' public/index.html
+          grep -q 'var APP_RELEASE_ID = "3.9.4-clean-rebuild-r1";' public/index.html
+          grep -q 'id="themeToggleButton"' public/index.html
+          grep -q 'id="salaryCardStyleGrid"' public/index.html
+          grep -q 'expense-category expense-category-visual' public/index.html
+          grep -q 'data-automation-visual-select' public/index.html
+          grep -q 'bank-card-emv' public/index.html
+          grep -q 'const PREVIOUS_PUBLISHED_VERSION = "3.9.3";' src/worker.js
+          grep -q 'const PREVIOUS_RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";' src/worker.js
+          python3 - <<'PY'
+          from pathlib import Path
+          text=Path("public/index.html").read_text(encoding="utf-8")
+          assert text.count('id="themeToggleButton"') == 1
+          assert text.count('id="salaryCardStyleGrid"') == 1
+          assert 'expenseSymbols[item.category] || "أ"' not in text
+          worker=Path("src/worker.js").read_text(encoding="utf-8")
+          accidental=worker.split('const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([',1)[1].split(']);',1)[0]
+          assert "3.9.3-autoapprove-sync-race-r7" not in accidental
+          print("Safety checks OK")
+          PY
+
+      - name: Commit staged build
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js package.json public/releases/3.9.3-autoapprove-sync-race-r7 .github/workflows/notify-owner-after-deploy.yml
+          git commit -m "Stage Salary Manager 3.9.4 clean rebuild for owner review"
+          git push
+
+      - name: Deploy staged 3.9.4 to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+          secrets: |
+            AUTH_PEPPER
+            OWNER_BOOTSTRAP_TOKEN
+        env:
+          AUTH_PEPPER: ${{ secrets.AUTH_PEPPER }}
+          OWNER_BOOTSTRAP_TOKEN: ${{ secrets.OWNER_BOOTSTRAP_TOKEN }}
+
+      - name: Verify exact staged release is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?clean394=$(date +%s)" || true)
+            echo "$BODY"
+            if echo "$BODY" | grep -q '"version":"3.9.4"' && echo "$BODY" | grep -q '"stagedReleaseId":"3.9.4-clean-rebuild-r1"'; then
+              break
+            fi
+            sleep 4
+          done
+          echo "$BODY" | grep -q '"stagedReleaseId":"3.9.4-clean-rebuild-r1"'
+
+      - name: Verify normal users remain on stable r7
+        shell: bash
+        run: |
+          set -euo pipefail
+          BODY=$(curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_gate_check=$(date +%s)")
+          echo "$BODY" | grep -q '3.9.3-autoapprove-sync-race-r7'
+          if echo "$BODY" | grep -q '3.9.4-clean-rebuild-r1'; then
+            echo "SECURITY FAILURE: staged 3.9.4 leaked to public users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          echo "### Salary Manager 3.9.4 Clean Rebuild" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Stable r7 archived before the update" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Smart expense SVG icons are rendered in the original icon slot" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Manual Bank/Wallet approval can choose and persist the transaction icon" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Compact moon/sun button with scoped dark theme" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Card selector added to the real Settings dialog" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Classic remains unchanged; bank cards use a detailed gold EMV chip and one MM/YY value" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Public route verified to stay on r7" >> "$GITHUB_STEP_SUMMARY"
+          echo "🔒 3.9.4 remains owner-only until explicit publication" >> "$GITHUB_STEP_SUMMARY"

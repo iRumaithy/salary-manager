@@ -44,7 +44,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.4-dark-statusbar-r11";
+      var v = "3.9.4-ltr-header-r12";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -3857,6 +3857,195 @@
       border-color:#30463f!important;
     }
 
+
+    /* 3.9.4 r12 — exact LTR mirror for the bank card + collision-proof English mobile header */
+
+    /* Arabic keeps the established r8 arrangement. English mirrors ALL directional pieces together. */
+    html[dir="ltr"] .salary-card.salary-card-bank .hero-kicker{
+      right:auto!important;
+      left:28px!important;
+      text-align:left!important;
+      justify-content:flex-start!important;
+    }
+    html[dir="ltr"] .salary-card.salary-card-bank .salary-label,
+    html[dir="ltr"] .salary-card.salary-card-bank .salary-value-row,
+    html[dir="ltr"] .salary-card.salary-card-bank .salary-payday-chip{
+      text-align:left!important;
+      margin-inline-start:0!important;
+      margin-inline-end:auto!important;
+    }
+    html[dir="ltr"] .salary-card.salary-card-bank .bank-card-emv{
+      left:auto!important;
+      right:28px!important;
+    }
+    html[dir="ltr"] .salary-card.salary-card-bank .bank-card-contactless{
+      left:auto!important;
+      right:104px!important;
+    }
+    html[dir="ltr"] .salary-card.salary-card-bank .bank-card-valid{
+      left:auto!important;
+      right:31px!important;
+      text-align:left!important;
+    }
+    html[dir="ltr"] .salary-card.salary-card-bank .bank-card-valid-label{
+      align-items:flex-start!important;
+      text-align:left!important;
+    }
+    html[dir="ltr"] .salary-card.salary-card-bank::after{
+      left:auto!important;
+      right:-62px!important;
+    }
+
+    /* Mobile LTR header is a two-row grid: brand + controls, then month. No element can sit on top of another. */
+    @media(max-width:620px){
+      html[dir="ltr"] .topbar-inner{
+        display:grid!important;
+        grid-template-columns:minmax(154px,1fr) auto!important;
+        grid-template-areas:
+          "brand actions"
+          "month month"!important;
+        align-items:center!important;
+        column-gap:6px!important;
+        row-gap:10px!important;
+        width:min(100% - 14px,1220px)!important;
+        padding:10px 0!important;
+      }
+      html[dir="ltr"] .brand{
+        grid-area:brand!important;
+        width:100%!important;
+        min-width:0!important;
+        max-width:none!important;
+        margin:0!important;
+        gap:8px!important;
+        overflow:hidden!important;
+      }
+      html[dir="ltr"] .brand-mark{
+        width:38px!important;
+        height:38px!important;
+        flex:0 0 38px!important;
+        border-radius:12px!important;
+      }
+      html[dir="ltr"] .brand-copy{
+        min-width:0!important;
+        max-width:100%!important;
+        overflow:hidden!important;
+      }
+      html[dir="ltr"] .brand-title{
+        display:block!important;
+        max-width:100%!important;
+        font-size:13px!important;
+        line-height:1.12!important;
+        white-space:nowrap!important;
+        overflow:hidden!important;
+        text-overflow:ellipsis!important;
+      }
+      html[dir="ltr"] .today-date-text{
+        display:block!important;
+        max-width:100%!important;
+        margin-top:2px!important;
+        font-size:7.6px!important;
+        line-height:1.15!important;
+        letter-spacing:-.14px!important;
+        white-space:nowrap!important;
+        overflow:hidden!important;
+        text-overflow:clip!important;
+      }
+      html[dir="ltr"] .today-clock-text{
+        display:block!important;
+        width:max-content!important;
+        max-width:100%!important;
+        margin-top:2px!important;
+        padding:0!important;
+        font-size:8px!important;
+        line-height:1.1!important;
+        white-space:nowrap!important;
+      }
+      html[dir="ltr"] .top-actions{
+        grid-area:actions!important;
+        justify-self:end!important;
+        align-self:center!important;
+        display:flex!important;
+        flex-wrap:nowrap!important;
+        gap:3px!important;
+        min-width:0!important;
+        max-width:none!important;
+        margin:0!important;
+      }
+      html[dir="ltr"] .top-actions .ghost-btn{
+        width:37px!important;
+        min-width:37px!important;
+        height:38px!important;
+        min-height:38px!important;
+        padding:7px 6px!important;
+        gap:3px!important;
+        border-radius:12px!important;
+        font-size:11px!important;
+        flex:0 0 37px!important;
+      }
+      html[dir="ltr"] #accountButton{
+        width:68px!important;
+        min-width:68px!important;
+        max-width:68px!important;
+        flex-basis:68px!important;
+        padding-inline:7px!important;
+      }
+      html[dir="ltr"] #accountButton .action-label{
+        display:inline!important;
+        min-width:0!important;
+        max-width:44px!important;
+        overflow:hidden!important;
+        text-overflow:ellipsis!important;
+        white-space:nowrap!important;
+        font-size:10px!important;
+      }
+      html[dir="ltr"] .account-dot{
+        width:7px!important;
+        height:7px!important;
+        flex:0 0 7px!important;
+        box-shadow:0 0 0 3px rgba(70,185,156,.14)!important;
+      }
+      html[dir="ltr"] .month-control{
+        grid-area:month!important;
+        order:initial!important;
+        width:100%!important;
+        margin:0!important;
+      }
+
+      html[dir="ltr"] .salary-card.salary-card-bank .hero-kicker{
+        right:auto!important;
+        left:20px!important;
+        max-width:52%!important;
+      }
+      html[dir="ltr"] .salary-card.salary-card-bank .bank-card-emv{
+        left:auto!important;
+        right:20px!important;
+      }
+      html[dir="ltr"] .salary-card.salary-card-bank .bank-card-contactless{
+        left:auto!important;
+        right:87px!important;
+      }
+      html[dir="ltr"] .salary-card.salary-card-bank .bank-card-valid{
+        left:auto!important;
+        right:22px!important;
+      }
+    }
+
+    /* On the narrowest supported widths keep every control, but remove extra spacing rather than overlap brand text. */
+    @media(max-width:390px){
+      html[dir="ltr"] .topbar-inner{
+        grid-template-columns:minmax(136px,1fr) auto!important;
+        column-gap:4px!important;
+      }
+      html[dir="ltr"] .brand{gap:6px!important}
+      html[dir="ltr"] .brand-mark{width:35px!important;height:35px!important;flex-basis:35px!important}
+      html[dir="ltr"] .brand-title{font-size:12px!important}
+      html[dir="ltr"] .today-date-text{font-size:7px!important;letter-spacing:-.18px!important}
+      html[dir="ltr"] .top-actions{gap:2px!important}
+      html[dir="ltr"] .top-actions .ghost-btn{width:34px!important;min-width:34px!important;flex-basis:34px!important;padding-inline:5px!important}
+      html[dir="ltr"] #accountButton{width:62px!important;min-width:62px!important;max-width:62px!important;flex-basis:62px!important}
+      html[dir="ltr"] #accountButton .action-label{max-width:39px!important;font-size:9.5px!important}
+    }
+
   </style>
 </head>
 <body>
@@ -5776,7 +5965,7 @@
 
 
       var APP_VERSION = "3.9.4";
-      var APP_RELEASE_ID = "3.9.4-dark-statusbar-r11";
+      var APP_RELEASE_ID = "3.9.4-ltr-header-r12";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";

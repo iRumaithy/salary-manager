@@ -29,7 +29,7 @@
     })();
   </script>
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="مدير الراتب">
   <meta name="mobile-web-app-capable" content="yes">
   <script>
@@ -44,7 +44,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.4-dark-fixed-fab-r10";
+      var v = "3.9.4-dark-statusbar-r11";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -3771,6 +3771,92 @@
       }
     }
 
+
+    /* 3.9.4 r11 — eliminate bright surfaces in dark mode + iOS safe-area status bar */
+    html[data-app-theme="dark"]{
+      color-scheme:dark;
+      --paper:#142622!important;
+      --canvas:#081512!important;
+      --ink:#edf5f2!important;
+      --muted:#8fa39d!important;
+      --line:#2d403b!important;
+      --teal-soft:#18332f!important;
+      --coral-soft:#34201d!important;
+      --gold-soft:#332b1e!important;
+      background:#0b2420!important;
+    }
+    html[data-app-theme="dark"] body,
+    html[data-app-theme="dark"] .app{
+      background-color:#081512!important;
+    }
+    html[data-app-theme="dark"] .topbar{
+      background:rgba(8,25,22,.97)!important;
+      border-bottom-color:#29403a!important;
+    }
+
+    /* In standalone iOS mode black-translucent lets the page paint behind the status bar. */
+    .topbar{
+      padding-top:env(safe-area-inset-top,0px);
+    }
+    body::before{
+      content:"";
+      position:fixed;
+      z-index:10060;
+      top:0;
+      left:0;
+      right:0;
+      height:env(safe-area-inset-top,0px);
+      background:#123f3b;
+      pointer-events:none;
+    }
+    html[data-app-theme="dark"] body::before{
+      background:#0b2b26;
+    }
+
+    /* Runtime-applied fallbacks catch dynamic cards/buttons that still carry a hard-coded light background. */
+    html[data-app-theme="dark"] .salary-dark-auto-surface{
+      background:#142622!important;
+      background-image:none!important;
+      color:#edf5f2!important;
+      border-color:#30463f!important;
+      box-shadow:0 12px 28px rgba(0,0,0,.16)!important;
+    }
+    html[data-app-theme="dark"] .salary-dark-auto-surface *:not(.aed-symbol):not(svg):not(path){
+      border-color:inherit;
+    }
+    html[data-app-theme="dark"] .salary-dark-auto-button{
+      background:#19302b!important;
+      background-image:none!important;
+      color:#dce9e5!important;
+      border-color:#39514a!important;
+      box-shadow:none!important;
+    }
+    html[data-app-theme="dark"] .salary-dark-auto-danger{
+      background:#34201f!important;
+      background-image:none!important;
+      color:#f0aaa5!important;
+      border-color:#68413d!important;
+      box-shadow:none!important;
+    }
+    html[data-app-theme="dark"] .salary-dark-auto-surface small,
+    html[data-app-theme="dark"] .salary-dark-auto-surface .muted,
+    html[data-app-theme="dark"] .salary-dark-auto-surface [class*="muted"],
+    html[data-app-theme="dark"] .salary-dark-auto-surface [class*="hint"]{
+      color:#91a59f!important;
+    }
+
+    /* Explicit safety net for the surfaces highlighted in the owner review. */
+    html[data-app-theme="dark"] [class*="daily"][class*="limit"],
+    html[data-app-theme="dark"] [class*="daily"][class*="budget"],
+    html[data-app-theme="dark"] [class*="wallet"][class*="note"],
+    html[data-app-theme="dark"] [class*="wallet"][class*="option"],
+    html[data-app-theme="dark"] [class*="expense"][class*="source"]{
+      background:#142622!important;
+      background-image:none!important;
+      color:#edf5f2!important;
+      border-color:#30463f!important;
+    }
+
   </style>
 </head>
 <body>
@@ -5690,7 +5776,7 @@
 
 
       var APP_VERSION = "3.9.4";
-      var APP_RELEASE_ID = "3.9.4-dark-fixed-fab-r10";
+      var APP_RELEASE_ID = "3.9.4-dark-statusbar-r11";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -11782,6 +11868,105 @@
       window.addEventListener("pageshow",boot);
       window.addEventListener("resize",pinSalaryFloatingActions,{passive:true});
       try{new MutationObserver(function(){refreshThemeSurface();pinSalaryFloatingActions();}).observe(document.documentElement,{attributes:true,attributeFilter:["data-app-theme"]});}catch(_){}
+    })();
+  </script>
+
+
+  <script id="r11DarkSurfaceStatusBarFix">
+    (function(){
+      var SURFACE_CLASS="salary-dark-auto-surface";
+      var BUTTON_CLASS="salary-dark-auto-button";
+      var DANGER_CLASS="salary-dark-auto-danger";
+      var themeMeta=document.querySelector('meta[name="theme-color"]');
+      var scheduled=false;
+
+      function isDark(){
+        return document.documentElement.getAttribute("data-app-theme")==="dark";
+      }
+      function parseColor(value){
+        var m=String(value||"").match(/rgba?\(\s*([0-9.]+)[ ,]+([0-9.]+)[ ,]+([0-9.]+)(?:[ ,/]+([0-9.]+))?\s*\)/i);
+        if(!m)return null;
+        return {r:+m[1],g:+m[2],b:+m[3],a:m[4]===undefined?1:+m[4]};
+      }
+      function isBrightBackground(el){
+        if(!el||el===document.documentElement||el===document.body)return false;
+        var cs=getComputedStyle(el), c=parseColor(cs.backgroundColor);
+        if(!c||c.a<.55)return false;
+        var lum=(.2126*c.r+.7152*c.g+.0722*c.b)/255;
+        if(lum<.78)return false;
+        var rect=el.getBoundingClientRect();
+        if(rect.width<28||rect.height<22)return false;
+        var tag=el.tagName;
+        if(tag==="IMG"||tag==="SVG"||tag==="PATH"||tag==="CANVAS"||tag==="VIDEO")return false;
+        return true;
+      }
+      function mark(el){
+        if(!el)return;
+        var tag=el.tagName;
+        var text=(el.textContent||"").trim();
+        var hint=((el.className&&String(el.className))||"")+" "+(el.getAttribute&&((el.getAttribute("aria-label")||"")+" "+(el.getAttribute("title")||""))||"");
+        if(tag==="BUTTON"||el.getAttribute("role")==="button"){
+          if(text==="×"||text==="✕"||/حذف|delete|remove|danger/i.test(hint)){
+            el.classList.add(DANGER_CLASS);
+            el.classList.remove(BUTTON_CLASS);
+          }else{
+            el.classList.add(BUTTON_CLASS);
+          }
+        }else{
+          el.classList.add(SURFACE_CLASS);
+        }
+      }
+      function nearestBrightBox(start,maxDepth){
+        var el=start;
+        for(var i=0;el&&i<maxDepth;i++,el=el.parentElement){
+          if(isBrightBackground(el))return el;
+        }
+        return null;
+      }
+      function fixHighlightedText(){
+        var nodes=document.querySelectorAll("body *");
+        for(var i=0;i<nodes.length;i++){
+          var el=nodes[i];
+          if(el.children&&el.children.length>5)continue;
+          var text=(el.textContent||"").replace(/\s+/g," ").trim();
+          if(!text)continue;
+          if(text.indexOf("حد الصرف اليومي المقترح")!==-1 || text.indexOf("دفع من محفظة أو مخصص سبق حجزه")!==-1){
+            mark(nearestBrightBox(el,6));
+          }
+        }
+      }
+      function sweep(){
+        scheduled=false;
+        var dark=isDark();
+        if(themeMeta)themeMeta.setAttribute("content",dark?"#0b2b26":"#123f3b");
+        if(!dark){
+          document.querySelectorAll("."+SURFACE_CLASS+",."+BUTTON_CLASS+",."+DANGER_CLASS).forEach(function(el){
+            el.classList.remove(SURFACE_CLASS,BUTTON_CLASS,DANGER_CLASS);
+          });
+          return;
+        }
+        var selector=[
+          "button","[role='button']","section","article","aside","label",
+          "[class*='card']","[class*='panel']","[class*='note']","[class*='item']",
+          "[class*='box']","[class*='banner']","[class*='summary']","[class*='option']",
+          "[class*='action']","[class*='daily']","[class*='budget']","[class*='limit']",
+          "[class*='wallet']","[class*='source']"
+        ].join(",");
+        document.querySelectorAll(selector).forEach(function(el){
+          if(isBrightBackground(el))mark(el);
+        });
+        fixHighlightedText();
+      }
+      function schedule(){
+        if(scheduled)return;
+        scheduled=true;
+        requestAnimationFrame(sweep);
+      }
+      if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",schedule,{once:true});else schedule();
+      window.addEventListener("pageshow",schedule);
+      try{
+        new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["data-app-theme","class","style"]});
+      }catch(_){ }
     })();
   </script>
 

@@ -1,0 +1,124 @@
+name: Apply Salary Manager 3.9.4 Dark Fixed FAB r10
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.4-dark-fixed-fab-r10.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-stage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current r8
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify current staged source is r8
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'var APP_VERSION = "3.9.4";' public/index.html
+          grep -Fq 'var APP_RELEASE_ID = "3.9.4-card-layout-r8";' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.4-card-layout-r8";' src/worker.js
+          grep -Fq 'const UPDATE_SIGNAL_VERSION = "3.9.4\u2060";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.4-card-layout-r8' public/sw.js
+          test -f public/releases/3.9.3-autoapprove-sync-race-r7/app.html
+
+      - name: Prepare r10 patch
+        shell: bash
+        run: |
+          printf '%s' 'ZnJvbSBwYXRobGliIGltcG9ydCBQYXRoCmltcG9ydCByZQoKSU5ERVggPSBQYXRoKCdwdWJsaWMvaW5kZXguaHRtbCcpCldPUktFUiA9IFBhdGgoJ3NyYy93b3JrZXIuanMnKQpTVyA9IFBhdGgoJ3B1YmxpYy9zdy5qcycpCk9MRCA9ICczLjkuNC1jYXJkLWxheW91dC1yOCcKTkVXID0gJzMuOS40LWRhcmstZml4ZWQtZmFiLXIxMCcKCmRlZiByZWFkKHApOiByZXR1cm4gcC5yZWFkX3RleHQoZW5jb2Rpbmc9J3V0Zi04JykKZGVmIHdyaXRlKHAsdCk6IHAud3JpdGVfdGV4dCh0LCBlbmNvZGluZz0ndXRmLTgnKQpkZWYgcmVxKHQsbixsKToKICAgIGlmIG4gbm90IGluIHQ6IHJhaXNlIFN5c3RlbUV4aXQoJ01pc3NpbmcgYW5jaG9yOiAnK2wpCmRlZiBvbmNlKHQsYSxiLGwpOgogICAgaWYgYSBub3QgaW4gdDogcmFpc2UgU3lzdGVtRXhpdCgnTWlzc2luZyBhbmNob3I6ICcrbCkKICAgIHJldHVybiB0LnJlcGxhY2UoYSxiLDEpCgppbmRleCA9IHJlYWQoSU5ERVgpCnJlcShpbmRleCwgJ3ZhciBBUFBfVkVSU0lPTiA9ICIzLjkuNCI7JywgJ0FQUF9WRVJTSU9OJykKcmVxKGluZGV4LCAndmFyIEFQUF9SRUxFQVNFX0lEID0gIicrT0xEKyciOycsICdyOCByZWxlYXNlIGlkJykKaW5kZXggPSBpbmRleC5yZXBsYWNlKE9MRCwgTkVXKQoKY3NzID0gcicnJwoKICAgIC8qIDMuOS40IHIxMCDigJQgZml4ZWQgdmlld3BvcnQgYWN0aW9ucyArIGNvbXBsZXRlIGRhcmsgc3VyZmFjZXMgKi8KICAgIC5mbG9hdGluZy1hY3Rpb24tc3RhY2t7CiAgICAgIHBvc2l0aW9uOmZpeGVkIWltcG9ydGFudDsKICAgICAgei1pbmRleDoxMDAyMCFpbXBvcnRhbnQ7CiAgICAgIHRvcDphdXRvIWltcG9ydGFudDsKICAgICAgbGVmdDphdXRvIWltcG9ydGFudDsKICAgICAgcmlnaHQ6bWF4KDE0cHgsZW52KHNhZmUtYXJlYS1pbnNldC1yaWdodCwwcHgpKSFpbXBvcnRhbnQ7CiAgICAgIGJvdHRvbTpjYWxjKDE0cHggKyBlbnYoc2FmZS1hcmVhLWluc2V0LWJvdHRvbSwwcHgpKSFpbXBvcnRhbnQ7CiAgICAgIG1hcmdpbjowIWltcG9ydGFudDsKICAgICAgdHJhbnNmb3JtOm5vbmUhaW1wb3J0YW50OwogICAgICB0cmFuc2xhdGU6bm9uZSFpbXBvcnRhbnQ7CiAgICAgIHBvaW50ZXItZXZlbnRzOm5vbmUhaW1wb3J0YW50OwogICAgfQogICAgLmZsb2F0aW5nLWFjdGlvbi1zdGFjaz5idXR0b257cG9pbnRlci1ldmVudHM6YXV0byFpbXBvcnRhbnR9CgogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5mb3JtLXBhbmVsLAogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5leHBlbnNlLXF1aWNrLWNhcHR1cmUsCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLnF1aWNrLWZvcm0sCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLmRlcG9zaXQtZm9ybSwKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAuZXhwZW5zZS1jYXRlZ29yeS1jaG9pY2UsCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLmV4cGVuc2Utdm9pY2UtYnV0dG9uLAogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5zZXR0aW5ncy1zZWN0aW9uLAogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5jaGFuZ2Vsb2ctZW50cnksCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLmFjY291bnQtY2FyZCwKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAuYWRtaW4tdXNlciwKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAucmVpbWJ1cnNlbWVudC1pdGVtLAogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5jb21taXRtZW50LWNhcmQsCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLnJlY3VycmluZy1jYXJkLAogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5zdGF0ZW1lbnQtY2FyZCwKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAuYXV0b21hdGlvbi1pbXBvcnQsCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLmF1dG9tYXRpb24tY29ubmVjdC1jYXJkLAogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5leHBlbnNlLWl0ZW0sCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLmluc3RhbGwtZm9sbG93dXAtbm90ZSwKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAub3duZXItY29uZmlnLXN0YXR1cywKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAuc2hhcmVkLWV4cGVuc2UtcGFuZWwsCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLnNoYXJlZC1leHBlbnNlLXN1bW1hcnksCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLnNoYXJlZC1zcGxpdC1zdW1tYXJ5LWJveHsKICAgICAgYmFja2dyb3VuZDojMTQyMTFmIWltcG9ydGFudDsKICAgICAgYmFja2dyb3VuZC1pbWFnZTpub25lIWltcG9ydGFudDsKICAgICAgY29sb3I6I2VkZjVmMiFpbXBvcnRhbnQ7CiAgICAgIGJvcmRlci1jb2xvcjojMmIzYzM4IWltcG9ydGFudDsKICAgICAgYm94LXNoYWRvdzpub25lIWltcG9ydGFudDsKICAgIH0KICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAuZXhwZW5zZS1xdWljay1jYXB0dXJle2JhY2tncm91bmQ6bGluZWFyLWdyYWRpZW50KDE0NWRlZywjMTQyMTFmLCMxNzI3MjQpIWltcG9ydGFudH0KICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAuZXhwZW5zZS1jYXRlZ29yeS1jaG9pY2V7YmFja2dyb3VuZDojMTgyNjIzIWltcG9ydGFudDtjb2xvcjojZWFmM2YwIWltcG9ydGFudDtib3JkZXItY29sb3I6IzMxNDIzZSFpbXBvcnRhbnR9CiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLmV4cGVuc2UtY2F0ZWdvcnktY2hvaWNlOmhvdmVye2JvcmRlci1jb2xvcjpjb2xvci1taXgoaW4gc3JnYix2YXIoLS1jYXQtYWNjZW50LCM0NWFhOTgpIDU1JSwjMzE0MjNlKSFpbXBvcnRhbnQ7YmFja2dyb3VuZDojMWIyYzI4IWltcG9ydGFudH0KICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAuZXhwZW5zZS1jYXRlZ29yeS1jaG9pY2UuaXMtc2VsZWN0ZWR7YmFja2dyb3VuZDpjb2xvci1taXgoaW4gc3JnYix2YXIoLS1jYXQtYWNjZW50LCM0NWFhOTgpIDE4JSwjMTgyNjIzKSFpbXBvcnRhbnQ7Ym9yZGVyLWNvbG9yOmNvbG9yLW1peChpbiBzcmdiLHZhcigtLWNhdC1hY2NlbnQsIzQ1YWE5OCkgNjUlLCMzMTQyM2UpIWltcG9ydGFudDtib3gtc2hhZG93OjAgMCAwIDJweCBjb2xvci1taXgoaW4gc3JnYix2YXIoLS1jYXQtYWNjZW50LCM0NWFhOTgpIDEyJSx0cmFuc3BhcmVudCkhaW1wb3J0YW50fQogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5leHBlbnNlLWNhdGVnb3J5LWljb257YmFja2dyb3VuZDpjb2xvci1taXgoaW4gc3JnYix2YXIoLS1jYXQtYWNjZW50LCM0NWFhOTgpIDE2JSwjMTYyMzFmKSFpbXBvcnRhbnR9CiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLmV4cGVuc2Utdm9pY2UtYnV0dG9uLAogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5leHBlbnNlLXZvaWNlLWJ1dHRvbi5pcy1saXN0ZW5pbmd7YmFja2dyb3VuZDojMTgyODI0IWltcG9ydGFudDtib3JkZXItY29sb3I6IzMzNDY0MCFpbXBvcnRhbnQ7Y29sb3I6I2VkZjVmMiFpbXBvcnRhbnR9CiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLmV4cGVuc2Utdm9pY2UtbWlje2JhY2tncm91bmQ6IzIwMzMyZSFpbXBvcnRhbnQ7Y29sb3I6IzhkZDNjNSFpbXBvcnRhbnR9CiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLmZpZWxkIGlucHV0LAogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5maWVsZCBzZWxlY3QsCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLmZpZWxkIHRleHRhcmVhLAogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIGlucHV0Om5vdChbdHlwZT0iY2hlY2tib3giXSk6bm90KFt0eXBlPSJyYWRpbyJdKSwKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSBzZWxlY3QsCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gdGV4dGFyZWF7YmFja2dyb3VuZDojMGYxYjE5IWltcG9ydGFudDtjb2xvcjojZWRmNWYyIWltcG9ydGFudDtib3JkZXItY29sb3I6IzMxNDIzZSFpbXBvcnRhbnQ7Ym94LXNoYWRvdzpub25lIWltcG9ydGFudH0KICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSBpbnB1dDo6cGxhY2Vob2xkZXIsCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gdGV4dGFyZWE6OnBsYWNlaG9sZGVye2NvbG9yOiM3MDgzN2QhaW1wb3J0YW50fQogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5maWVsZCBsYWJlbCwKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAuZXhwZW5zZS1xdWljay1jYXB0dXJlLWNvcHksCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLmV4cGVuc2UtcXVpY2stY2FwdHVyZS1jb3B5IHN0cm9uZywKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAuZXhwZW5zZS1jYXRlZ29yeS1jaG9pY2Ugc3BhbjpsYXN0LWNoaWxke2NvbG9yOiNkY2U4ZTQhaW1wb3J0YW50fQogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5maWVsZCBzbWFsbCwKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAuZXhwZW5zZS1xdWljay1jYXB0dXJlLWNvcHkgc21hbGwsCiAgICBodG1sW2RhdGEtYXBwLXRoZW1lPSJkYXJrIl0gLnN0b3JhZ2Utbm90ZSwKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAuc2V0dGluZ3Mtc3RhdHVze2NvbG9yOiM4ZmEzOWQhaW1wb3J0YW50fQogICAgaHRtbFtkYXRhLWFwcC10aGVtZT0iZGFyayJdIC5wcmltYXJ5LWJ0biwKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAubW9iaWxlLWZhYiwKICAgIGh0bWxbZGF0YS1hcHAtdGhlbWU9ImRhcmsiXSAuYXV0b21hdGlvbi1yZXZpZXctZmFie2JveC1zaGFkb3c6MCAxMnB4IDI4cHggcmdiYSgwLDAsMCwuMjgpIWltcG9ydGFudH0KCiAgICBAbWVkaWEobWF4LXdpZHRoOjYyMHB4KXsKICAgICAgLmZsb2F0aW5nLWFjdGlvbi1zdGFja3sKICAgICAgICByaWdodDptYXgoMTJweCxlbnYoc2FmZS1hcmVhLWluc2V0LXJpZ2h0LDBweCkpIWltcG9ydGFudDsKICAgICAgICBib3R0b206Y2FsYygxMnB4ICsgZW52KHNhZmUtYXJlYS1pbnNldC1ib3R0b20sMHB4KSkhaW1wb3J0YW50OwogICAgICAgIGdhcDo5cHghaW1wb3J0YW50OwogICAgICB9CiAgICB9CicnJwppbmRleCA9IG9uY2UoaW5kZXgsICdcbiAgPC9zdHlsZT4nLCBjc3MrJ1xuICA8L3N0eWxlPicsICdzdHlsZSBjbG9zZScpCgpzY3JpcHQgPSByJycnCiAgPHNjcmlwdCBpZD0icjEwVmlld3BvcnREYXJrRml4Ij4KICAgIChmdW5jdGlvbigpewogICAgICBmdW5jdGlvbiBwaW5TYWxhcnlGbG9hdGluZ0FjdGlvbnMoKXsKICAgICAgICB2YXIgc3RhY2s9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoImZsb2F0aW5nQWN0aW9uU3RhY2siKTsKICAgICAgICBpZighc3RhY2spcmV0dXJuOwogICAgICAgIGlmKHN0YWNrLnBhcmVudEVsZW1lbnQhPT1kb2N1bWVudC5ib2R5KSBkb2N1bWVudC5ib2R5LmFwcGVuZENoaWxkKHN0YWNrKTsKICAgICAgICBzdGFjay5zdHlsZS5zZXRQcm9wZXJ0eSgicG9zaXRpb24iLCJmaXhlZCIsImltcG9ydGFudCIpOwogICAgICAgIHN0YWNrLnN0eWxlLnNldFByb3BlcnR5KCJ0b3AiLCJhdXRvIiwiaW1wb3J0YW50Iik7CiAgICAgICAgc3RhY2suc3R5bGUuc2V0UHJvcGVydHkoImxlZnQiLCJhdXRvIiwiaW1wb3J0YW50Iik7CiAgICAgICAgc3RhY2suc3R5bGUuc2V0UHJvcGVydHkoInJpZ2h0IiwibWF4KDE0cHgsIGVudihzYWZlLWFyZWEtaW5zZXQtcmlnaHQsIDBweCkpIiwiaW1wb3J0YW50Iik7CiAgICAgICAgc3RhY2suc3R5bGUuc2V0UHJvcGVydHkoImJvdHRvbSIsImNhbGMoMTRweCArIGVudihzYWZlLWFyZWEtaW5zZXQtYm90dG9tLCAwcHgpKSIsImltcG9ydGFudCIpOwogICAgICAgIHN0YWNrLnN0eWxlLnNldFByb3BlcnR5KCJ0cmFuc2Zvcm0iLCJub25lIiwiaW1wb3J0YW50Iik7CiAgICAgICAgc3RhY2suc3R5bGUuc2V0UHJvcGVydHkoIm1hcmdpbiIsIjAiLCJpbXBvcnRhbnQiKTsKICAgICAgfQogICAgICBmdW5jdGlvbiByZWZyZXNoVGhlbWVTdXJmYWNlKCl7CiAgICAgICAgdmFyIGRhcms9ZG9jdW1lbnQuZG9jdW1lbnRFbGVtZW50LmdldEF0dHJpYnV0ZSgiZGF0YS1hcHAtdGhlbWUiKT09PSJkYXJrIjsKICAgICAgICBkb2N1bWVudC5ib2R5LmNsYXNzTGlzdC50b2dnbGUoInNhbGFyeS1kYXJrLWFjdGl2ZSIsZGFyayk7CiAgICAgIH0KICAgICAgZnVuY3Rpb24gYm9vdCgpe3BpblNhbGFyeUZsb2F0aW5nQWN0aW9ucygpO3JlZnJlc2hUaGVtZVN1cmZhY2UoKTt9CiAgICAgIGlmKGRvY3VtZW50LnJlYWR5U3RhdGU9PT0ibG9hZGluZyIpIGRvY3VtZW50LmFkZEV2ZW50TGlzdGVuZXIoIkRPTUNvbnRlbnRMb2FkZWQiLGJvb3Qse29uY2U6dHJ1ZX0pOyBlbHNlIGJvb3QoKTsKICAgICAgd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoInBhZ2VzaG93Iixib290KTsKICAgICAgd2luZG93LmFkZEV2ZW50TGlzdGVuZXIoInJlc2l6ZSIscGluU2FsYXJ5RmxvYXRpbmdBY3Rpb25zLHtwYXNzaXZlOnRydWV9KTsKICAgICAgdHJ5e25ldyBNdXRhdGlvbk9ic2VydmVyKGZ1bmN0aW9uKCl7cmVmcmVzaFRoZW1lU3VyZmFjZSgpO3BpblNhbGFyeUZsb2F0aW5nQWN0aW9ucygpO30pLm9ic2VydmUoZG9jdW1lbnQuZG9jdW1lbnRFbGVtZW50LHthdHRyaWJ1dGVzOnRydWUsYXR0cmlidXRlRmlsdGVyOlsiZGF0YS1hcHAtdGhlbWUiXX0pO31jYXRjaChfKXt9CiAgICB9KSgpOwogIDwvc2NyaXB0PgonJycKcmVxKGluZGV4LCAnPC9ib2R5PicsICdib2R5IGNsb3NlJykKaWYgJ2lkPSJyMTBWaWV3cG9ydERhcmtGaXgiJyBub3QgaW4gaW5kZXg6CiAgICBpbmRleCA9IGluZGV4LnJlcGxhY2UoJzwvYm9keT4nLCBzY3JpcHQrJ1xuPC9ib2R5PicsMSkKCmZvciBuIGluIFsKICAndmFyIEFQUF9SRUxFQVNFX0lEID0gIicrTkVXKyciOycsCiAgJzMuOS40IHIxMCDigJQgZml4ZWQgdmlld3BvcnQgYWN0aW9ucyArIGNvbXBsZXRlIGRhcmsgc3VyZmFjZXMnLAogICdpZD0icjEwVmlld3BvcnREYXJrRml4IicsCiAgJ3Bvc2l0aW9uOmZpeGVkIWltcG9ydGFudCcsCiAgJ2V4cGVuc2UtY2F0ZWdvcnktY2hvaWNlLmlzLXNlbGVjdGVkJwpdOiByZXEoaW5kZXgsbixuKQp3cml0ZShJTkRFWCxpbmRleCkKCndvcmtlcj1yZWFkKFdPUktFUikKcmVxKHdvcmtlciwnY29uc3QgUkVMRUFTRV9JRCA9ICInK09MRCsnIjsnLCd3b3JrZXIgcjgnKQp3b3JrZXI9b25jZSh3b3JrZXIsJ2NvbnN0IFJFTEVBU0VfSUQgPSAiJytPTEQrJyI7JywnY29uc3QgUkVMRUFTRV9JRCA9ICInK05FVysnIjsnLCd3b3JrZXIgcmVsZWFzZScpCndvcmtlcj1yZS5zdWIocidjb25zdCBVUERBVEVfU0lHTkFMX1ZFUlNJT04gPSAiM1wuOVwuNFteXCJdKiI7JywgbGFtYmRhIG06ICdjb25zdCBVUERBVEVfU0lHTkFMX1ZFUlNJT04gPSAiMy45LjRcXHUyMDYzIjsnLCB3b3JrZXIsIGNvdW50PTEpCndyaXRlKFdPUktFUix3b3JrZXIpCgpzdz1yZWFkKFNXKQpyZXEoc3csJ3NhbGFyeS1tYW5hZ2VyLXYzLjkuNC1jYXJkLWxheW91dC1yOCcsJ3N3IHI4IGNhY2hlJykKc3c9c3cucmVwbGFjZSgnc2FsYXJ5LW1hbmFnZXItdjMuOS40LWNhcmQtbGF5b3V0LXI4Jywnc2FsYXJ5LW1hbmFnZXItdjMuOS40LWRhcmstZml4ZWQtZmFiLXIxMCcsMSkKd3JpdGUoU1csc3cpCnByaW50KCdyMTAgcGF0Y2ggYXBwbGllZCcpCg==' > /tmp/salary-r10-patch.b64
+
+      - name: Decode and apply r10 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d /tmp/salary-r10-patch.b64 > /tmp/salary-r10-patch.py
+          python3 -m py_compile /tmp/salary-r10-patch.py
+          python3 /tmp/salary-r10-patch.py
+
+      - name: Validate JavaScript and requested fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/worker.js
+          node --check public/sw.js
+          python3 - <<'PY2'
+          from pathlib import Path
+          import re
+          text=Path('public/index.html').read_text(encoding='utf-8')
+          blocks=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',text,flags=re.S|re.I)
+          Path('/tmp/salary-r10-inline.js').write_text('\n'.join(x for x in blocks if x.strip()),encoding='utf-8')
+          PY2
+          node --check /tmp/salary-r10-inline.js
+          grep -Fq 'var APP_RELEASE_ID = "3.9.4-dark-fixed-fab-r10";' public/index.html
+          grep -Fq '3.9.4 r10 — fixed viewport actions + complete dark surfaces' public/index.html
+          grep -Fq 'id="r10ViewportDarkFix"' public/index.html
+          grep -Fq 'position:fixed!important' public/index.html
+          grep -Fq 'expense-category-choice.is-selected' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.4-dark-fixed-fab-r10";' src/worker.js
+          grep -Fq 'const UPDATE_SIGNAL_VERSION = "3.9.4\u2063";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.4-dark-fixed-fab-r10' public/sw.js
+
+      - name: Commit staged r10
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js
+          git commit -m "Salary Manager 3.9.4 r10 fix floating actions and dark surfaces"
+          git push
+
+      - name: Deploy staged r10 to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+          secrets: |
+            AUTH_PEPPER
+            OWNER_BOOTSTRAP_TOKEN
+        env:
+          AUTH_PEPPER: ${{ secrets.AUTH_PEPPER }}
+          OWNER_BOOTSTRAP_TOKEN: ${{ secrets.OWNER_BOOTSTRAP_TOKEN }}
+
+      - name: Verify exact r10 is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?r10_check=$(date +%s)" || true)
+            echo "$BODY"
+            if echo "$BODY" | grep -Fq '"version":"3.9.4"' && echo "$BODY" | grep -Fq '"stagedReleaseId":"3.9.4-dark-fixed-fab-r10"'; then break; fi
+            sleep 4
+          done
+          echo "$BODY" | grep -Fq '"stagedReleaseId":"3.9.4-dark-fixed-fab-r10"'
+
+      - name: Verify public users remain on stable r7
+        shell: bash
+        run: |
+          set -euo pipefail
+          BODY=$(curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_r10_check=$(date +%s)")
+          echo "$BODY" | grep -Fq '3.9.3-autoapprove-sync-race-r7'
+          if echo "$BODY" | grep -Fq '3.9.4-dark-fixed-fab-r10'; then
+            echo "SECURITY FAILURE: staged r10 leaked to public users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          echo "### Salary Manager 3.9.4 r10" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Fixed the Python re.sub unicode-escape failure from r9" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Floating action buttons pinned to the viewport bottom-right" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Stack moved to document.body to avoid transformed-parent fixed-position bugs" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Expense form, fields, category cards, settings and other bright surfaces darkened" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Owner-only staging retained; public users stay on stable 3.9.3 r7" >> "$GITHUB_STEP_SUMMARY"

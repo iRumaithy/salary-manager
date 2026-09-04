@@ -44,7 +44,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.4-ltr-header-r12";
+      var v = "3.9.4-quick-expense-icons-r13";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -4351,18 +4351,33 @@
                 <button class="expense-category-choice" type="button" data-expense-category="مواصلات" style="--cat-accent:#b87928;--cat-soft:#fbf1dc" aria-pressed="false">
                   <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 17h14l-1-6-2-4H8l-2 4-1 6Z"></path><path d="M7 17v2M17 17v2M7.5 13h.01M16.5 13h.01M3 11h3M18 11h3"></path></svg></span><span>وقود وتنقل</span>
                 </button>
+                <button class="expense-category-choice" type="button" data-expense-category="مواقف" style="--cat-accent:#3f7f8f;--cat-soft:#e9f5f7" aria-pressed="false">
+        <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 18V6h4.2a3.8 3.8 0 0 1 0 7.6H9M9 13.6h4.2"></path></svg></span><span>مواقف</span>
+      </button>
                 <button class="expense-category-choice" type="button" data-expense-category="فواتير" style="--cat-accent:#2d7088;--cat-soft:#e8f3f7" aria-pressed="false">
                   <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"></path><path d="M9 8h6M9 12h6M9 16h3"></path></svg></span><span>فواتير</span>
                 </button>
+                <button class="expense-category-choice" type="button" data-expense-category="اشتراكات" style="--cat-accent:#4f6fb3;--cat-soft:#eef1fb" aria-pressed="false">
+        <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h10a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-7a3 3 0 0 1 3-3Z"></path><path d="m10 11 5 3-5 3v-6ZM8 4h8"></path></svg></span><span>اشتراكات</span>
+      </button>
+                <button class="expense-category-choice" type="button" data-expense-category="رسوم حكومية" style="--cat-accent:#8a6f45;--cat-soft:#f5f0e7" aria-pressed="false">
+        <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 9 9-5 9 5H3Z"></path><path d="M5 10v7M9 10v7M15 10v7M19 10v7M3 20h18M4 17h16"></path></svg></span><span>رسوم حكومية</span>
+      </button>
                 <button class="expense-category-choice" type="button" data-expense-category="اتصالات" style="--cat-accent:#526cb3;--cat-soft:#eef0fb" aria-pressed="false">
                   <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"></rect><path d="M10 6h4M11 18h2"></path></svg></span><span>اتصالات</span>
                 </button>
                 <button class="expense-category-choice" type="button" data-expense-category="صحة" style="--cat-accent:#b84f62;--cat-soft:#fbecef" aria-pressed="false">
                   <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 8.5c0 5-8 10-8 10s-8-5-8-10A4.5 4.5 0 0 1 12 5.7 4.5 4.5 0 0 1 20 8.5Z"></path><path d="M9 11h2l1-2 1.5 4 1-2H17"></path></svg></span><span>صحة</span>
                 </button>
+                <button class="expense-category-choice" type="button" data-expense-category="رياضة" style="--cat-accent:#4b8a69;--cat-soft:#ebf5ef" aria-pressed="false">
+        <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 9v6M4.5 10v4M17 9v6M19.5 10v4M7 12h10M2.5 12h2M19.5 12h2"></path></svg></span><span>رياضة</span>
+      </button>
                 <button class="expense-category-choice" type="button" data-expense-category="ترفيه" style="--cat-accent:#705a9b;--cat-soft:#f0ecf8" aria-pressed="false">
                   <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 9h10a4 4 0 0 1 3.7 5.5l-1.2 3a2 2 0 0 1-3.2.8L14 16h-4l-2.3 2.3a2 2 0 0 1-3.2-.8l-1.2-3A4 4 0 0 1 7 9Z"></path><path d="M8 12v3M6.5 13.5h3M15.5 12.5h.01M18 14h.01"></path></svg></span><span>ترفيه</span>
                 </button>
+                <button class="expense-category-choice" type="button" data-expense-category="سينما" style="--cat-accent:#7c5aa0;--cat-soft:#f3eef8" aria-pressed="false">
+        <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="13" rx="2"></rect><path d="M4 11h16M7 7l2-3M12 7l2-3M17 7l2-3"></path></svg></span><span>سينما</span>
+      </button>
                 <button class="expense-category-choice" type="button" data-expense-category="قهوة" style="--cat-accent:#8a6448;--cat-soft:#f5eee8" aria-pressed="false">
                   <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h11v7a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V8Z"></path><path d="M16 10h2a2.5 2.5 0 0 1 0 5h-2M8 3c1 1 .2 2 1.2 3M12 3c1 1 .2 2 1.2 3"></path></svg></span><span>قهوة</span>
                 </button>
@@ -4375,6 +4390,9 @@
                 <button class="expense-category-choice" type="button" data-expense-category="سفر" style="--cat-accent:#3d83a2;--cat-soft:#eaf5f9" aria-pressed="false">
                   <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 11 8-2 5-6 2 1-3 6 5 2v2l-6-.5-3 6-2-1 1-6-7 .5v-2Z"></path></svg></span><span>سفر</span>
                 </button>
+                <button class="expense-category-choice" type="button" data-expense-category="فندق" style="--cat-accent:#4f7395;--cat-soft:#edf3f8" aria-pressed="false">
+        <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9h16v10M4 15h16M7 9V6h4a3 3 0 0 1 3 3M7 15v4M17 15v4"></path></svg></span><span>فندق</span>
+      </button>
                 <button class="expense-category-choice" type="button" data-expense-category="تعليم" style="--cat-accent:#5d5aa2;--cat-soft:#efeffa" aria-pressed="false">
                   <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 8 9-5 9 5-9 5-9-5Z"></path><path d="M7 11v5c3 2 7 2 10 0v-5M21 9v6"></path></svg></span><span>تعليم</span>
                 </button>
@@ -5965,7 +5983,7 @@
 
 
       var APP_VERSION = "3.9.4";
-      var APP_RELEASE_ID = "3.9.4-ltr-header-r12";
+      var APP_RELEASE_ID = "3.9.4-quick-expense-icons-r13";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";

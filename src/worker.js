@@ -2,8 +2,8 @@ import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
 const VERSION = "3.9.4";
-const RELEASE_ID = "3.9.4-ltr-header-r12";
-const UPDATE_SIGNAL_VERSION = "3.9.4⁥";
+const RELEASE_ID = "3.9.4-quick-expense-icons-r13";
+const UPDATE_SIGNAL_VERSION = "3.9.4⁦";
 const PREVIOUS_PUBLISHED_VERSION = "3.9.3";
 const PREVIOUS_RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";
 const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([

@@ -1,0 +1,376 @@
+name: Apply Salary Manager 3.9.4 Dark Surfaces + Status Bar r11
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.4-dark-statusbar-r11.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-stage-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current r10
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify current staged source is r10
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'var APP_VERSION = "3.9.4";' public/index.html
+          grep -Fq 'var APP_RELEASE_ID = "3.9.4-dark-fixed-fab-r10";' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.4-dark-fixed-fab-r10";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.4-dark-fixed-fab-r10' public/sw.js
+          grep -Fq 'name="apple-mobile-web-app-status-bar-style" content="default"' public/index.html
+
+      - name: Apply r11 dark surfaces and iOS status-bar patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          INDEX = Path('public/index.html')
+          WORKER = Path('src/worker.js')
+          SW = Path('public/sw.js')
+          OLD = '3.9.4-dark-fixed-fab-r10'
+          NEW = '3.9.4-dark-statusbar-r11'
+
+          def read(p): return p.read_text(encoding='utf-8')
+          def write(p, t): p.write_text(t, encoding='utf-8')
+          def req(t, needle, label):
+              if needle not in t:
+                  raise SystemExit('Missing anchor: ' + label)
+          def once(t, a, b, label):
+              req(t, a, label)
+              return t.replace(a, b, 1)
+
+          index = read(INDEX)
+          req(index, 'var APP_VERSION = "3.9.4";', 'APP_VERSION')
+          req(index, 'var APP_RELEASE_ID = "' + OLD + '";', 'r10 release id')
+          req(index, 'name="apple-mobile-web-app-status-bar-style" content="default"', 'iOS status bar meta')
+
+          # Keep the public version number at 3.9.4 while advancing only the staged owner release id.
+          index = index.replace(OLD, NEW)
+          index = once(
+              index,
+              'name="apple-mobile-web-app-status-bar-style" content="default"',
+              'name="apple-mobile-web-app-status-bar-style" content="black-translucent"',
+              'status-bar style'
+          )
+
+          css = r'''
+
+              /* 3.9.4 r11 — eliminate bright surfaces in dark mode + iOS safe-area status bar */
+              html[data-app-theme="dark"]{
+                color-scheme:dark;
+                --paper:#142622!important;
+                --canvas:#081512!important;
+                --ink:#edf5f2!important;
+                --muted:#8fa39d!important;
+                --line:#2d403b!important;
+                --teal-soft:#18332f!important;
+                --coral-soft:#34201d!important;
+                --gold-soft:#332b1e!important;
+                background:#0b2420!important;
+              }
+              html[data-app-theme="dark"] body,
+              html[data-app-theme="dark"] .app{
+                background-color:#081512!important;
+              }
+              html[data-app-theme="dark"] .topbar{
+                background:rgba(8,25,22,.97)!important;
+                border-bottom-color:#29403a!important;
+              }
+
+              /* In standalone iOS mode black-translucent lets the page paint behind the status bar. */
+              .topbar{
+                padding-top:env(safe-area-inset-top,0px);
+              }
+              body::before{
+                content:"";
+                position:fixed;
+                z-index:10060;
+                top:0;
+                left:0;
+                right:0;
+                height:env(safe-area-inset-top,0px);
+                background:#123f3b;
+                pointer-events:none;
+              }
+              html[data-app-theme="dark"] body::before{
+                background:#0b2b26;
+              }
+
+              /* Runtime-applied fallbacks catch dynamic cards/buttons that still carry a hard-coded light background. */
+              html[data-app-theme="dark"] .salary-dark-auto-surface{
+                background:#142622!important;
+                background-image:none!important;
+                color:#edf5f2!important;
+                border-color:#30463f!important;
+                box-shadow:0 12px 28px rgba(0,0,0,.16)!important;
+              }
+              html[data-app-theme="dark"] .salary-dark-auto-surface *:not(.aed-symbol):not(svg):not(path){
+                border-color:inherit;
+              }
+              html[data-app-theme="dark"] .salary-dark-auto-button{
+                background:#19302b!important;
+                background-image:none!important;
+                color:#dce9e5!important;
+                border-color:#39514a!important;
+                box-shadow:none!important;
+              }
+              html[data-app-theme="dark"] .salary-dark-auto-danger{
+                background:#34201f!important;
+                background-image:none!important;
+                color:#f0aaa5!important;
+                border-color:#68413d!important;
+                box-shadow:none!important;
+              }
+              html[data-app-theme="dark"] .salary-dark-auto-surface small,
+              html[data-app-theme="dark"] .salary-dark-auto-surface .muted,
+              html[data-app-theme="dark"] .salary-dark-auto-surface [class*="muted"],
+              html[data-app-theme="dark"] .salary-dark-auto-surface [class*="hint"]{
+                color:#91a59f!important;
+              }
+
+              /* Explicit safety net for the surfaces highlighted in the owner review. */
+              html[data-app-theme="dark"] [class*="daily"][class*="limit"],
+              html[data-app-theme="dark"] [class*="daily"][class*="budget"],
+              html[data-app-theme="dark"] [class*="wallet"][class*="note"],
+              html[data-app-theme="dark"] [class*="wallet"][class*="option"],
+              html[data-app-theme="dark"] [class*="expense"][class*="source"]{
+                background:#142622!important;
+                background-image:none!important;
+                color:#edf5f2!important;
+                border-color:#30463f!important;
+              }
+          '''
+          index = once(index, '\n  </style>', css + '\n  </style>', 'style close')
+
+          script = r'''
+            <script id="r11DarkSurfaceStatusBarFix">
+              (function(){
+                var SURFACE_CLASS="salary-dark-auto-surface";
+                var BUTTON_CLASS="salary-dark-auto-button";
+                var DANGER_CLASS="salary-dark-auto-danger";
+                var themeMeta=document.querySelector('meta[name="theme-color"]');
+                var scheduled=false;
+
+                function isDark(){
+                  return document.documentElement.getAttribute("data-app-theme")==="dark";
+                }
+                function parseColor(value){
+                  var m=String(value||"").match(/rgba?\(\s*([0-9.]+)[ ,]+([0-9.]+)[ ,]+([0-9.]+)(?:[ ,/]+([0-9.]+))?\s*\)/i);
+                  if(!m)return null;
+                  return {r:+m[1],g:+m[2],b:+m[3],a:m[4]===undefined?1:+m[4]};
+                }
+                function isBrightBackground(el){
+                  if(!el||el===document.documentElement||el===document.body)return false;
+                  var cs=getComputedStyle(el), c=parseColor(cs.backgroundColor);
+                  if(!c||c.a<.55)return false;
+                  var lum=(.2126*c.r+.7152*c.g+.0722*c.b)/255;
+                  if(lum<.78)return false;
+                  var rect=el.getBoundingClientRect();
+                  if(rect.width<28||rect.height<22)return false;
+                  var tag=el.tagName;
+                  if(tag==="IMG"||tag==="SVG"||tag==="PATH"||tag==="CANVAS"||tag==="VIDEO")return false;
+                  return true;
+                }
+                function mark(el){
+                  if(!el)return;
+                  var tag=el.tagName;
+                  var text=(el.textContent||"").trim();
+                  var hint=((el.className&&String(el.className))||"")+" "+(el.getAttribute&&((el.getAttribute("aria-label")||"")+" "+(el.getAttribute("title")||""))||"");
+                  if(tag==="BUTTON"||el.getAttribute("role")==="button"){
+                    if(text==="×"||text==="✕"||/حذف|delete|remove|danger/i.test(hint)){
+                      el.classList.add(DANGER_CLASS);
+                      el.classList.remove(BUTTON_CLASS);
+                    }else{
+                      el.classList.add(BUTTON_CLASS);
+                    }
+                  }else{
+                    el.classList.add(SURFACE_CLASS);
+                  }
+                }
+                function nearestBrightBox(start,maxDepth){
+                  var el=start;
+                  for(var i=0;el&&i<maxDepth;i++,el=el.parentElement){
+                    if(isBrightBackground(el))return el;
+                  }
+                  return null;
+                }
+                function fixHighlightedText(){
+                  var nodes=document.querySelectorAll("body *");
+                  for(var i=0;i<nodes.length;i++){
+                    var el=nodes[i];
+                    if(el.children&&el.children.length>5)continue;
+                    var text=(el.textContent||"").replace(/\s+/g," ").trim();
+                    if(!text)continue;
+                    if(text.indexOf("حد الصرف اليومي المقترح")!==-1 || text.indexOf("دفع من محفظة أو مخصص سبق حجزه")!==-1){
+                      mark(nearestBrightBox(el,6));
+                    }
+                  }
+                }
+                function sweep(){
+                  scheduled=false;
+                  var dark=isDark();
+                  if(themeMeta)themeMeta.setAttribute("content",dark?"#0b2b26":"#123f3b");
+                  if(!dark){
+                    document.querySelectorAll("."+SURFACE_CLASS+",."+BUTTON_CLASS+",."+DANGER_CLASS).forEach(function(el){
+                      el.classList.remove(SURFACE_CLASS,BUTTON_CLASS,DANGER_CLASS);
+                    });
+                    return;
+                  }
+                  var selector=[
+                    "button","[role='button']","section","article","aside","label",
+                    "[class*='card']","[class*='panel']","[class*='note']","[class*='item']",
+                    "[class*='box']","[class*='banner']","[class*='summary']","[class*='option']",
+                    "[class*='action']","[class*='daily']","[class*='budget']","[class*='limit']",
+                    "[class*='wallet']","[class*='source']"
+                  ].join(",");
+                  document.querySelectorAll(selector).forEach(function(el){
+                    if(isBrightBackground(el))mark(el);
+                  });
+                  fixHighlightedText();
+                }
+                function schedule(){
+                  if(scheduled)return;
+                  scheduled=true;
+                  requestAnimationFrame(sweep);
+                }
+                if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",schedule,{once:true});else schedule();
+                window.addEventListener("pageshow",schedule);
+                try{
+                  new MutationObserver(schedule).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["data-app-theme","class","style"]});
+                }catch(_){ }
+              })();
+            </script>
+          '''
+          req(index, '</body>', 'body close')
+          if 'id="r11DarkSurfaceStatusBarFix"' not in index:
+              index = index.replace('</body>', script + '\n</body>', 1)
+
+          for needle in [
+              'var APP_RELEASE_ID = "' + NEW + '";',
+              'content="black-translucent"',
+              '3.9.4 r11 — eliminate bright surfaces in dark mode + iOS safe-area status bar',
+              'salary-dark-auto-surface',
+              'id="r11DarkSurfaceStatusBarFix"',
+              'حد الصرف اليومي المقترح',
+              'دفع من محفظة أو مخصص سبق حجزه'
+          ]:
+              req(index, needle, needle)
+          write(INDEX, index)
+
+          worker = read(WORKER)
+          req(worker, 'const RELEASE_ID = "' + OLD + '";', 'worker r10')
+          worker = once(worker, 'const RELEASE_ID = "' + OLD + '";', 'const RELEASE_ID = "' + NEW + '";', 'worker release')
+          worker, signal_updates = re.subn(
+              r'const UPDATE_SIGNAL_VERSION = "3\.9\.4[^"]*";',
+              lambda _: 'const UPDATE_SIGNAL_VERSION = "3.9.4' + chr(0x2064) + '";',
+              worker,
+              count=1
+          )
+          if signal_updates != 1:
+              raise SystemExit('Missing or ambiguous UPDATE_SIGNAL_VERSION anchor')
+          req(worker, 'const RELEASE_ID = "' + NEW + '";', 'worker r11')
+          write(WORKER, worker)
+
+          sw = read(SW)
+          req(sw, 'salary-manager-v3.9.4-dark-fixed-fab-r10', 'sw r10 cache')
+          sw = sw.replace('salary-manager-v3.9.4-dark-fixed-fab-r10', 'salary-manager-v3.9.4-dark-statusbar-r11', 1)
+          write(SW, sw)
+          print('r11 dark-surface + iOS status-bar patch applied')
+          PY
+
+      - name: Validate JavaScript and requested fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/worker.js
+          node --check public/sw.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+          text=Path('public/index.html').read_text(encoding='utf-8')
+          blocks=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S|re.I)
+          checked=0
+          for i, block in enumerate(blocks):
+              if not block.strip():
+                  continue
+              path=Path(f'/tmp/salary-r11-inline-{i}.js')
+              path.write_text(block, encoding='utf-8')
+              subprocess.run(['node','--check',str(path)], check=True)
+              checked += 1
+          print(f'checked {checked} inline scripts')
+          PY
+          grep -Fq 'var APP_RELEASE_ID = "3.9.4-dark-statusbar-r11";' public/index.html
+          grep -Fq 'name="apple-mobile-web-app-status-bar-style" content="black-translucent"' public/index.html
+          grep -Fq 'salary-dark-auto-surface' public/index.html
+          grep -Fq 'id="r11DarkSurfaceStatusBarFix"' public/index.html
+          grep -Fq 'body::before' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.4-dark-statusbar-r11";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.4-dark-statusbar-r11' public/sw.js
+
+      - name: Commit staged r11
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js
+          git commit -m "Salary Manager 3.9.4 r11 dark surfaces and iOS status bar"
+          git push
+
+      - name: Deploy staged r11 to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+
+      - name: Verify exact r11 is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?r11_check=$(date +%s)" || true)
+            echo "$BODY"
+            if [[ "$BODY" == *'"version":"3.9.4"'* && "$BODY" == *'"stagedReleaseId":"3.9.4-dark-statusbar-r11"'* ]]; then
+              break
+            fi
+            sleep 4
+          done
+          [[ "$BODY" == *'"stagedReleaseId":"3.9.4-dark-statusbar-r11"'* ]]
+
+      - name: Verify public users remain on stable r7
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_r11_check=$(date +%s)" -o /tmp/public-r11.html
+          grep -Fq '3.9.3-autoapprove-sync-race-r7' /tmp/public-r11.html
+          if grep -Fq '3.9.4-dark-statusbar-r11' /tmp/public-r11.html; then
+            echo "SECURITY FAILURE: staged r11 leaked to public users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        shell: bash
+        run: |
+          echo "### Salary Manager 3.9.4 r11" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Dark mode: bright white cards/buttons are auto-normalized to dark green surfaces" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Highlighted daily-limit and wallet/reserved-payment cards are covered" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Edit/delete controls receive dark-mode treatments" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ iOS standalone status bar uses black-translucent with a dark-green safe-area background" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Staged owner release deployed to Cloudflare" >> "$GITHUB_STEP_SUMMARY"
+          echo "🔒 Public users remain on stable 3.9.3 r7 until owner approval" >> "$GITHUB_STEP_SUMMARY"

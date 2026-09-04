@@ -1,0 +1,343 @@
+name: Apply Salary Manager 3.9.4 English Card + Header r12
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.4-ltr-header-r12.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-stage-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current r11
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify current staged source is r11
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'var APP_VERSION = "3.9.4";' public/index.html
+          grep -Fq 'var APP_RELEASE_ID = "3.9.4-dark-statusbar-r11";' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.4-dark-statusbar-r11";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.4-dark-statusbar-r11' public/sw.js
+
+      - name: Apply exact English card and mobile header fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          INDEX = Path('public/index.html')
+          WORKER = Path('src/worker.js')
+          SW = Path('public/sw.js')
+          OLD = '3.9.4-dark-statusbar-r11'
+          NEW = '3.9.4-ltr-header-r12'
+
+          def read(p): return p.read_text(encoding='utf-8')
+          def write(p,t): p.write_text(t, encoding='utf-8')
+          def req(t,n,label):
+              if n not in t:
+                  raise SystemExit('Missing anchor: ' + label)
+
+          index = read(INDEX)
+          req(index, 'var APP_RELEASE_ID = "' + OLD + '";', 'r11 app release')
+          req(index, '/* 3.9.4 r8 — bank card placement refinement */', 'bank card r8 css')
+          req(index, '<div class="topbar-inner">', 'topbar')
+          index = index.replace(OLD, NEW)
+
+          css = r'''
+          
+              /* 3.9.4 r12 — exact LTR mirror for the bank card + collision-proof English mobile header */
+          
+              /* Arabic keeps the established r8 arrangement. English mirrors ALL directional pieces together. */
+              html[dir="ltr"] .salary-card.salary-card-bank .hero-kicker{
+                right:auto!important;
+                left:28px!important;
+                text-align:left!important;
+                justify-content:flex-start!important;
+              }
+              html[dir="ltr"] .salary-card.salary-card-bank .salary-label,
+              html[dir="ltr"] .salary-card.salary-card-bank .salary-value-row,
+              html[dir="ltr"] .salary-card.salary-card-bank .salary-payday-chip{
+                text-align:left!important;
+                margin-inline-start:0!important;
+                margin-inline-end:auto!important;
+              }
+              html[dir="ltr"] .salary-card.salary-card-bank .bank-card-emv{
+                left:auto!important;
+                right:28px!important;
+              }
+              html[dir="ltr"] .salary-card.salary-card-bank .bank-card-contactless{
+                left:auto!important;
+                right:104px!important;
+              }
+              html[dir="ltr"] .salary-card.salary-card-bank .bank-card-valid{
+                left:auto!important;
+                right:31px!important;
+                text-align:left!important;
+              }
+              html[dir="ltr"] .salary-card.salary-card-bank .bank-card-valid-label{
+                align-items:flex-start!important;
+                text-align:left!important;
+              }
+              html[dir="ltr"] .salary-card.salary-card-bank::after{
+                left:auto!important;
+                right:-62px!important;
+              }
+          
+              /* Mobile LTR header is a two-row grid: brand + controls, then month. No element can sit on top of another. */
+              @media(max-width:620px){
+                html[dir="ltr"] .topbar-inner{
+                  display:grid!important;
+                  grid-template-columns:minmax(154px,1fr) auto!important;
+                  grid-template-areas:
+                    "brand actions"
+                    "month month"!important;
+                  align-items:center!important;
+                  column-gap:6px!important;
+                  row-gap:10px!important;
+                  width:min(100% - 14px,1220px)!important;
+                  padding:10px 0!important;
+                }
+                html[dir="ltr"] .brand{
+                  grid-area:brand!important;
+                  width:100%!important;
+                  min-width:0!important;
+                  max-width:none!important;
+                  margin:0!important;
+                  gap:8px!important;
+                  overflow:hidden!important;
+                }
+                html[dir="ltr"] .brand-mark{
+                  width:38px!important;
+                  height:38px!important;
+                  flex:0 0 38px!important;
+                  border-radius:12px!important;
+                }
+                html[dir="ltr"] .brand-copy{
+                  min-width:0!important;
+                  max-width:100%!important;
+                  overflow:hidden!important;
+                }
+                html[dir="ltr"] .brand-title{
+                  display:block!important;
+                  max-width:100%!important;
+                  font-size:13px!important;
+                  line-height:1.12!important;
+                  white-space:nowrap!important;
+                  overflow:hidden!important;
+                  text-overflow:ellipsis!important;
+                }
+                html[dir="ltr"] .today-date-text{
+                  display:block!important;
+                  max-width:100%!important;
+                  margin-top:2px!important;
+                  font-size:7.6px!important;
+                  line-height:1.15!important;
+                  letter-spacing:-.14px!important;
+                  white-space:nowrap!important;
+                  overflow:hidden!important;
+                  text-overflow:clip!important;
+                }
+                html[dir="ltr"] .today-clock-text{
+                  display:block!important;
+                  width:max-content!important;
+                  max-width:100%!important;
+                  margin-top:2px!important;
+                  padding:0!important;
+                  font-size:8px!important;
+                  line-height:1.1!important;
+                  white-space:nowrap!important;
+                }
+                html[dir="ltr"] .top-actions{
+                  grid-area:actions!important;
+                  justify-self:end!important;
+                  align-self:center!important;
+                  display:flex!important;
+                  flex-wrap:nowrap!important;
+                  gap:3px!important;
+                  min-width:0!important;
+                  max-width:none!important;
+                  margin:0!important;
+                }
+                html[dir="ltr"] .top-actions .ghost-btn{
+                  width:37px!important;
+                  min-width:37px!important;
+                  height:38px!important;
+                  min-height:38px!important;
+                  padding:7px 6px!important;
+                  gap:3px!important;
+                  border-radius:12px!important;
+                  font-size:11px!important;
+                  flex:0 0 37px!important;
+                }
+                html[dir="ltr"] #accountButton{
+                  width:68px!important;
+                  min-width:68px!important;
+                  max-width:68px!important;
+                  flex-basis:68px!important;
+                  padding-inline:7px!important;
+                }
+                html[dir="ltr"] #accountButton .action-label{
+                  display:inline!important;
+                  min-width:0!important;
+                  max-width:44px!important;
+                  overflow:hidden!important;
+                  text-overflow:ellipsis!important;
+                  white-space:nowrap!important;
+                  font-size:10px!important;
+                }
+                html[dir="ltr"] .account-dot{
+                  width:7px!important;
+                  height:7px!important;
+                  flex:0 0 7px!important;
+                  box-shadow:0 0 0 3px rgba(70,185,156,.14)!important;
+                }
+                html[dir="ltr"] .month-control{
+                  grid-area:month!important;
+                  order:initial!important;
+                  width:100%!important;
+                  margin:0!important;
+                }
+          
+                html[dir="ltr"] .salary-card.salary-card-bank .hero-kicker{
+                  right:auto!important;
+                  left:20px!important;
+                  max-width:52%!important;
+                }
+                html[dir="ltr"] .salary-card.salary-card-bank .bank-card-emv{
+                  left:auto!important;
+                  right:20px!important;
+                }
+                html[dir="ltr"] .salary-card.salary-card-bank .bank-card-contactless{
+                  left:auto!important;
+                  right:87px!important;
+                }
+                html[dir="ltr"] .salary-card.salary-card-bank .bank-card-valid{
+                  left:auto!important;
+                  right:22px!important;
+                }
+              }
+          
+              /* On the narrowest supported widths keep every control, but remove extra spacing rather than overlap brand text. */
+              @media(max-width:390px){
+                html[dir="ltr"] .topbar-inner{
+                  grid-template-columns:minmax(136px,1fr) auto!important;
+                  column-gap:4px!important;
+                }
+                html[dir="ltr"] .brand{gap:6px!important}
+                html[dir="ltr"] .brand-mark{width:35px!important;height:35px!important;flex-basis:35px!important}
+                html[dir="ltr"] .brand-title{font-size:12px!important}
+                html[dir="ltr"] .today-date-text{font-size:7px!important;letter-spacing:-.18px!important}
+                html[dir="ltr"] .top-actions{gap:2px!important}
+                html[dir="ltr"] .top-actions .ghost-btn{width:34px!important;min-width:34px!important;flex-basis:34px!important;padding-inline:5px!important}
+                html[dir="ltr"] #accountButton{width:62px!important;min-width:62px!important;max-width:62px!important;flex-basis:62px!important}
+                html[dir="ltr"] #accountButton .action-label{max-width:39px!important;font-size:9.5px!important}
+              }
+          '''
+
+          # Insert last in the stylesheet so it overrides older r8/mobile rules decisively.
+          anchor = '\n  </style>'
+          req(index, anchor, 'stylesheet close')
+          index = index.replace(anchor, css + anchor, 1)
+          write(INDEX, index)
+
+          worker = read(WORKER)
+          req(worker, 'const RELEASE_ID = "' + OLD + '";', 'worker r11')
+          worker = worker.replace('const RELEASE_ID = "' + OLD + '";', 'const RELEASE_ID = "' + NEW + '";', 1)
+          worker, n = re.subn(r'const UPDATE_SIGNAL_VERSION = "3\.9\.4[^"]*";', 'const UPDATE_SIGNAL_VERSION = "3.9.4⁥";', worker, count=1)
+          if n != 1:
+              raise SystemExit('Could not bump UPDATE_SIGNAL_VERSION')
+          write(WORKER, worker)
+
+          sw = read(SW)
+          req(sw, 'salary-manager-v3.9.4-dark-statusbar-r11', 'sw r11 cache')
+          sw = sw.replace('salary-manager-v3.9.4-dark-statusbar-r11', 'salary-manager-v3.9.4-ltr-header-r12', 1)
+          write(SW, sw)
+          print('r12 exact English card/header patch applied')
+          PY
+
+      - name: Validate exact layout selectors and JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/worker.js
+          node --check public/sw.js
+          grep -Fq 'var APP_RELEASE_ID = "3.9.4-ltr-header-r12";' public/index.html
+          grep -Fq '3.9.4 r12 — exact LTR mirror for the bank card + collision-proof English mobile header' public/index.html
+          grep -Fq 'grid-template-areas:' public/index.html
+          grep -Fq 'html[dir="ltr"] .salary-card.salary-card-bank .bank-card-emv' public/index.html
+          grep -Fq 'html[dir="ltr"] .salary-card.salary-card-bank .bank-card-contactless' public/index.html
+          grep -Fq 'html[dir="ltr"] .salary-card.salary-card-bank .bank-card-valid' public/index.html
+          grep -Fq 'html[dir="ltr"] .salary-card.salary-card-bank .hero-kicker' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.4-ltr-header-r12";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.4-ltr-header-r12' public/sw.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+          text=Path('public/index.html').read_text(encoding='utf-8')
+          blocks=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',text,flags=re.S|re.I)
+          for i,b in enumerate(blocks):
+              if not b.strip(): continue
+              p=Path(f'/tmp/r12-inline-{i}.js'); p.write_text(b,encoding='utf-8')
+              subprocess.run(['node','--check',str(p)],check=True)
+          PY
+
+      - name: Commit staged r12
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js
+          git commit -m "Salary Manager 3.9.4 r12 fix English bank card and header"
+          git push
+
+      - name: Deploy staged r12 to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+
+      - name: Verify exact r12 is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?r12_check=$(date +%s)" || true)
+            echo "$BODY"
+            if [[ "$BODY" == *'"version":"3.9.4"'* && "$BODY" == *'"stagedReleaseId":"3.9.4-ltr-header-r12"'* ]]; then break; fi
+            sleep 4
+          done
+          [[ "$BODY" == *'"stagedReleaseId":"3.9.4-ltr-header-r12"'* ]]
+
+      - name: Verify public users remain stable
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_r12_check=$(date +%s)" -o /tmp/public-r12.html
+          grep -Fq '3.9.3-autoapprove-sync-race-r7' /tmp/public-r12.html
+          if grep -Fq '3.9.4-ltr-header-r12' /tmp/public-r12.html; then
+            echo "SECURITY FAILURE: staged r12 leaked to public users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          echo "### Salary Manager 3.9.4 r12" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ English card now mirrors title, chip, contactless icon and valid date as one layout" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ English mobile header now uses a collision-proof two-row grid" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Arabic header/card layout remains unchanged" >> "$GITHUB_STEP_SUMMARY"
+          echo "🔒 Public users remain on stable r7 until owner approval" >> "$GITHUB_STEP_SUMMARY"

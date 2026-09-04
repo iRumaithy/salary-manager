@@ -44,7 +44,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.4-card-layout-r8";
+      var v = "3.9.4-dark-fixed-fab-r10";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -3691,6 +3691,86 @@
       }
     }
 
+
+    /* 3.9.4 r10 — fixed viewport actions + complete dark surfaces */
+    .floating-action-stack{
+      position:fixed!important;
+      z-index:10020!important;
+      top:auto!important;
+      left:auto!important;
+      right:max(14px,env(safe-area-inset-right,0px))!important;
+      bottom:calc(14px + env(safe-area-inset-bottom,0px))!important;
+      margin:0!important;
+      transform:none!important;
+      translate:none!important;
+      pointer-events:none!important;
+    }
+    .floating-action-stack>button{pointer-events:auto!important}
+
+    html[data-app-theme="dark"] .form-panel,
+    html[data-app-theme="dark"] .expense-quick-capture,
+    html[data-app-theme="dark"] .quick-form,
+    html[data-app-theme="dark"] .deposit-form,
+    html[data-app-theme="dark"] .expense-category-choice,
+    html[data-app-theme="dark"] .expense-voice-button,
+    html[data-app-theme="dark"] .settings-section,
+    html[data-app-theme="dark"] .changelog-entry,
+    html[data-app-theme="dark"] .account-card,
+    html[data-app-theme="dark"] .admin-user,
+    html[data-app-theme="dark"] .reimbursement-item,
+    html[data-app-theme="dark"] .commitment-card,
+    html[data-app-theme="dark"] .recurring-card,
+    html[data-app-theme="dark"] .statement-card,
+    html[data-app-theme="dark"] .automation-import,
+    html[data-app-theme="dark"] .automation-connect-card,
+    html[data-app-theme="dark"] .expense-item,
+    html[data-app-theme="dark"] .install-followup-note,
+    html[data-app-theme="dark"] .owner-config-status,
+    html[data-app-theme="dark"] .shared-expense-panel,
+    html[data-app-theme="dark"] .shared-expense-summary,
+    html[data-app-theme="dark"] .shared-split-summary-box{
+      background:#14211f!important;
+      background-image:none!important;
+      color:#edf5f2!important;
+      border-color:#2b3c38!important;
+      box-shadow:none!important;
+    }
+    html[data-app-theme="dark"] .expense-quick-capture{background:linear-gradient(145deg,#14211f,#172724)!important}
+    html[data-app-theme="dark"] .expense-category-choice{background:#182623!important;color:#eaf3f0!important;border-color:#31423e!important}
+    html[data-app-theme="dark"] .expense-category-choice:hover{border-color:color-mix(in srgb,var(--cat-accent,#45aa98) 55%,#31423e)!important;background:#1b2c28!important}
+    html[data-app-theme="dark"] .expense-category-choice.is-selected{background:color-mix(in srgb,var(--cat-accent,#45aa98) 18%,#182623)!important;border-color:color-mix(in srgb,var(--cat-accent,#45aa98) 65%,#31423e)!important;box-shadow:0 0 0 2px color-mix(in srgb,var(--cat-accent,#45aa98) 12%,transparent)!important}
+    html[data-app-theme="dark"] .expense-category-icon{background:color-mix(in srgb,var(--cat-accent,#45aa98) 16%,#16231f)!important}
+    html[data-app-theme="dark"] .expense-voice-button,
+    html[data-app-theme="dark"] .expense-voice-button.is-listening{background:#182824!important;border-color:#334640!important;color:#edf5f2!important}
+    html[data-app-theme="dark"] .expense-voice-mic{background:#20332e!important;color:#8dd3c5!important}
+    html[data-app-theme="dark"] .field input,
+    html[data-app-theme="dark"] .field select,
+    html[data-app-theme="dark"] .field textarea,
+    html[data-app-theme="dark"] input:not([type="checkbox"]):not([type="radio"]),
+    html[data-app-theme="dark"] select,
+    html[data-app-theme="dark"] textarea{background:#0f1b19!important;color:#edf5f2!important;border-color:#31423e!important;box-shadow:none!important}
+    html[data-app-theme="dark"] input::placeholder,
+    html[data-app-theme="dark"] textarea::placeholder{color:#70837d!important}
+    html[data-app-theme="dark"] .field label,
+    html[data-app-theme="dark"] .expense-quick-capture-copy,
+    html[data-app-theme="dark"] .expense-quick-capture-copy strong,
+    html[data-app-theme="dark"] .expense-category-choice span:last-child{color:#dce8e4!important}
+    html[data-app-theme="dark"] .field small,
+    html[data-app-theme="dark"] .expense-quick-capture-copy small,
+    html[data-app-theme="dark"] .storage-note,
+    html[data-app-theme="dark"] .settings-status{color:#8fa39d!important}
+    html[data-app-theme="dark"] .primary-btn,
+    html[data-app-theme="dark"] .mobile-fab,
+    html[data-app-theme="dark"] .automation-review-fab{box-shadow:0 12px 28px rgba(0,0,0,.28)!important}
+
+    @media(max-width:620px){
+      .floating-action-stack{
+        right:max(12px,env(safe-area-inset-right,0px))!important;
+        bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;
+        gap:9px!important;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -5610,7 +5690,7 @@
 
 
       var APP_VERSION = "3.9.4";
-      var APP_RELEASE_ID = "3.9.4-card-layout-r8";
+      var APP_RELEASE_ID = "3.9.4-dark-fixed-fab-r10";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -11678,5 +11758,32 @@
 
     })();
   </script>
+
+  <script id="r10ViewportDarkFix">
+    (function(){
+      function pinSalaryFloatingActions(){
+        var stack=document.getElementById("floatingActionStack");
+        if(!stack)return;
+        if(stack.parentElement!==document.body) document.body.appendChild(stack);
+        stack.style.setProperty("position","fixed","important");
+        stack.style.setProperty("top","auto","important");
+        stack.style.setProperty("left","auto","important");
+        stack.style.setProperty("right","max(14px, env(safe-area-inset-right, 0px))","important");
+        stack.style.setProperty("bottom","calc(14px + env(safe-area-inset-bottom, 0px))","important");
+        stack.style.setProperty("transform","none","important");
+        stack.style.setProperty("margin","0","important");
+      }
+      function refreshThemeSurface(){
+        var dark=document.documentElement.getAttribute("data-app-theme")==="dark";
+        document.body.classList.toggle("salary-dark-active",dark);
+      }
+      function boot(){pinSalaryFloatingActions();refreshThemeSurface();}
+      if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot,{once:true}); else boot();
+      window.addEventListener("pageshow",boot);
+      window.addEventListener("resize",pinSalaryFloatingActions,{passive:true});
+      try{new MutationObserver(function(){refreshThemeSurface();pinSalaryFloatingActions();}).observe(document.documentElement,{attributes:true,attributeFilter:["data-app-theme"]});}catch(_){}
+    })();
+  </script>
+
 </body>
 </html>

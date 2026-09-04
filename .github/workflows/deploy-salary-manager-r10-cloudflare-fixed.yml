@@ -1,0 +1,67 @@
+name: Deploy Salary Manager r10 to Cloudflare
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current r10
+        uses: actions/checkout@v6
+
+      - name: Verify repository contains r10
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'var APP_RELEASE_ID = "3.9.4-dark-fixed-fab-r10";' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.4-dark-fixed-fab-r10";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.4-dark-fixed-fab-r10' public/sw.js
+
+      - name: Deploy Worker without re-uploading existing Worker secrets
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+
+      - name: Verify r10 is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?r10_deploy_check=$(date +%s)" || true)
+            echo "$BODY"
+            if echo "$BODY" | grep -Fq '"version":"3.9.4"' && echo "$BODY" | grep -Fq '"stagedReleaseId":"3.9.4-dark-fixed-fab-r10"'; then
+              exit 0
+            fi
+            sleep 4
+          done
+          echo "Timed out waiting for r10 on Cloudflare" >&2
+          exit 1
+
+      - name: Verify public users remain on stable r7
+        shell: bash
+        run: |
+          set -euo pipefail
+          BODY=$(curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_r10_deploy_check=$(date +%s)")
+          echo "$BODY" | grep -Fq '3.9.3-autoapprove-sync-race-r7'
+          if echo "$BODY" | grep -Fq '3.9.4-dark-fixed-fab-r10'; then
+            echo "SECURITY FAILURE: staged r10 leaked to public users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        shell: bash
+        run: |
+          echo "### Salary Manager r10 Cloudflare deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ r10 source verified before deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Existing Cloudflare Worker secrets were not re-uploaded" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ r10 deployed and verified as staged owner release" >> "$GITHUB_STEP_SUMMARY"
+          echo "🔒 Public users remain on stable 3.9.3 r7" >> "$GITHUB_STEP_SUMMARY"

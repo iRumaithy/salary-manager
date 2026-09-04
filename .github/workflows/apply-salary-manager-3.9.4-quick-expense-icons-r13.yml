@@ -1,0 +1,250 @@
+name: Apply Salary Manager 3.9.4 Quick Expense Icons r13
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.4-quick-expense-icons-r13.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-stage-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current r12
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify current staged source is r12
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'var APP_VERSION = "3.9.4";' public/index.html
+          grep -Fq 'var APP_RELEASE_ID = "3.9.4-ltr-header-r12";' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.4-ltr-header-r12";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.4-ltr-header-r12' public/sw.js
+
+      - name: Add missing quick-expense category cards
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          INDEX = Path('public/index.html')
+          WORKER = Path('src/worker.js')
+          SW = Path('public/sw.js')
+          OLD = '3.9.4-ltr-header-r12'
+          NEW = '3.9.4-quick-expense-icons-r13'
+
+          def read(p):
+              return p.read_text(encoding='utf-8')
+
+          def write(p, text):
+              p.write_text(text, encoding='utf-8')
+
+          def require(text, needle, label):
+              if needle not in text:
+                  raise SystemExit('Missing anchor: ' + label)
+
+          def insert_after_category_button(text, anchor_category, new_category, block):
+              marker = f'data-expense-category="{new_category}"'
+              if marker in text:
+                  return text
+              pattern = re.compile(
+                  r'(<button\b[^>]*data-expense-category="' + re.escape(anchor_category) + r'"[^>]*>.*?</button>)',
+                  re.S
+              )
+              text, count = pattern.subn(lambda m: m.group(1) + '\n' + block, text, count=1)
+              if count != 1:
+                  raise SystemExit('Could not find quick-expense button anchor: ' + anchor_category)
+              return text
+
+          index = read(INDEX)
+          require(index, 'var APP_RELEASE_ID = "' + OLD + '";', 'r12 app release')
+          require(index, '<div class="expense-category-grid" id="expenseCategoryGrid"', 'quick expense grid')
+          require(index, '<option value="فندق">فندق</option>', 'hotel select option')
+          require(index, '<option value="سينما">سينما</option>', 'cinema select option')
+          require(index, '<option value="اشتراكات">اشتراكات</option>', 'subscriptions select option')
+          require(index, '<option value="مواقف">مواقف</option>', 'parking select option')
+          require(index, '<option value="رياضة">رياضة</option>', 'sports select option')
+          require(index, '<option value="رسوم حكومية">رسوم حكومية</option>', 'government select option')
+
+          index = index.replace(OLD, NEW)
+
+          parking = '''                <button class="expense-category-choice" type="button" data-expense-category="مواقف" style="--cat-accent:#3f7f8f;--cat-soft:#e9f5f7" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><path d="M9 18V6h4.2a3.8 3.8 0 0 1 0 7.6H9M9 13.6h4.2"></path></svg></span><span>مواقف</span>
+                </button>'''
+
+          subscriptions = '''                <button class="expense-category-choice" type="button" data-expense-category="اشتراكات" style="--cat-accent:#4f6fb3;--cat-soft:#eef1fb" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h10a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-7a3 3 0 0 1 3-3Z"></path><path d="m10 11 5 3-5 3v-6ZM8 4h8"></path></svg></span><span>اشتراكات</span>
+                </button>'''
+
+          government = '''                <button class="expense-category-choice" type="button" data-expense-category="رسوم حكومية" style="--cat-accent:#8a6f45;--cat-soft:#f5f0e7" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 9 9-5 9 5H3Z"></path><path d="M5 10v7M9 10v7M15 10v7M19 10v7M3 20h18M4 17h16"></path></svg></span><span>رسوم حكومية</span>
+                </button>'''
+
+          sports = '''                <button class="expense-category-choice" type="button" data-expense-category="رياضة" style="--cat-accent:#4b8a69;--cat-soft:#ebf5ef" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 9v6M4.5 10v4M17 9v6M19.5 10v4M7 12h10M2.5 12h2M19.5 12h2"></path></svg></span><span>رياضة</span>
+                </button>'''
+
+          cinema = '''                <button class="expense-category-choice" type="button" data-expense-category="سينما" style="--cat-accent:#7c5aa0;--cat-soft:#f3eef8" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="13" rx="2"></rect><path d="M4 11h16M7 7l2-3M12 7l2-3M17 7l2-3"></path></svg></span><span>سينما</span>
+                </button>'''
+
+          hotel = '''                <button class="expense-category-choice" type="button" data-expense-category="فندق" style="--cat-accent:#4f7395;--cat-soft:#edf3f8" aria-pressed="false">
+                  <span class="expense-category-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19V9h16v10M4 15h16M7 9V6h4a3 3 0 0 1 3 3M7 15v4M17 15v4"></path></svg></span><span>فندق</span>
+                </button>'''
+
+          # Place each new card next to the most closely related existing category.
+          index = insert_after_category_button(index, 'مواصلات', 'مواقف', parking)
+          index = insert_after_category_button(index, 'فواتير', 'اشتراكات', subscriptions)
+          index = insert_after_category_button(index, 'اشتراكات', 'رسوم حكومية', government)
+          index = insert_after_category_button(index, 'صحة', 'رياضة', sports)
+          index = insert_after_category_button(index, 'ترفيه', 'سينما', cinema)
+          index = insert_after_category_button(index, 'سفر', 'فندق', hotel)
+
+          # Translation entries existed in the earlier category update; restore them defensively if missing.
+          translation_anchor = '      EN_TRANSLATIONS["مناسبات"] = "Occasions";'
+          if 'EN_TRANSLATIONS["فندق"] = "Hotel";' not in index:
+              require(index, translation_anchor, 'English category translation anchor')
+              translation_block = "\n".join([
+                  '      EN_TRANSLATIONS["فندق"] = "Hotel";',
+                  '      EN_TRANSLATIONS["سينما"] = "Cinema";',
+                  '      EN_TRANSLATIONS["اشتراكات"] = "Subscriptions";',
+                  '      EN_TRANSLATIONS["مواقف"] = "Parking";',
+                  '      EN_TRANSLATIONS["رياضة"] = "Sports";',
+                  '      EN_TRANSLATIONS["رسوم حكومية"] = "Government fees";',
+                  ''
+              ])
+              index = index.replace(translation_anchor, translation_block + translation_anchor, 1)
+
+          # Confirm the six cards are specifically inside the visible quick-expense grid.
+          grid_match = re.search(
+              r'<div class="expense-category-grid" id="expenseCategoryGrid"[^>]*>(.*?)\n\s*</div>',
+              index,
+              flags=re.S
+          )
+          if not grid_match:
+              raise SystemExit('Could not isolate expenseCategoryGrid after patch')
+          grid = grid_match.group(1)
+          for category in ['فندق','سينما','اشتراكات','مواقف','رياضة','رسوم حكومية']:
+              require(grid, f'data-expense-category="{category}"', 'quick icon ' + category)
+
+          write(INDEX, index)
+
+          worker = read(WORKER)
+          require(worker, 'const RELEASE_ID = "' + OLD + '";', 'worker r12 release')
+          worker = worker.replace('const RELEASE_ID = "' + OLD + '";', 'const RELEASE_ID = "' + NEW + '";', 1)
+          worker, signal_updates = re.subn(
+              r'const UPDATE_SIGNAL_VERSION = "3\.9\.4[^"]*";',
+              lambda _: 'const UPDATE_SIGNAL_VERSION = "3.9.4' + chr(0x2066) + '";',
+              worker,
+              count=1
+          )
+          if signal_updates != 1:
+              raise SystemExit('Could not bump UPDATE_SIGNAL_VERSION')
+          write(WORKER, worker)
+
+          sw = read(SW)
+          require(sw, 'salary-manager-v3.9.4-ltr-header-r12', 'service worker r12 cache')
+          sw = sw.replace('salary-manager-v3.9.4-ltr-header-r12', 'salary-manager-v3.9.4-quick-expense-icons-r13', 1)
+          write(SW, sw)
+
+          print('r13 quick-expense cards added successfully')
+          PY
+
+      - name: Validate quick-expense cards and JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/worker.js
+          node --check public/sw.js
+          grep -Fq 'var APP_RELEASE_ID = "3.9.4-quick-expense-icons-r13";' public/index.html
+          grep -Fq 'data-expense-category="فندق"' public/index.html
+          grep -Fq 'data-expense-category="سينما"' public/index.html
+          grep -Fq 'data-expense-category="اشتراكات"' public/index.html
+          grep -Fq 'data-expense-category="مواقف"' public/index.html
+          grep -Fq 'data-expense-category="رياضة"' public/index.html
+          grep -Fq 'data-expense-category="رسوم حكومية"' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.4-quick-expense-icons-r13";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.4-quick-expense-icons-r13' public/sw.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+          text = Path('public/index.html').read_text(encoding='utf-8')
+          grid = re.search(r'<div class="expense-category-grid" id="expenseCategoryGrid"[^>]*>(.*?)\n\s*</div>', text, re.S)
+          if not grid:
+              raise SystemExit('expenseCategoryGrid missing')
+          content = grid.group(1)
+          for category in ['فندق','سينما','اشتراكات','مواقف','رياضة','رسوم حكومية']:
+              if f'data-expense-category="{category}"' not in content:
+                  raise SystemExit('Missing visible quick card: ' + category)
+          blocks = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S|re.I)
+          for i, block in enumerate(blocks):
+              if not block.strip():
+                  continue
+              p = Path(f'/tmp/r13-inline-{i}.js')
+              p.write_text(block, encoding='utf-8')
+              subprocess.run(['node','--check',str(p)], check=True)
+          print('validated all six visible quick-expense cards')
+          PY
+
+      - name: Commit staged r13
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js
+          git commit -m "Salary Manager 3.9.4 r13 add quick expense category cards"
+          git push
+
+      - name: Deploy staged r13 to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+
+      - name: Verify exact r13 is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?r13_check=$(date +%s)" || true)
+            echo "$BODY"
+            if [[ "$BODY" == *'"version":"3.9.4"'* && "$BODY" == *'"stagedReleaseId":"3.9.4-quick-expense-icons-r13"'* ]]; then
+              break
+            fi
+            sleep 4
+          done
+          [[ "$BODY" == *'"stagedReleaseId":"3.9.4-quick-expense-icons-r13"'* ]]
+
+      - name: Verify public users remain stable
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_r13_check=$(date +%s)" -o /tmp/public-r13.html
+          grep -Fq '3.9.3-autoapprove-sync-race-r7' /tmp/public-r13.html
+          if grep -Fq '3.9.4-quick-expense-icons-r13' /tmp/public-r13.html; then
+            echo "SECURITY FAILURE: staged r13 leaked to public users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        shell: bash
+        run: |
+          echo "### Salary Manager 3.9.4 r13" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Added Hotel, Cinema, Subscriptions, Parking, Sports and Government Fees as visible quick-expense cards" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Each card has a dedicated SVG icon and matching visual color" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Cards are positioned beside the closest related existing categories" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ All r12 English-card/header and r11 dark-mode/status-bar fixes are preserved" >> "$GITHUB_STEP_SUMMARY"
+          echo "🔒 Public users remain on stable r7 until owner approval" >> "$GITHUB_STEP_SUMMARY"

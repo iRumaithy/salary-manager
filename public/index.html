@@ -44,7 +44,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.4-card-deposit-icons-r6";
+      var v = "3.9.4-card-layout-r8";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -3532,6 +3532,165 @@
       .bank-card-contactless{width:24px;height:24px}
     }
 
+
+    /* 3.9.4 r8 — bank card placement refinement */
+    .salary-card.salary-card-bank{
+      position:relative;
+      min-height:330px;
+      padding:84px 28px 118px;
+      overflow:hidden;
+    }
+    .salary-card.salary-card-bank .hero-kicker{
+      top:21px;
+      right:28px;
+      max-width:48%;
+      z-index:6;
+    }
+    .salary-card.salary-card-bank .salary-label,
+    .salary-card.salary-card-bank .salary-value-row{
+      position:relative;
+      z-index:6;
+      transform:translateY(-13px);
+    }
+    .salary-card.salary-card-bank .bank-card-hardware{
+      position:absolute;
+      inset:0;
+      display:block;
+      pointer-events:none;
+      direction:ltr;
+      z-index:5;
+    }
+    .salary-card.salary-card-bank .bank-card-emv{
+      position:absolute;
+      top:34px;
+      left:28px;
+      width:70px;
+      height:53px;
+      filter:drop-shadow(0 4px 6px rgba(0,0,0,.16));
+    }
+    .salary-card.salary-card-bank .bank-card-contactless{
+      position:absolute;
+      top:45px;
+      left:104px;
+      width:29px;
+      height:29px;
+      display:grid;
+      place-items:center;
+      color:rgba(255,255,255,.95);
+    }
+    .salary-card.salary-card-bank .bank-card-contactless svg{
+      width:100%;
+      height:100%;
+      display:block;
+      fill:none;
+      stroke:currentColor;
+      stroke-width:2;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+    .salary-card.salary-card-bank .bank-card-valid{
+      position:absolute;
+      left:31px;
+      bottom:79px;
+      display:flex;
+      align-items:flex-end;
+      gap:8px;
+      color:rgba(255,255,255,.94);
+      z-index:6;
+    }
+    .salary-card.salary-card-bank .bank-card-valid-label{
+      display:flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:1px;
+      line-height:1;
+    }
+    .salary-card.salary-card-bank .bank-card-valid-label small{
+      font-size:7px;
+      line-height:1.02;
+      font-weight:900;
+      letter-spacing:.12em;
+    }
+    .salary-card.salary-card-bank .bank-card-valid strong{
+      font-family:ui-monospace,"SFMono-Regular",Menlo,Monaco,monospace;
+      font-size:17px;
+      font-weight:900;
+      letter-spacing:.09em;
+    }
+    .salary-card.salary-card-bank .bank-card-number{
+      position:absolute;
+      left:50%;
+      bottom:24px;
+      transform:translateX(-50%);
+      width:calc(100% - 60px);
+      text-align:center;
+      color:#e8eceb;
+      font-family:ui-monospace,"SFMono-Regular",Menlo,Monaco,monospace;
+      font-size:27px;
+      font-weight:900;
+      letter-spacing:.12em;
+      white-space:nowrap;
+      -webkit-text-stroke:.35px rgba(255,255,255,.24);
+      text-shadow:
+        -1px -1px 0 rgba(255,255,255,.34),
+        1px 1px 0 rgba(0,0,0,.34),
+        0 2px 2px rgba(0,0,0,.26),
+        0 5px 10px rgba(0,0,0,.10);
+      z-index:6;
+    }
+    .salary-card.salary-card-bank.salary-card-style-ivory .bank-card-number,
+    .salary-card.salary-card-bank.salary-card-style-ivory .bank-card-contactless,
+    .salary-card.salary-card-bank.salary-card-style-ivory .bank-card-valid{
+      color:rgba(23,47,44,.82);
+    }
+    .salary-card.salary-card-bank.salary-card-style-ivory .bank-card-number{
+      -webkit-text-stroke:.3px rgba(255,255,255,.48);
+      text-shadow:
+        -1px -1px 0 rgba(255,255,255,.60),
+        1px 1px 0 rgba(23,47,44,.22),
+        0 2px 2px rgba(23,47,44,.12);
+    }
+    @media(max-width:620px){
+      .salary-card.salary-card-bank{
+        min-height:312px;
+        padding:80px 20px 108px;
+      }
+      .salary-card.salary-card-bank .hero-kicker{
+        top:18px;
+        right:20px;
+        max-width:52%;
+      }
+      .salary-card.salary-card-bank .salary-label,
+      .salary-card.salary-card-bank .salary-value-row{
+        transform:translateY(-10px);
+      }
+      .salary-card.salary-card-bank .bank-card-emv{
+        top:31px;
+        left:20px;
+        width:62px;
+        height:47px;
+      }
+      .salary-card.salary-card-bank .bank-card-contactless{
+        top:40px;
+        left:87px;
+        width:27px;
+        height:27px;
+      }
+      .salary-card.salary-card-bank .bank-card-valid{
+        left:22px;
+        bottom:70px;
+      }
+      .salary-card.salary-card-bank .bank-card-valid strong{
+        font-size:15px;
+      }
+      .salary-card.salary-card-bank .bank-card-number{
+        bottom:21px;
+        width:calc(100% - 38px);
+        font-size:20px;
+        letter-spacing:.085em;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -4603,7 +4762,7 @@
         <div class="settings-section-head">
           <div>
             <h3>مظهر بطاقة الراتب</h3>
-            <p>الكلاسيكي يبقي البطاقة الحالية كما هي. التصاميم البنكية تضيف رقاقة EMV ذهبية، رمز الدفع اللاتلامسي، رقمًا من 16 خانة يبدأ بـ 9190، وVALID THRU بصيغة MM/YY.</p>
+            <p>الكلاسيكي يبقي البطاقة الحالية كما هي. التصاميم البنكية تعرض رقاقة EMV واقعية مع رمز الدفع اللاتلامسي بجانبها، ورقمًا بارزًا من 16 خانة يبدأ بـ 9190، وVALID THRU فوق الرقم.</p>
           </div>
         </div>
         <div class="salary-card-style-grid" id="salaryCardStyleGrid">
@@ -5451,7 +5610,7 @@
 
 
       var APP_VERSION = "3.9.4";
-      var APP_RELEASE_ID = "3.9.4-card-deposit-icons-r6";
+      var APP_RELEASE_ID = "3.9.4-card-layout-r8";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -5601,7 +5760,7 @@
 
       var expenseVisualIcons = {
         shopping:'<svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 11H6.2L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
-        restaurant:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M4 4v7M2.8 4v4.5A2.5 2.5 0 0 0 5.3 11V4M19 4v16M16.5 4c2.5 2.6 2.5 6 0 8H19"/></svg>',
+        restaurant:'<svg viewBox="0 0 24 24"><path d="M6 3v7M4 3v4.5A2.5 2.5 0 0 0 6.5 10 2.5 2.5 0 0 0 9 7.5V3M6.5 10v11M16 3v18M16 3c2.7 2.2 2.7 6.1 0 8"/></svg>',
         bank:'<svg viewBox="0 0 24 24"><path d="m3 9 9-5 9 5M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18"/></svg>',
         salary:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3M14 15h4"/></svg>',
         transferin:'<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6M5 6v12"/></svg>',

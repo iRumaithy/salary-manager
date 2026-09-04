@@ -1,0 +1,76 @@
+name: Emergency Rollback to Salary Manager 3.9.3 r7
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/emergency-rollback-3.9.3-r7.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  rollback-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Restore exact stable 3.9.3 r7 runtime
+        shell: bash
+        run: |
+          git checkout 80b28f0bcf091317648d741486723ca0ff9e1d64 -- public/index.html public/sw.js src/worker.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path("package.json")
+          text = p.read_text(encoding="utf-8")
+          text = re.sub(r'"version"\s*:\s*"[^"]+"', '"version": "3.9.3"', text, count=1)
+          p.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Validate restored runtime
+        shell: bash
+        run: |
+          grep -q 'var APP_VERSION = "3.9.3";' public/index.html
+          grep -q 'var APP_RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";' public/index.html
+          grep -q 'const VERSION = "3.9.3";' src/worker.js
+          grep -q 'const RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";' src/worker.js
+          node --check src/worker.js
+
+      - name: Commit emergency rollback
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js package.json
+          if git diff --cached --quiet; then
+            echo "Runtime already matches 3.9.3 r7."
+          else
+            git commit -m "Emergency rollback to stable Salary Manager 3.9.3 r7"
+            git push
+          fi
+
+      - name: Deploy stable 3.9.3 r7 to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+          secrets: |
+            AUTH_PEPPER
+            OWNER_BOOTSTRAP_TOKEN
+        env:
+          AUTH_PEPPER: ${{ secrets.AUTH_PEPPER }}
+          OWNER_BOOTSTRAP_TOKEN: ${{ secrets.OWNER_BOOTSTRAP_TOKEN }}
+
+      - name: Recovery summary
+        run: |
+          echo "### Emergency recovery complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Restored exact 3.9.3 r7 runtime from commit 80b28f0" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Restored APP/Worker release ID to 3.9.3-autoapprove-sync-race-r7" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Cloudflare now serves the current root shell instead of a missing archived release" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ User salary/account data is not modified" >> "$GITHUB_STEP_SUMMARY"

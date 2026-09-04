@@ -1,0 +1,475 @@
+name: Apply Salary Manager 3.9.4 Card and Icons r6
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.4-card-icons-r6.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-stage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current 3.9.4
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify current clean rebuild r1
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'var APP_VERSION = "3.9.4";' public/index.html
+          grep -q 'var APP_RELEASE_ID = "3.9.4-clean-rebuild-r1";' public/index.html
+          grep -q 'const VERSION = "3.9.4";' src/worker.js
+          grep -q 'const RELEASE_ID = "3.9.4-clean-rebuild-r1";' src/worker.js
+          test -f public/releases/3.9.3-autoapprove-sync-race-r7/app.html
+          test -f public/releases/3.9.3-autoapprove-sync-race-r7/sw.js
+
+      - name: Prepare r6 patch 1/2
+        shell: bash
+        run: |
+          cat > /tmp/salary-r5-patch.py <<'SALARY_R5_PATCH_1_END'
+          
+          from pathlib import Path
+          import re
+          
+          INDEX = Path("public/index.html")
+          WORKER = Path("src/worker.js")
+          SW = Path("public/sw.js")
+          
+          OLD_RELEASE = "3.9.4-clean-rebuild-r1"
+          NEW_RELEASE = "3.9.4-card-deposit-icons-r6"
+          
+          def read(path):
+              return path.read_text(encoding="utf-8")
+          
+          def write(path, text):
+              path.write_text(text, encoding="utf-8")
+          
+          def require(text, needle, label):
+              if needle not in text:
+                  raise SystemExit("Patch failed — missing " + label)
+          
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit("Patch failed — missing " + label)
+              return text.replace(old, new, 1)
+          
+          def insert_before(text, anchor, block, label, marker=None):
+              if marker and marker in text:
+                  return text
+              if anchor not in text:
+                  raise SystemExit("Patch failed — missing " + label)
+              return text.replace(anchor, block + anchor, 1)
+          
+          index = read(INDEX)
+          require(index, 'var APP_VERSION = "3.9.4";', "APP_VERSION 3.9.4")
+          require(index, 'var APP_RELEASE_ID = "3.9.4-clean-rebuild-r1";', "current 3.9.4 r1")
+          index = index.replace(OLD_RELEASE, NEW_RELEASE)
+          
+          category_anchor = '<option value="مناسبات">مناسبات</option>'
+          category_block = '''                <option value="فندق">فندق</option>
+                          <option value="سينما">سينما</option>
+                          <option value="اشتراكات">اشتراكات</option>
+                          <option value="مواقف">مواقف</option>
+                          <option value="رياضة">رياضة</option>
+                          <option value="رسوم حكومية">رسوم حكومية</option>
+          '''
+          index = insert_before(index, category_anchor, category_block, "new category options", '<option value="فندق">فندق</option>')
+          
+          tr_anchor = '      EN_TRANSLATIONS["مناسبات"] = "Occasions";'
+          tr_block = '''      EN_TRANSLATIONS["فندق"] = "Hotel";
+                EN_TRANSLATIONS["سينما"] = "Cinema";
+                EN_TRANSLATIONS["اشتراكات"] = "Subscriptions";
+                EN_TRANSLATIONS["مواقف"] = "Parking";
+                EN_TRANSLATIONS["رياضة"] = "Sports";
+                EN_TRANSLATIONS["رسوم حكومية"] = "Government fees";
+          '''
+          index = insert_before(index, tr_anchor, tr_block, "new category translations", 'EN_TRANSLATIONS["فندق"] = "Hotel";')
+          
+          index = index.replace(
+              "الكلاسيكي يبقي البطاقة الحالية كما هي. التصاميم البنكية تضيف رقاقة EMV ذهبية واقعية وشهرًا حاليًا بصيغة MM/YY.",
+              "الكلاسيكي يبقي البطاقة الحالية كما هي. التصاميم البنكية تضيف رقاقة EMV ذهبية، رمز الدفع اللاتلامسي، رقمًا من 16 خانة يبدأ بـ 9190، وVALID THRU بصيغة MM/YY."
+          )
+          
+          css = r'''
+              /* 3.9.4 r5 — realistic card + deposit/new-category icon refinements */
+              .salary-card.salary-card-bank{
+                min-height:320px;
+                padding:124px 28px 28px;
+                overflow:hidden;
+              }
+              .salary-card.salary-card-bank .hero-kicker{
+                top:24px;
+                right:28px;
+                max-width:46%;
+              }
+              .salary-card.salary-card-bank .bank-card-hardware{
+                top:22px;
+                left:24px;
+                right:24px;
+                display:grid;
+                grid-template-columns:auto minmax(0,1fr) auto;
+                grid-template-areas:
+                  "chip number contactless"
+                  "chip valid contactless";
+                align-items:center;
+                column-gap:14px;
+                row-gap:7px;
+                direction:ltr;
+              }
+              .bank-card-emv{grid-area:chip;width:58px;height:44px}
+              .bank-card-number{
+                grid-area:number;
+                min-width:0;
+                color:rgba(255,255,255,.97);
+                font-family:ui-monospace,"SFMono-Regular",Menlo,Monaco,monospace;
+                font-size:21px;
+                font-weight:800;
+                letter-spacing:.09em;
+                white-space:nowrap;
+                text-shadow:0 1px 2px rgba(0,0,0,.22);
+              }
+              .bank-card-contactless{
+                grid-area:contactless;
+                width:28px;
+                height:28px;
+                display:grid;
+                place-items:center;
+                justify-self:end;
+                color:rgba(255,255,255,.94);
+              }
+              .bank-card-contactless svg{
+                width:100%;
+                height:100%;
+                display:block;
+                fill:none;
+                stroke:currentColor;
+                stroke-width:1.9;
+                stroke-linecap:round;
+                stroke-linejoin:round;
+              }
+              .bank-card-valid{
+                grid-area:valid;
+                display:flex;
+                align-items:flex-end;
+                gap:8px;
+                color:rgba(255,255,255,.92);
+              }
+              .bank-card-valid-label{
+                display:flex;
+                flex-direction:column;
+                align-items:flex-start;
+                line-height:1;
+              }
+              .bank-card-valid-label small{
+                font-size:7px;
+                line-height:1.02;
+                font-weight:900;
+                letter-spacing:.11em;
+              }
+              .bank-card-valid strong{
+                font-family:ui-monospace,"SFMono-Regular",Menlo,Monaco,monospace;
+                font-size:16px;
+                font-weight:900;
+                letter-spacing:.08em;
+              }
+              .salary-card-style-ivory .bank-card-number,
+              .salary-card-style-ivory .bank-card-contactless,
+              .salary-card-style-ivory .bank-card-valid{
+                color:rgba(23,47,44,.78);
+                text-shadow:none;
+              }
+              @media(max-width:620px){
+                .salary-card.salary-card-bank{min-height:304px;padding:118px 22px 22px}
+                .salary-card.salary-card-bank .hero-kicker{top:22px;right:22px;max-width:44%}
+                .salary-card.salary-card-bank .bank-card-hardware{top:18px;left:18px;right:18px;column-gap:9px}
+                .bank-card-emv{width:52px;height:40px}
+                .bank-card-number{font-size:17px;letter-spacing:.07em}
+                .bank-card-valid strong{font-size:14px}
+                .bank-card-contactless{width:24px;height:24px}
+              }
+          '''
+          index = replace_once(index, '\n  </style>', '\n' + css + '\n  </style>', "head style closing tag")
+          
+          old_restaurant = '''        restaurant:'<svg viewBox="0 0 24 24"><path d="M6 3v8M4 3v5a2 2 0 0 0 4 0V3M12 3v18M17 3c2 2 2 5 0 7h-2V3Z"/></svg>','''
+          new_restaurant = '''        restaurant:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M4 4v7M2.8 4v4.5A2.5 2.5 0 0 0 5.3 11V4M19 4v16M16.5 4c2.5 2.6 2.5 6 0 8H19"/></svg>',
+                  bank:'<svg viewBox="0 0 24 24"><path d="m3 9 9-5 9 5M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18"/></svg>',
+                  salary:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h3M14 15h4"/></svg>',
+                  transferin:'<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6M5 6v12"/></svg>',
+                  refund:'<svg viewBox="0 0 24 24"><path d="M8 7H4v-4M4 7a8 8 0 1 1-1 8"/><path d="M9 12h6"/></svg>','''
+          index = replace_once(index, old_restaurant, new_restaurant, "restaurant and income icons")
+          
+          index = replace_once(
+              index,
+              '{key:"coffee",words:["starbucks","arabica","coffee","cafe","café","كوفي","قهوة","كافيه"]},',
+              '{key:"coffee",words:["starbucks","arabica","coffee","cafe","café","كوفي","قهوة","كافيه","cafeteria","كافتيريا"]},',
+              "cafeteria coffee rule"
+          )
+          
+          old_category_map = '''"أطفال وعائلة":"family","حيوانات أليفة":"pets","مناسبات":"gift","أخرى":"other"'''
+          new_category_map = '''"أطفال وعائلة":"family","حيوانات أليفة":"pets","مناسبات":"gift","فندق":"hotel","سينما":"cinema","اشتراكات":"bills","مواقف":"parking","رياضة":"sport","رسوم حكومية":"government","أخرى":"other"'''
+          index = replace_once(index, old_category_map, new_category_map, "new category icon map")
+          
+          deposit_helpers = r'''
+                function depositVisualKey394(item) {
+                  var title = normalizeExpenseVisualText(String(item && item.title || ""));
+                  var source = normalizeExpenseVisualText(String(item && item.source || ""));
+                  var text = title + " " + source;
+                  if (text.indexOf("salary") !== -1 || text.indexOf("راتب") !== -1) return "salary";
+                  if (text.indexOf("refund") !== -1 || text.indexOf("استرداد") !== -1 || text.indexOf("cashback") !== -1) return "refund";
+                  if (text.indexOf("transfer") !== -1 || text.indexOf("تحويل") !== -1 || text.indexOf("iban") !== -1) return "transferin";
+                  return "bank";
+                }
+                function depositVisualSvg394(item) {
+                  var key = String(item && item.visualIcon || "");
+                  if (!expenseVisualIcons[key]) key = depositVisualKey394(item);
+                  return expenseVisualIcons[key] || expenseVisualIcons.bank;
+                }
+          
+          '''
+          expense_svg_anchor = '''      function expenseVisualSvg(item){var key=resolveExpenseVisualKey(item&&item.title,item&&item.category,item&&item.visualIcon);return expenseVisualIcons[key]||expenseVisualIcons.other}
+          '''
+          require(index, expense_svg_anchor, "expense visual helper")
+          index = index.replace(expense_svg_anchor, expense_svg_anchor + deposit_helpers, 1)
+          
+          index = replace_once(
+              index,
+              '''            '<div class="expense-category">إ</div>' +''',
+              '''            '<div class="expense-category expense-category-visual" title="' + escapeHTML(item.source || "إيداع") + '">' + depositVisualSvg394(item) + '</div>' +''',
+              "deposit list icon"
+          )
+          
+          start = index.find('      function bankCardEmvSvg(){')
+          end_marker = '      function initAppearance394(){applyAppTheme394(getAppTheme394(),false);applySalaryCardStyle394(getSalaryCardStyle394(),false)}'
+          end = index.find(end_marker, start)
+          if start < 0 or end < 0:
+              raise SystemExit("Patch failed — bank card function block not found")
+          end += len(end_marker)
+          
+          bank_block = r'''      function bankCardEmvSvg(){
+                  return '<svg class="bank-card-emv" viewBox="0 0 64 48" aria-hidden="true"><defs><linearGradient id="emvGold394" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1b5"/><stop offset=".24" stop-color="#e9c95d"/><stop offset=".54" stop-color="#bf8e1e"/><stop offset=".76" stop-color="#e5c157"/><stop offset="1" stop-color="#f5dfa0"/></linearGradient><linearGradient id="emvShine394" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".55" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#6b4705" stop-opacity=".12"/></linearGradient></defs><rect x="1.5" y="1.5" width="61" height="45" rx="8" fill="url(#emvGold394)" stroke="#9e7113" stroke-width="1.2"/><path d="M21 2v44M43 2v44M2 15h14c3.4 0 5-1.8 5-5.2V2M62 15H48c-3.4 0-5-1.8-5-5.2V2M2 33h14c3.4 0 5 1.8 5 5.2V46M62 33H48c-3.4 0-5 1.8-5 5.2V46M21 24h22" fill="none" stroke="#94670f" stroke-width="1.25"/><path d="M2.5 23h18.5M43 23h18.5M31.9 2v44" fill="none" stroke="#ba8b22" stroke-width=".72"/><rect x="3.2" y="3.2" width="57.6" height="41.6" rx="6.4" fill="url(#emvShine394)" opacity=".62"/></svg>'
+                }
+                function bankCardContactlessSvg394() {
+                  return '<span class="bank-card-contactless" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 8.5a5 5 0 0 1 0 7"/><path d="M11 5.5a9 9 0 0 1 0 13"/><path d="M14 2.5a13 13 0 0 1 0 19"/></svg></span>';
+                }
+                function currentBankCardMonth394(){var d=new Date();return String(d.getMonth()+1).padStart(2,"0")+"/"+String(d.getFullYear()).slice(-2)}
+                function salaryCardIdentity394() {
+                  try {
+                    if (typeof authState !== "undefined" && authState.user) {
+                      var u = authState.user;
+                      return String(u.id || u.email || u.username || u.name || "user");
+                    }
+                  } catch (_) {}
+                  try {
+                    var seed = localStorage.getItem("monthlySalaryManager.cardGuestSeed.v394");
+                    if (!seed) {
+                      seed = String(Date.now()) + "-" + String(Math.random());
+                      localStorage.setItem("monthlySalaryManager.cardGuestSeed.v394", seed);
+                    }
+                    return seed;
+                  } catch (_) { return "salary-manager-guest"; }
+                }
+                function salaryCardDigits394(identity) {
+                  var value = String(identity || "salary-manager");
+                  var h = 2166136261 >>> 0;
+                  for (var i=0; i<value.length; i++) {
+                    h ^= value.charCodeAt(i);
+                    h = Math.imul(h, 16777619) >>> 0;
+                  }
+                  var digits = "";
+                  for (var j=0; j<12; j++) {
+                    h ^= h << 13; h ^= h >>> 17; h ^= h << 5; h >>>= 0;
+          SALARY_R5_PATCH_1_END
+
+      - name: Prepare r6 patch 2/2
+        shell: bash
+        run: |
+          cat >> /tmp/salary-r5-patch.py <<'SALARY_R5_PATCH_2_END'
+                    digits += String(h % 10);
+                  }
+                  return digits;
+                }
+                function getSalaryCardNumber394() {
+                  return "9190" + salaryCardDigits394(salaryCardIdentity394());
+                }
+                function formatBankCardNumber394(number) {
+                  return String(number || "").replace(/\D+/g,"").slice(0,16).replace(/(.{4})/g,"$1 ").trim();
+                }
+                function bankCardValidMarkup394() {
+                  return '<span class="bank-card-valid"><span class="bank-card-valid-label"><small>VALID</small><small>THRU</small></span><strong>' + currentBankCardMonth394() + '</strong></span>';
+                }
+                function salaryCardHardwareHTML394() {
+                  return bankCardEmvSvg()
+                    + '<span class="bank-card-number" aria-label="رقم البطاقة">' + formatBankCardNumber394(getSalaryCardNumber394()) + '</span>'
+                    + bankCardContactlessSvg394()
+                    + bankCardValidMarkup394();
+                }
+                function getSalaryCardStyle394(){var style="";try{style=localStorage.getItem(SALARY_CARD_STYLE_KEY_394)||""}catch(_){}return SALARY_CARD_STYLES_394.indexOf(style)!==-1?style:"classic"}
+                function syncSalaryCardStyleChoices394(style){
+                  style=style||getSalaryCardStyle394();
+                  $all("[data-salary-card-style]").forEach(function(button){var active=button.dataset.salaryCardStyle===style;button.classList.toggle("is-active",active);button.setAttribute("aria-pressed",active?"true":"false")});
+                  var status=$("#salaryCardStyleStatus");
+                  if(status) status.textContent=style==="classic"
+                    ? "التصميم الكلاسيكي مفعّل؛ بطاقة الراتب الأصلية كما هي."
+                    : "التصميم المصرفي مفعّل؛ رقم البطاقة يبدأ بـ 9190 ويختلف حسب حساب المستخدم.";
+                }
+                function applySalaryCardStyle394(style,persist){
+                  style=SALARY_CARD_STYLES_394.indexOf(style)!==-1?style:"classic";
+                  if(persist!==false)try{localStorage.setItem(SALARY_CARD_STYLE_KEY_394,style)}catch(_){}
+                  var card=$(".salary-card");if(!card)return;
+                  SALARY_CARD_STYLES_394.forEach(function(name){card.classList.remove("salary-card-style-"+name)});
+                  card.classList.remove("salary-card-bank");
+                  var hardware=card.querySelector(".bank-card-hardware");
+                  if(style==="classic"){if(hardware)hardware.remove();syncSalaryCardStyleChoices394(style);return}
+                  card.classList.add("salary-card-bank","salary-card-style-"+style);
+                  if(!hardware){hardware=document.createElement("div");hardware.className="bank-card-hardware";card.appendChild(hardware)}
+                  hardware.innerHTML=salaryCardHardwareHTML394();
+                  syncSalaryCardStyleChoices394(style)
+                }
+                function refreshSalaryCardMonth394(){
+                  var hardware=document.querySelector(".bank-card-hardware");
+                  if(hardware) hardware.innerHTML=salaryCardHardwareHTML394();
+                }
+                function initAppearance394(){applyAppTheme394(getAppTheme394(),false);applySalaryCardStyle394(getSalaryCardStyle394(),false)}'''
+          
+          index = index[:start] + bank_block + index[end:]
+          
+          for needle in [
+              'var APP_RELEASE_ID = "3.9.4-card-deposit-icons-r6";',
+              '<option value="فندق">فندق</option>',
+              'function depositVisualSvg394',
+              'bank-card-number',
+              'bank-card-contactless',
+              'getSalaryCardNumber394',
+              'cafeteria'
+          ]:
+              require(index, needle, needle)
+          
+          write(INDEX, index)
+          
+          worker = read(WORKER)
+          require(worker, 'const VERSION = "3.9.4";', "worker version")
+          worker = replace_once(worker, 'const RELEASE_ID = "3.9.4-clean-rebuild-r1";', 'const RELEASE_ID = "3.9.4-card-deposit-icons-r6";', "worker current release")
+          worker = replace_once(worker, 'const UPDATE_SIGNAL_VERSION = "3.9.4\\u200B";', 'const UPDATE_SIGNAL_VERSION = "3.9.4\\u200C";', "worker update signal")
+          
+          worker_anchor = '''  const rules = [
+              ["مغسلة ملابس",'''
+          worker_block = '''  const rules = [
+              ["فندق", ["hotel","resort","hilton","marriott","booking","rotana","stay","inn","فندق","منتجع"]],
+              ["سينما", ["cinema","vox","reel cinema","movie","movies","سينما","ريل"]],
+              ["اشتراكات", ["subscription","netflix","spotify","apple.com/bill","اشتراك","اشتراكات"]],
+              ["مواقف", ["parking","mawaqif","park","مواقف"]],
+              ["رياضة", ["gym","fitness","crossfit","sports","جيم","رياضة","نادي رياضي"]],
+              ["رسوم حكومية", ["tamm","darb","rta","moi","government fee","government","تم","درب","رسوم حكومية"]],
+              ["مغسلة ملابس",'''
+          worker = replace_once(worker, worker_anchor, worker_block, "worker new categories")
+          write(WORKER, worker)
+          
+          sw = read(SW)
+          sw = replace_once(sw, 'salary-manager-v3.9.4-clean-rebuild-r1', 'salary-manager-v3.9.4-card-deposit-icons-r6', "service worker cache")
+          write(SW, sw)
+          
+          print("Salary Manager 3.9.4 r6 enhancements applied.")
+          SALARY_R5_PATCH_2_END
+
+      - name: Apply r6 enhancements
+        run: python3 /tmp/salary-r5-patch.py
+
+      - name: Validate JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/worker.js
+          node --check public/sw.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text=Path("public/index.html").read_text(encoding="utf-8")
+          blocks=re.findall(r"<script(?:\s[^>]*)?>(.*?)</script>",text,flags=re.S|re.I)
+          Path("/tmp/salary-r5-inline.js").write_text("\n".join(x for x in blocks if x.strip()),encoding="utf-8")
+          PY
+          node --check /tmp/salary-r5-inline.js
+
+      - name: Validate requested changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'var APP_RELEASE_ID = "3.9.4-card-deposit-icons-r6";' public/index.html
+          grep -q 'bank-card-number' public/index.html
+          grep -q 'bank-card-contactless' public/index.html
+          grep -q 'getSalaryCardNumber394' public/index.html
+          grep -q 'function depositVisualSvg394' public/index.html
+          grep -Fq '<option value="فندق">فندق</option>' public/index.html
+          grep -Fq '<option value="سينما">سينما</option>' public/index.html
+          grep -Fq '<option value="مواقف">مواقف</option>' public/index.html
+          grep -q 'cafeteria' public/index.html
+          grep -q 'const RELEASE_ID = "3.9.4-card-deposit-icons-r6";' src/worker.js
+          grep -Fq '["فندق", ["hotel","resort"' src/worker.js
+          test -f public/releases/3.9.3-autoapprove-sync-race-r7/app.html
+
+      - name: Commit staged r6
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js
+          git commit -m "Salary Manager 3.9.4 r6 realistic card and deposit icons"
+          git push
+
+      - name: Deploy staged r6 to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+          secrets: |
+            AUTH_PEPPER
+            OWNER_BOOTSTRAP_TOKEN
+        env:
+          AUTH_PEPPER: ${{ secrets.AUTH_PEPPER }}
+          OWNER_BOOTSTRAP_TOKEN: ${{ secrets.OWNER_BOOTSTRAP_TOKEN }}
+
+      - name: Verify exact r6 is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?r6_check=$(date +%s)" || true)
+            echo "$BODY"
+            if echo "$BODY" | grep -q '"version":"3.9.4"' && echo "$BODY" | grep -q '"stagedReleaseId":"3.9.4-card-deposit-icons-r6"'; then
+              break
+            fi
+            sleep 4
+          done
+          echo "$BODY" | grep -q '"stagedReleaseId":"3.9.4-card-deposit-icons-r6"'
+
+      - name: Verify public users remain on stable r7
+        shell: bash
+        run: |
+          set -euo pipefail
+          BODY=$(curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_r6_check=$(date +%s)")
+          echo "$BODY" | grep -q '3.9.3-autoapprove-sync-race-r7'
+          if echo "$BODY" | grep -q '3.9.4-card-deposit-icons-r6'; then
+            echo "SECURITY FAILURE: r6 leaked to unauthenticated users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        run: |
+          echo "### Salary Manager 3.9.4 r6" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Starts from the actual current 3.9.4 clean-rebuild r1" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ 16-digit card number starts with 9190 and is deterministic per account" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Realistic EMV chip + contactless mark + VALID THRU MM/YY" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Deposits use icons for salary, transfer, refund, or general bank deposit" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Hotel, cinema, subscriptions, parking, sports and government-fee categories are selectable" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Cafeteria is treated as café/coffee instead of restaurant" >> "$GITHUB_STEP_SUMMARY"
+          echo "🔒 r6 remains staged for owner review; public users stay on r7" >> "$GITHUB_STEP_SUMMARY"

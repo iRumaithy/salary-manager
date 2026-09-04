@@ -2,8 +2,8 @@ import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
 const VERSION = "3.9.4";
-const RELEASE_ID = "3.9.4-clean-rebuild-r1";
-const UPDATE_SIGNAL_VERSION = "3.9.4\u200B";
+const RELEASE_ID = "3.9.4-card-deposit-icons-r6";
+const UPDATE_SIGNAL_VERSION = "3.9.4\u200C";
 const PREVIOUS_PUBLISHED_VERSION = "3.9.3";
 const PREVIOUS_RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";
 const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
@@ -142,6 +142,12 @@ function automationKindFromText(value, explicitType) {
 function automationCategoryFromText(value) {
   const text = normalizeAutomationText(value).toLowerCase();
   const rules = [
+    ["فندق", ["hotel","resort","hilton","marriott","booking","rotana","stay","inn","فندق","منتجع"]],
+    ["سينما", ["cinema","vox","reel cinema","movie","movies","سينما","ريل"]],
+    ["اشتراكات", ["subscription","netflix","spotify","apple.com/bill","اشتراك","اشتراكات"]],
+    ["مواقف", ["parking","mawaqif","park","مواقف"]],
+    ["رياضة", ["gym","fitness","crossfit","sports","جيم","رياضة","نادي رياضي"]],
+    ["رسوم حكومية", ["tamm","darb","rta","moi","government fee","government","تم","درب","رسوم حكومية"]],
     ["مغسلة ملابس", ["laundry","laundromat","dry clean","dryclean","laundry service","مغسلة","مغسله","غسيل ملابس","دراي كلين"]],
     ["صيانة سيارة", ["garage","auto service","car service","car wash","tyre","tire","oil change","ورشة","ورشه","كراج","غسيل سيارات","غسيل سيارة","اطارات","إطارات","تغيير زيت"]],
     ["عناية شخصية", ["barber","salon","spa","beauty","صالون","حلاق","سبا","مناكير","بديكير"]],

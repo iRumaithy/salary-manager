@@ -1,0 +1,622 @@
+name: Apply Salary Manager 3.9.4
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.4-fixed.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Apply Salary Manager 3.9.4
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          OLD_RELEASE = "3.9.3-autoapprove-sync-race-r7"
+          NEW_RELEASE = "3.9.4-smart-visuals-dark-cards-r1"
+
+          def read(path):
+              return Path(path).read_text(encoding="utf-8")
+
+          def write(path, text):
+              Path(path).write_text(text, encoding="utf-8")
+
+          def replace_once(text, old, new, label, already=None):
+              if old in text:
+                  return text.replace(old, new, 1)
+              if already and already in text:
+                  print(label + ": already applied")
+                  return text
+              raise SystemExit("Patch failed: " + label)
+
+          def insert_before(text, anchor, block, label, marker=None):
+              if marker and marker in text:
+                  print(label + ": already applied")
+                  return text
+              if anchor not in text:
+                  raise SystemExit("Patch failed: " + label)
+              return text.replace(anchor, block + anchor, 1)
+
+          index_path = "public/index.html"
+          index = read(index_path).replace(OLD_RELEASE, NEW_RELEASE)
+          index = replace_once(
+              index,
+              '      var APP_VERSION = "3.9.3";',
+              '      var APP_VERSION = "3.9.4";',
+              "public app version",
+              '      var APP_VERSION = "3.9.4";'
+          )
+
+          category_anchor = '<option value="مناسبات">مناسبات</option>'
+          category_block = '''                <option value="فندق">فندق</option>
+                          <option value="سينما">سينما</option>
+                          <option value="اشتراكات">اشتراكات</option>
+                          <option value="مواقف">مواقف</option>
+                          <option value="رياضة">رياضة</option>
+                          <option value="رسوم حكومية">رسوم حكومية</option>
+          '''
+          index = insert_before(index, category_anchor, category_block, "3.9.4 extra categories", '<option value="فندق">فندق</option>')
+
+          tr_anchor = '      EN_TRANSLATIONS["مناسبات"] = "Occasions";'
+          tr_block = '''      EN_TRANSLATIONS["فندق"] = "Hotel";
+                EN_TRANSLATIONS["سينما"] = "Cinema";
+                EN_TRANSLATIONS["اشتراكات"] = "Subscriptions";
+                EN_TRANSLATIONS["مواقف"] = "Parking";
+                EN_TRANSLATIONS["رياضة"] = "Sports";
+                EN_TRANSLATIONS["رسوم حكومية"] = "Government fees";
+          '''
+          index = insert_before(index, tr_anchor, tr_block, "3.9.4 translations", 'EN_TRANSLATIONS["فندق"] = "Hotel";')
+
+          css = r'''
+              /* 3.9.4 r1 — smart visuals, dark mode, premium salary card skins */
+              :root {
+                --theme-bg: #f5f1e8;
+                --theme-panel: #fffdfa;
+                --theme-panel-2: #f8f6f0;
+                --theme-ink: #173331;
+                --theme-muted: #6f7e7b;
+                --theme-line: rgba(23,51,49,.10);
+                --theme-soft: #e8f2ef;
+                --theme-brand: #0f5e56;
+                --theme-brand-2: #0f766d;
+                --theme-danger-soft: #fceceb;
+                --theme-danger: #c76059;
+                --theme-shadow: 0 14px 34px rgba(17,50,46,.08);
+              }
+              :root[data-theme="dark"] {
+                --theme-bg: #0e1717;
+                --theme-panel: #142121;
+                --theme-panel-2: #172727;
+                --theme-ink: #edf6f2;
+                --theme-muted: #9fb1ac;
+                --theme-line: rgba(237,246,242,.09);
+                --theme-soft: rgba(71,113,104,.18);
+                --theme-brand: #28b29f;
+                --theme-brand-2: #1f8f81;
+                --theme-danger-soft: rgba(180,90,87,.14);
+                --theme-danger: #f28e86;
+                --theme-shadow: 0 18px 40px rgba(0,0,0,.32);
+              }
+              :root[data-theme="dark"] body,
+              :root[data-theme="dark"] .app,
+              :root[data-theme="dark"] .page-shell {
+                background: var(--theme-bg) !important;
+                color: var(--theme-ink) !important;
+              }
+              :root[data-theme="dark"] .panel,
+              :root[data-theme="dark"] .card,
+              :root[data-theme="dark"] .sheet,
+              :root[data-theme="dark"] .modal-card,
+              :root[data-theme="dark"] .segment,
+              :root[data-theme="dark"] .panel-pad,
+              :root[data-theme="dark"] .tabs,
+              :root[data-theme="dark"] .glass,
+              :root[data-theme="dark"] .surface {
+                background: var(--theme-panel) !important;
+                color: var(--theme-ink) !important;
+                border-color: var(--theme-line) !important;
+                box-shadow: var(--theme-shadow) !important;
+              }
+              :root[data-theme="dark"] input,
+              :root[data-theme="dark"] select,
+              :root[data-theme="dark"] textarea,
+              :root[data-theme="dark"] button:not(.fab):not(.primary) {
+                background: var(--theme-panel-2) !important;
+                color: var(--theme-ink) !important;
+                border-color: var(--theme-line) !important;
+              }
+              :root[data-theme="dark"] .muted,
+              :root[data-theme="dark"] small,
+              :root[data-theme="dark"] .panel-subtitle {
+                color: var(--theme-muted) !important;
+              }
+              :root[data-theme="dark"] .expense-category-row,
+              :root[data-theme="dark"] .statement-expense-category-block,
+              :root[data-theme="dark"] .expense-category-empty {
+                background: var(--theme-panel-2) !important;
+              }
+              .theme-toggle-mini {
+                width: 62px;
+                min-width: 62px;
+                height: 62px;
+                border-radius: 18px;
+                border: 1px solid var(--theme-line);
+                background: var(--theme-panel);
+                color: var(--theme-ink);
+                display: inline-grid;
+                place-items: center;
+                cursor: pointer;
+                box-shadow: var(--theme-shadow);
+                transition: transform .18s ease, background .2s ease, color .2s ease;
+                font-size: 24px;
+                line-height: 1;
+              }
+              .smart-expense-visual,
+              .smart-expense-visual-choice {
+                width: 56px;
+                height: 56px;
+                border-radius: 18px;
+                display: inline-grid;
+                place-items: center;
+                border: 1px solid rgba(16,74,67,.08);
+                background: linear-gradient(180deg, #eff8f6 0%, #dff1ec 100%);
+                color: #17695f;
+                box-shadow: 0 10px 18px rgba(17,50,46,.08);
+                overflow: hidden;
+                flex-shrink: 0;
+              }
+              :root[data-theme="dark"] .smart-expense-visual,
+              :root[data-theme="dark"] .smart-expense-visual-choice {
+                background: linear-gradient(180deg, rgba(38,104,95,.38) 0%, rgba(31,80,74,.28) 100%);
+                border-color: rgba(237,246,242,.08);
+                color: #bff2e7;
+                box-shadow: 0 12px 22px rgba(0,0,0,.24);
+              }
+              .smart-expense-visual svg,
+              .smart-expense-visual-choice svg { width: 28px; height: 28px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+              .smart-approval-edit {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 10px;
+                border: 1px solid var(--theme-line);
+                border-radius: 12px;
+                background: var(--theme-panel);
+                cursor: pointer;
+                color: var(--theme-ink);
+                font-weight: 800;
+                font-size: 12px;
+              }
+              .smart-approval-picker {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0,1fr));
+                gap: 10px;
+                margin-top: 10px;
+              }
+              .bank-card-skin {
+                position: relative;
+                overflow: hidden;
+                min-height: 240px;
+                border-radius: 32px;
+                background: linear-gradient(135deg, #0a4f49 0%, #0f7469 100%);
+                color: #fff;
+                box-shadow: 0 24px 50px rgba(7,38,35,.18);
+              }
+              .bank-card-chip {
+                position: absolute;
+                top: 26px;
+                left: 26px;
+                width: 54px;
+                height: 40px;
+                border-radius: 10px;
+                background: linear-gradient(135deg, #f8e19c 0%, #d7ad38 55%, #f1da91 100%);
+                box-shadow: inset 0 1px 1px rgba(255,255,255,.55), 0 8px 18px rgba(0,0,0,.14);
+                overflow: hidden;
+              }
+              .bank-card-chip::before,
+              .bank-card-chip::after {
+                content: "";
+                position: absolute;
+                background: rgba(130,88,9,.36);
+                border-radius: 999px;
+              }
+              .bank-card-chip::before { inset: 8px 22px 8px 22px; }
+              .bank-card-chip::after { inset: 18px 8px 18px 8px; }
+              .bank-card-month-tag {
+                position: absolute;
+                top: 28px;
+                right: 26px;
+                font-size: 14px;
+                font-weight: 900;
+                letter-spacing: .08em;
+                color: rgba(255,255,255,.92);
+                padding: 6px 10px;
+                border-radius: 999px;
+                background: rgba(255,255,255,.12);
+                backdrop-filter: blur(10px);
+              }
+              .bank-card-style-classic { background: linear-gradient(135deg, #0b554f 0%, #157d72 100%); }
+              .bank-card-style-obsidian { background: linear-gradient(135deg, #141516 0%, #252a2f 42%, #0d7c72 100%); }
+              .bank-card-style-emerald-glass { background: linear-gradient(135deg, rgba(12,93,86,.95), rgba(60,177,152,.92)); }
+              .bank-card-style-royal-gradient { background: linear-gradient(135deg, #113d62 0%, #2b6ca1 45%, #15846f 100%); }
+              .bank-card-style-ivory { background: linear-gradient(135deg, #f0ece1 0%, #d9cfb6 100%); color: #173331; }
+              .bank-card-style-ivory .bank-card-month-tag { background: rgba(23,51,49,.08); color: #173331; }
+              .bank-card-style-midnight { background: linear-gradient(135deg, #121e2b 0%, #1a2f47 42%, #164b63 100%); }
+              .card-style-chooser {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0,1fr));
+                gap: 10px;
+                margin-top: 12px;
+              }
+              .card-style-choice {
+                border: 1px solid var(--theme-line);
+                border-radius: 16px;
+                background: var(--theme-panel);
+                padding: 10px;
+                cursor: pointer;
+                color: var(--theme-ink);
+                text-align: start;
+              }
+              .card-style-choice.is-active { outline: 2px solid rgba(17,122,107,.28); }
+          '''
+          index = insert_before(index, "  </style>", css, "3.9.4 CSS", "3.9.4 r1 — smart visuals, dark mode")
+
+          js = r'''
+                /* 3.9.4 r1 — smart visuals, theme toggle, bank-card skins */
+                var merchantVisualRules = [
+                  { key:"adnoc", category:"مواصلات", label:"ADNOC", tokens:["adnoc","ادنوك","adnoc oasis","adnoc dist"], icon:"fuel" },
+                  { key:"laundry", category:"مغسلة ملابس", label:"Laundry", tokens:["laundry","مغسلة","مغسله","dry clean","دراي"], icon:"laundry" },
+                  { key:"cinema", category:"سينما", label:"Cinema", tokens:["vox","cinema","ريل سينما","movie","سينما"], icon:"cinema" },
+                  { key:"hotel", category:"فندق", label:"Hotel", tokens:["hotel","resort","marriott","hilton","booking","فندق"], icon:"hotel" },
+                  { key:"coffee", category:"قهوة", label:"Coffee", tokens:["coffee","starbucks","كوفي","قهوة","cafe"], icon:"coffee" },
+                  { key:"restaurant", category:"طعام", label:"Restaurant", tokens:["restaurant","مطعم","grill","burger","shawarma"], icon:"restaurant" },
+                  { key:"subscriptions", category:"اشتراكات", label:"Subscriptions", tokens:["netflix","spotify","apple.com","subscription","اشتراك"], icon:"subscription" },
+                  { key:"parking", category:"مواقف", label:"Parking", tokens:["park","parking","mawaqif","مواقف"], icon:"parking" },
+                  { key:"telecom", category:"اتصالات", label:"Telecom", tokens:["etisalat","du","virgin mobile","اتصالات","دو"], icon:"phone" },
+                  { key:"pharmacy", category:"صحة", label:"Pharmacy", tokens:["pharmacy","صيدلية","life pharmacy","aster"], icon:"pharmacy" },
+                  { key:"sport", category:"رياضة", label:"Sports", tokens:["gym","fitness","رياضة","fit"], icon:"sport" },
+                  { key:"gov", category:"رسوم حكومية", label:"Gov", tokens:["rta","moi","government","رسوم","tamm","darb"], icon:"gov" },
+                  { key:"salon", category:"عناية شخصية", label:"Salon", tokens:["salon","barber","حلاق","صالون","سبا"], icon:"salon" },
+                  { key:"delivery", category:"توصيل", label:"Delivery", tokens:["talabat","deliveroo","noon food","careem food","توصيل"], icon:"delivery" }
+                ];
+
+                var iconSvgLibrary = {
+                  fuel:'<svg viewBox="0 0 24 24"><path d="M3 8h12v10H3z"></path><path d="M15 9h2l2 2v5a2 2 0 0 0 4 0v-6l-2-2"></path><path d="M7 12h4"></path></svg>',
+                  laundry:'<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"></rect><circle cx="12" cy="13" r="4.5"></circle><path d="M8 6h.01M11 6h4"></path></svg>',
+                  cinema:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M7 3v6M12 3v6M17 3v6M7 18v3M12 18v3M17 18v3"></path></svg>',
+                  hotel:'<svg viewBox="0 0 24 24"><path d="M4 20V6a2 2 0 0 1 2-2h7v16"></path><path d="M13 10h7v10"></path><path d="M7 8h2M7 12h2M16 13h2M16 17h2"></path></svg>',
+                  coffee:'<svg viewBox="0 0 24 24"><path d="M6 8h9v5a4 4 0 0 1-4 4H9a3 3 0 0 1-3-3V8z"></path><path d="M15 9h2a2.5 2.5 0 0 1 0 5h-2"></path><path d="M8 3v2M12 3v2"></path></svg>',
+                  restaurant:'<svg viewBox="0 0 24 24"><path d="M6 3v8"></path><path d="M4 3v5a2 2 0 0 0 4 0V3"></path><path d="M12 3v18"></path><path d="M16 3c2 2 2 5 0 7h-2V3z"></path></svg>',
+                  subscription:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M7 9h10M7 13h6"></path></svg>',
+                  parking:'<svg viewBox="0 0 24 24"><path d="M7 21V3h6a4 4 0 0 1 0 8H7"></path></svg>',
+                  phone:'<svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"></rect><path d="M11 18h2"></path></svg>',
+                  pharmacy:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path><rect x="3" y="3" width="18" height="18" rx="4"></rect></svg>',
+                  sport:'<svg viewBox="0 0 24 24"><path d="M6 7a4 4 0 0 1 4-4c2.5 0 4.5 2 4.5 4.5S12 12 9.5 12A3.5 3.5 0 0 0 6 15.5V17"></path><path d="M15 10l6 6M17 8l4 4"></path></svg>',
+                  gov:'<svg viewBox="0 0 24 24"><path d="M3 9l9-5 9 5"></path><path d="M5 10v8M10 10v8M14 10v8M19 10v8"></path><path d="M3 20h18"></path></svg>',
+                  salon:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12"></path><path d="M9 3l3 3-6 6-3-3z"></path><path d="M15 12l6-6M14 17l3 3"></path></svg>',
+                  delivery:'<svg viewBox="0 0 24 24"><path d="M3 7h11v10H3z"></path><path d="M14 11h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="2"></circle><circle cx="18" cy="18" r="2"></circle></svg>',
+                  shopping:'<svg viewBox="0 0 24 24"><path d="M6 7h12l-1 12H7z"></path><path d="M9 7a3 3 0 0 1 6 0"></path></svg>',
+                  home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"></path><path d="M5 10v10h14V10"></path></svg>',
+                  gift:'<svg viewBox="0 0 24 24"><path d="M4 10h16v10H4z"></path><path d="M12 10v10M4 14h16"></path><path d="M12 10H8a2 2 0 1 1 0-4c2 0 4 4 4 4z"></path><path d="M12 10h4a2 2 0 1 0 0-4c-2 0-4 4-4 4z"></path></svg>',
+                  other:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg>'
+                };
+
+                var categoryVisualMap = {
+                  "طعام":"restaurant","مشتريات":"shopping","مواصلات":"fuel","فواتير":"subscription","اتصالات":"phone","صحة":"pharmacy","ترفيه":"cinema","قهوة":"coffee","ملابس":"shopping","منزل":"home","سفر":"hotel","تعليم":"other","هدايا":"gift","مغسلة ملابس":"laundry","عناية شخصية":"salon","صيانة سيارة":"fuel","خدمات منزلية":"home","توصيل":"delivery","أطفال وعائلة":"other","حيوانات أليفة":"other","مناسبات":"gift","فندق":"hotel","سينما":"cinema","اشتراكات":"subscription","مواقف":"parking","رياضة":"sport","رسوم حكومية":"gov","أخرى":"other"
+                };
+
+                var salaryCardStyles = [
+                  { key:"classic", label:"Classic Green", note:"الشكل الحالي بشكل مطور" },
+                  { key:"obsidian", label:"Obsidian Black", note:"أسود فاخر بلمسة تركواز" },
+                  { key:"emerald-glass", label:"Emerald Glass", note:"زجاجي هادئ وأنيق" },
+                  { key:"royal-gradient", label:"Royal Gradient", note:"تدرج ملكي احترافي" },
+                  { key:"ivory", label:"Ivory Premium", note:"فاتح وفخم" },
+                  { key:"midnight", label:"Midnight", note:"ليلي عميق" }
+                ];
+
+                function normalizeSmartText(value) { return String(value || "").toLowerCase().replace(/\s+/g, " ").trim(); }
+                function smartVisualFromRaw(rawTitle, rawCategory) {
+                  var category = String(rawCategory || "").trim() || "أخرى";
+                  var text = normalizeSmartText(rawTitle);
+                  for (var i = 0; i < merchantVisualRules.length; i += 1) {
+                    var rule = merchantVisualRules[i];
+                    for (var j = 0; j < rule.tokens.length; j += 1) {
+                      if (text.indexOf(normalizeSmartText(rule.tokens[j])) !== -1) return { icon:rule.icon, category:rule.category || category, label:rule.label || category, source:"merchant" };
+                    }
+                  }
+                  return { icon: categoryVisualMap[category] || "other", category:category, label:category, source:"category" };
+                }
+                function smartVisualHTML(iconKey, alt) {
+                  var svg = iconSvgLibrary[String(iconKey || "other")] || iconSvgLibrary.other;
+                  return '<span class="smart-expense-visual" aria-label="' + escapeHTML(String(alt || "")) + '">' + svg + '</span>';
+                }
+                function iconChoiceHTML(iconKey, alt) {
+                  var svg = iconSvgLibrary[String(iconKey || "other")] || iconSvgLibrary.other;
+                  return '<button class="smart-expense-visual-choice" type="button" data-smart-icon="' + escapeHTML(iconKey) + '" aria-label="' + escapeHTML(String(alt || "")) + '">' + svg + '</button>';
+                }
+                function guessRowCategoryText(row) {
+                  var txt = normalizeSmartText(row && row.textContent || "");
+                  var keys = Object.keys(categoryVisualMap);
+                  for (var i = 0; i < keys.length; i += 1) if (txt.indexOf(normalizeSmartText(keys[i])) !== -1) return keys[i];
+                  return "أخرى";
+                }
+                function enhanceExpenseListVisuals() {
+                  var rows = document.querySelectorAll("li, .expense-row, .expense-item, .record-row, .list-row");
+                  rows.forEach(function(row) {
+                    if (row.dataset.smartVisualPatched === "1") return;
+                    var text = String(row.textContent || "").trim();
+                    if (!text || text.length < 4) return;
+                    var visual = smartVisualFromRaw(text, guessRowCategoryText(row));
+                    if (!row.querySelector(".smart-expense-visual")) {
+                      var container = document.createElement("span");
+                      container.innerHTML = smartVisualHTML(visual.icon, visual.label);
+                      row.insertBefore(container.firstChild, row.firstChild);
+                    }
+                    row.dataset.smartVisualPatched = "1";
+                  });
+                }
+                function ensureThemeToggle() {
+                  if (document.querySelector(".theme-toggle-mini")) return;
+                  var host = document.querySelector(".top-actions, .header-actions, .toolbar-actions, .topbar-actions");
+                  if (!host) {
+                    var enButton = Array.from(document.querySelectorAll("button")).find(function(btn) { return /en/i.test(String(btn.textContent || "").trim()); });
+                    if (enButton && enButton.parentElement) host = enButton.parentElement;
+                  }
+                  if (!host) return;
+                  var button = document.createElement("button");
+                  button.type = "button";
+                  button.className = "theme-toggle-mini";
+                  function syncThemeIcon() {
+                    var mode = document.documentElement.getAttribute("data-theme") || localStorage.getItem("salary_theme_mode") || "light";
+                    button.textContent = mode === "dark" ? "☀️" : "🌙";
+                  }
+                  button.addEventListener("click", function() {
+                    var mode = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+                    document.documentElement.setAttribute("data-theme", mode);
+                    localStorage.setItem("salary_theme_mode", mode);
+                    syncThemeIcon();
+                  });
+                  var stored = localStorage.getItem("salary_theme_mode");
+                  if (stored) document.documentElement.setAttribute("data-theme", stored);
+                  syncThemeIcon();
+                  host.appendChild(button);
+                }
+                function applySalaryCardSkin() {
+                  var skins = ["classic","obsidian","emerald-glass","royal-gradient","ivory","midnight"];
+                  var skin = localStorage.getItem("salary_card_skin") || "classic";
+                  var card = document.querySelector(".salary-hero, .salary-card, .hero-card, .overview-card");
+                  if (!card) return;
+                  card.classList.add("bank-card-skin");
+                  skins.forEach(function(key){ card.classList.remove("bank-card-style-" + key); });
+                  card.classList.add("bank-card-style-" + skin);
+                  if (!card.querySelector(".bank-card-chip")) {
+                    var chip = document.createElement("span");
+                    chip.className = "bank-card-chip";
+                    card.appendChild(chip);
+                  }
+                  if (!card.querySelector(".bank-card-month-tag")) {
+                    var tag = document.createElement("span");
+                    tag.className = "bank-card-month-tag";
+                    var now = new Date();
+                    tag.textContent = String(now.getMonth() + 1).padStart(2, "0") + "/" + String(now.getFullYear()).slice(-2);
+                    card.appendChild(tag);
+                  }
+                }
+                function ensureCardStyleChooser() {
+                  if (document.querySelector("[data-card-style-host='1']")) return;
+                  var settingsRoot = document.querySelector("#settingsModal .modal-body, .settings-modal .modal-body, .settings-panel, #settingsSheet");
+                  if (!settingsRoot) return;
+                  var host = document.createElement("section");
+                  host.setAttribute("data-card-style-host", "1");
+                  host.style.marginTop = "18px";
+                  host.innerHTML = '<h3 style="margin:0 0 6px;font-size:16px;color:inherit">مظهر بطاقة الراتب</h3><p style="margin:0 0 10px;color:var(--theme-muted);font-size:12px">اختر التصميم الذي تفضله. الشريحة الذهبية والشهر الحالي يضافان تلقائيًا.</p><div class="card-style-chooser"></div>';
+                  settingsRoot.appendChild(host);
+                  var chooser = host.querySelector(".card-style-chooser");
+                  salaryCardStyles.forEach(function(item) {
+                    var button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "card-style-choice";
+                    button.dataset.cardStyle = item.key;
+                    button.innerHTML = '<strong>' + escapeHTML(item.label) + '</strong><small>' + escapeHTML(item.note) + '</small>';
+                    button.addEventListener("click", function() {
+                      localStorage.setItem("salary_card_skin", item.key);
+                      chooser.querySelectorAll(".card-style-choice").forEach(function(node){ node.classList.remove("is-active"); });
+                      button.classList.add("is-active");
+                      applySalaryCardSkin();
+                    });
+                    if ((localStorage.getItem("salary_card_skin") || "classic") === item.key) button.classList.add("is-active");
+                    chooser.appendChild(button);
+                  });
+                }
+                function ensurePendingApprovalIconEditor() {
+                  var modal = document.querySelector("#pendingTransactionsModal, .pending-transactions-modal, .approve-transactions-modal, .approval-modal");
+                  if (!modal) return;
+                  var rows = modal.querySelectorAll(".pending-item, .approval-item, li, .transaction-row");
+                  rows.forEach(function(row) {
+                    if (row.dataset.smartApprovalRow === "1") return;
+                    var rowText = String(row.textContent || "").trim();
+                    if (!rowText) return;
+                    var visual = smartVisualFromRaw(rowText, guessRowCategoryText(row));
+                    var edit = document.createElement("div");
+                    edit.className = "smart-approval-edit";
+                    edit.innerHTML = smartVisualHTML(visual.icon, visual.label) + '<span>تغيير الأيقونة</span>';
+                    var picker = document.createElement("div");
+                    picker.className = "smart-approval-picker";
+                    picker.style.display = "none";
+                    ["fuel","laundry","cinema","hotel","coffee","restaurant","subscription","parking","phone","pharmacy","sport","gov","salon","delivery","shopping","home","gift","other"].forEach(function(iconKey) {
+                      var wrap = document.createElement("span");
+                      wrap.innerHTML = iconChoiceHTML(iconKey, iconKey);
+                      var btn = wrap.firstChild;
+                      btn.addEventListener("click", function() {
+                        row.dataset.smartApprovalIcon = iconKey;
+                        edit.querySelector(".smart-expense-visual").outerHTML = smartVisualHTML(iconKey, iconKey);
+                        picker.style.display = "none";
+                      });
+                      picker.appendChild(btn);
+                    });
+                    edit.addEventListener("click", function() { picker.style.display = picker.style.display === "none" ? "grid" : "none"; });
+                    row.appendChild(edit);
+                    row.appendChild(picker);
+                    row.dataset.smartApprovalRow = "1";
+                  });
+                }
+                function boot394Enhancements() {
+                  var storedMode = localStorage.getItem("salary_theme_mode");
+                  if (storedMode) document.documentElement.setAttribute("data-theme", storedMode);
+                  ensureThemeToggle();
+                  applySalaryCardSkin();
+                  ensureCardStyleChooser();
+                  enhanceExpenseListVisuals();
+                  ensurePendingApprovalIconEditor();
+                }
+                if (!window.__salary394Enhancements) {
+                  window.__salary394Enhancements = true;
+                  document.addEventListener("DOMContentLoaded", function() {
+                    boot394Enhancements();
+                    setInterval(function() { boot394Enhancements(); }, 1400);
+                  });
+                }
+          '''
+          index = insert_before(index, "      function renderExpenses(items) {", js, "3.9.4 JS helpers", "3.9.4 r1 — smart visuals, theme toggle")
+
+          cl_anchor = '''            <li>إضافة حماية من تعارض المراجعات تحفظ عمليات Apple Wallet ورسائل البنك المضافة على الخادم وتدمجها مع أحدث تغييرات الجهاز بدل الكتابة فوقها.</li>'''
+          cl_block = '''            <li>استبدال الحروف في قائمة المصروفات بأيقونات وصور ذكية مرتبطة بالتاجر أو التصنيف، مع دعم متاجر مثل أدنوك والمغسلة والسينما والفندق وغيرها.</li>
+                      <li>إضافة إمكانية تعديل أيقونة المعاملة داخل قائمة الاعتماد قبل اعتمادها عندما يكون الاعتماد التلقائي غير مفعّل.</li>
+                      <li>إضافة وضع ليلي اختياري بزّر هلال/شمس صغير مع حفظ تفضيل كل مستخدم.</li>
+                      <li>إضافة تصاميم بطاقات راتب احترافية متعددة مع رقاقة ذهبية صغيرة وشهر حالي بصيغة بطاقات بنكية مثل 09/26 دون اعتباره تاريخ انتهاء فعلي.</li>
+          '''
+          if "استبدال الحروف في قائمة المصروفات بأيقونات وصور ذكية" not in index:
+              index = replace_once(index, cl_anchor, cl_anchor + "\n" + cl_block, "3.9.4 changelog")
+
+          write(index_path, index)
+
+          sw_path = "public/sw.js"
+          sw = read(sw_path).replace(OLD_RELEASE, NEW_RELEASE)
+          write(sw_path, sw)
+
+          worker_path = "src/worker.js"
+          worker = read(worker_path)
+          worker = replace_once(
+              worker,
+              'const VERSION = "3.9.3";',
+              'const VERSION = "3.9.4";',
+              "worker visible version",
+              'const VERSION = "3.9.4";'
+          )
+          worker = replace_once(
+              worker,
+              'const UPDATE_SIGNAL_VERSION = "3.9.3\\u200B";',
+              'const UPDATE_SIGNAL_VERSION = "3.9.4\\u200B";',
+              "worker update signal version",
+              'const UPDATE_SIGNAL_VERSION = "3.9.4\\u200B";'
+          )
+          worker = replace_once(
+              worker,
+              'const RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";',
+              'const RELEASE_ID = "3.9.4-smart-visuals-dark-cards-r1";',
+              "worker release id",
+              'const RELEASE_ID = "3.9.4-smart-visuals-dark-cards-r1";'
+          )
+          tail_old = '''  "3.9.3-shortcuts-merchant-preview-r5",
+            "3.9.3-expense-insights-voice-wallet-r6"
+          ]);'''
+          tail_new = '''  "3.9.3-shortcuts-merchant-preview-r5",
+            "3.9.3-expense-insights-voice-wallet-r6",
+            "3.9.3-autoapprove-sync-race-r7"
+          ]);'''
+          worker = replace_once(worker, tail_old, tail_new, "stage r7 predecessor", '"3.9.3-autoapprove-sync-race-r7"\n]);')
+          auto_anchor = '    ["مناسبات", ["flowers","flower shop","party","event","wedding","ورد","زهور","حفلة","حفله","عرس","زفاف","مناسبة"]],'
+          auto_block = '''    ["فندق", ["hotel","resort","hilton","marriott","booking","stay","inn","فندق"]],
+              ["سينما", ["cinema","vox","movie","movies","ريل سينما","سينما"]],
+              ["اشتراكات", ["subscription","netflix","spotify","apple.com","google storage","icloud","اشتراك","رسوم اشتراك"]],
+              ["مواقف", ["parking","park","mparking","mawaqif","مواقف"]],
+              ["رياضة", ["gym","fitness","sport","sports","crossfit","رياضة","نادي"]],
+              ["رسوم حكومية", ["rta","government","moi","شرطة","دارب","تم","tamm","رسوم حكومية"]],
+          '''
+          worker = insert_before(worker, auto_anchor, auto_block, "backend extra categories", '["فندق", ["hotel","resort","hilton"')
+          write(worker_path, worker)
+          package_path = "package.json"
+          package_text = read(package_path)
+          package_text = replace_once(package_text, '"version": "3.8.7"', '"version": "3.9.4"', "package version", '"version": "3.9.4"')
+          write(package_path, package_text)
+
+          checks = {
+              "public/index.html": [NEW_RELEASE, 'var APP_VERSION = "3.9.4";', "theme-toggle-mini", "bank-card-chip", "bank-card-month-tag", "merchantVisualRules", "ensurePendingApprovalIconEditor", '<option value="فندق">فندق</option>'],
+              "public/sw.js": [NEW_RELEASE],
+              "src/worker.js": [NEW_RELEASE, 'const VERSION = "3.9.4";', 'const UPDATE_SIGNAL_VERSION = "3.9.4\\u200B";', '["فندق", ["hotel","resort","hilton","marriott","booking","stay","inn","فندق"]]']
+          }
+          for path, needles in checks.items():
+              text = read(path)
+              missing = [x for x in needles if x not in text]
+              if missing:
+                  raise SystemExit("Validation failed in " + path + ": " + repr(missing))
+
+          print("Salary Manager 3.9.4 r1 package patch prepared successfully.")
+          PY
+
+      - name: Validate Worker JavaScript
+        run: node --check src/worker.js
+
+      - name: Validate inline JavaScript
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path("public/index.html").read_text(encoding="utf-8")
+          blocks = re.findall(r"<script(?:\s[^>]*)?>(.*?)</script>", text, flags=re.S|re.I)
+          inline = "\n".join(block for block in blocks if block.strip())
+          Path("/tmp/salary-inline-394.js").write_text(inline, encoding="utf-8")
+          PY
+          node --check /tmp/salary-inline-394.js
+
+      - name: Commit patched source
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No source changes to commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add public/index.html public/sw.js src/worker.js package.json
+            git commit -m "Salary Manager 3.9.4: smart visuals, dark mode, salary card skins"
+            git push
+          fi
+
+      - name: Deploy patched build to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+          secrets: |
+            AUTH_PEPPER
+            OWNER_BOOTSTRAP_TOKEN
+        env:
+          AUTH_PEPPER: ${{ secrets.AUTH_PEPPER }}
+          OWNER_BOOTSTRAP_TOKEN: ${{ secrets.OWNER_BOOTSTRAP_TOKEN }}
+
+      - name: Summary
+        run: |
+          echo "### Salary Manager 3.9.4" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Replaces expense letters with smart icons / visuals" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Adds more categories like hotel and cinema" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Adds optional dark mode with moon/sun toggle" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Adds multiple premium salary card styles" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Adds gold chip and current month tag like a real bank card" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Adds icon editing in approval flow when auto-approve is off" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Deploys 3.9.4 as a staged owner-only build" >> "$GITHUB_STEP_SUMMARY"
+          echo "🔒 Normal users remain on the published release until owner approval" >> "$GITHUB_STEP_SUMMARY"

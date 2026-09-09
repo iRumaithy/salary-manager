@@ -1,0 +1,326 @@
+name: Apply Salary Manager 3.9.4 Automation Review Edit r14
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.4-automation-review-edit-r14.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-stage-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current r13
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify current staged source is r13
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'var APP_VERSION = "3.9.4";' public/index.html
+          grep -Fq 'var APP_RELEASE_ID = "3.9.4-quick-expense-icons-r13";' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.4-quick-expense-icons-r13";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.4-quick-expense-icons-r13' public/sw.js
+
+      - name: Add editable transaction title and explicit detected icon
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          INDEX = Path('public/index.html')
+          WORKER = Path('src/worker.js')
+          SW = Path('public/sw.js')
+          OLD = '3.9.4-quick-expense-icons-r13'
+          NEW = '3.9.4-automation-review-edit-r14'
+
+          def read(p):
+              return p.read_text(encoding='utf-8')
+
+          def write(p, text):
+              p.write_text(text, encoding='utf-8')
+
+          def require(text, needle, label):
+              if needle not in text:
+                  raise SystemExit('Missing anchor: ' + label)
+
+          def replace_once(text, old, new, label):
+              require(text, old, label)
+              return text.replace(old, new, 1)
+
+          index = read(INDEX)
+          require(index, 'var APP_RELEASE_ID = "' + OLD + '";', 'r13 app release')
+          require(index, 'var automationPendingVisualOverrides = Object.create(null);', 'visual override map')
+          require(index, 'function automationVisualOptions(selected){', 'visual options')
+          require(index, 'function recordAutomationImport(item, kind, options)', 'automation record function')
+          require(index, 'function handleAutomationReviewAction(event)', 'review action handler')
+
+          index = index.replace(OLD, NEW)
+
+          index = replace_once(
+              index,
+              '      var automationPendingVisualOverrides = Object.create(null);',
+              '      var automationPendingVisualOverrides = Object.create(null);\n'
+              '      var automationPendingTitleOverrides = Object.create(null);',
+              'title override map'
+          )
+
+          css_anchor = '    .automation-visual-editor select{width:100%;min-height:36px;padding:5px 9px;border:1px solid var(--line);border-radius:10px;color:var(--ink);background:var(--paper);font-size:11px;font-weight:800}'
+          require(index, css_anchor, 'automation visual editor css')
+          css_add = '''
+              .automation-title-editor{display:grid;gap:6px;margin-top:10px;padding:9px 10px;border:1px solid var(--line);border-radius:12px;background:rgba(255,253,249,.72)}
+              .automation-title-editor>span{color:var(--muted);font-size:9px;font-weight:850}
+              .automation-title-editor input{width:100%;min-height:40px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;outline:0;color:var(--ink);background:var(--paper);font-size:12px;font-weight:850}
+              .automation-title-editor input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(20,117,108,.10)}
+              html[data-app-theme="dark"] .automation-title-editor{background:#14211f;border-color:#2b3c38}
+              html[data-app-theme="dark"] .automation-title-editor input{background:#0f1b19;color:#edf5f2;border-color:#31423e}
+          '''
+          index = index.replace(css_anchor, css_anchor + css_add, 1)
+
+          translation_anchor = '      EN_TRANSLATIONS["رسوم حكومية"] = "Government fees";'
+          require(index, translation_anchor, 'English translation anchor')
+          translation_add = '''
+                EN_TRANSLATIONS["اسم العملية بعد الاعتماد"] = "Transaction name after approval";
+                EN_TRANSLATIONS["اكتب الاسم الذي تريد ظهوره في سجل المصروفات"] = "Enter the name you want to appear in the expense log";
+                EN_TRANSLATIONS["أيقونة العملية"] = "Transaction icon";
+          '''
+          if 'EN_TRANSLATIONS["اسم العملية بعد الاعتماد"]' not in index:
+              index = index.replace(translation_anchor, translation_anchor + translation_add, 1)
+
+          visual_pattern = re.compile(
+              r'      function automationVisualOptions\(selected\)\{.*?\n'
+              r'      function themeIconSvg\(mode\)\{',
+              re.S
+          )
+          visual_block = '''      function automationVisualCatalog(){
+                  return [["shopping","مشتريات"],["restaurant","مطعم"],["coffee","قهوة"],["fuel","وقود"],["laundry","مغسلة"],["cinema","سينما"],["hotel","فندق"],["parking","مواقف"],["telecom","اتصالات"],["health","صحة / صيدلية"],["delivery","توصيل"],["salon","عناية شخصية"],["sport","رياضة"],["government","جهة حكومية"],["travel","سفر"],["home","منزل"],["gift","هدية / مناسبة"],["pets","حيوانات أليفة"],["education","تعليم"],["bills","فاتورة"],["family","عائلة"],["other","أخرى"]];
+                }
+                function automationVisualOptions(selected){
+                  var options=automationVisualCatalog();
+                  return options.map(function(row){return '<option value="'+row[0]+'"'+(row[0]===selected?' selected':'')+'>'+row[1]+'</option>'}).join("")
+                }
+                function automationVisualEditorHTML(item,title,category){
+                  var id=String(item&&item.id||"");
+                  var manual=String(automationPendingVisualOverrides[id]||"");
+                  var previewKey=manual||inferExpenseVisualKey(title,category)||"other";
+                  return '<label class="automation-visual-editor"><span class="automation-visual-preview" data-automation-visual-preview="'+escapeHTML(id)+'">'+(expenseVisualIcons[previewKey]||expenseVisualIcons.other)+'</span><span>أيقونة العملية</span><select data-automation-visual-select="'+escapeHTML(id)+'">'+automationVisualOptions(previewKey)+'</select></label>'
+                }
+                function automationTitleEditorHTML(item,title){
+                  var id=String(item&&item.id||"");
+                  var stored=Object.prototype.hasOwnProperty.call(automationPendingTitleOverrides,id)?String(automationPendingTitleOverrides[id]||""):String(title||"");
+                  return '<label class="automation-title-editor"><span>اسم العملية بعد الاعتماد</span><input type="text" maxlength="80" autocomplete="off" data-automation-title-input="'+escapeHTML(id)+'" value="'+escapeHTML(stored)+'" placeholder="اكتب الاسم الذي تريد ظهوره في سجل المصروفات"></label>'
+                }
+
+                function themeIconSvg(mode){'''
+          index, count = visual_pattern.subn(visual_block, index, count=1)
+          if count != 1:
+              raise SystemExit('Could not replace automation visual editor block')
+
+          render_old = '''          var visualEditor = (!automationAutoApproveEnabled && kind === "expense") ? automationVisualEditorHTML(item, merchant, item.category || "أخرى") : "";
+                    return '<div class="automation-import"><div class="automation-import-main"><strong>' + escapeHTML(merchant) + '<span class="automation-confidence' + confidenceClass + '">' + escapeHTML(confidenceText) + '</span></strong><small>' + escapeHTML(meta) + '</small></div><div class="automation-import-amount ' + escapeHTML(kind) + '">' + escapeHTML(amountText) + '</div>' + (raw ? '<div class="automation-import-raw">' + escapeHTML(raw.slice(0,260)) + '</div>' : '') + visualEditor + '<div class="automation-import-actions">' + actions + '</div></div>';'''
+          render_new = '''          var idKey = String(item.id || "");
+                    var reviewTitle = Object.prototype.hasOwnProperty.call(automationPendingTitleOverrides,idKey) ? String(automationPendingTitleOverrides[idKey] || "").trim() : merchant;
+                    if (!reviewTitle) reviewTitle = merchant;
+                    var titleEditor = (amount > 0 && kind !== "commitment_confirmation") ? automationTitleEditorHTML(item, reviewTitle) : "";
+                    var visualEditor = (kind === "expense") ? automationVisualEditorHTML(item, reviewTitle, item.category || "أخرى") : "";
+                    return '<div class="automation-import"><div class="automation-import-main"><strong>' + escapeHTML(merchant) + '<span class="automation-confidence' + confidenceClass + '">' + escapeHTML(confidenceText) + '</span></strong><small>' + escapeHTML(meta) + '</small></div><div class="automation-import-amount ' + escapeHTML(kind) + '">' + escapeHTML(amountText) + '</div>' + (raw ? '<div class="automation-import-raw">' + escapeHTML(raw.slice(0,260)) + '</div>' : '') + titleEditor + visualEditor + '<div class="automation-import-actions">' + actions + '</div></div>';'''
+          index = replace_once(index, render_old, render_new, 'review row render')
+
+          merchant_anchor = '        var merchant = String(item.merchant || "").trim();'
+          index = replace_once(
+              index,
+              merchant_anchor,
+              merchant_anchor + '\n        var customTitle = String(automationPendingTitleOverrides[importId] || "").trim();',
+              'record custom title'
+          )
+          index = replace_once(
+              index,
+              '          var depositTitle = merchant || "إيداع من البنك";',
+              '          var depositTitle = customTitle || merchant || "إيداع من البنك";',
+              'deposit title override'
+          )
+          index = replace_once(
+              index,
+              '          var expenseTitle = merchant || voiceExpenseTitle(combined, category) || expenseCategoryDefaultTitle(category);',
+              '          var expenseTitle = customTitle || merchant || voiceExpenseTitle(combined, category) || expenseCategoryDefaultTitle(category);',
+              'expense title override'
+          )
+
+          accept_old = '''        var ok = await recordAutomationImport(item, kind, { silent:false, commitmentId:String(commitmentId || "") });
+                  if (!ok) return;
+                  await refreshAutomationPending(true);'''
+          accept_new = '''        var ok = await recordAutomationImport(item, kind, { silent:false, commitmentId:String(commitmentId || "") });
+                  if (!ok) return;
+                  delete automationPendingTitleOverrides[String(importId || "")];
+                  delete automationPendingVisualOverrides[String(importId || "")];
+                  await refreshAutomationPending(true);'''
+          index = replace_once(index, accept_old, accept_new, 'accept cleanup')
+
+          ignore_old = '''      async function ignoreAutomationImport(importId) {
+                  delete automationPendingVisualOverrides[String(importId || "")];'''
+          ignore_new = '''      async function ignoreAutomationImport(importId) {
+                  delete automationPendingVisualOverrides[String(importId || "")];
+                  delete automationPendingTitleOverrides[String(importId || "")];'''
+          index = replace_once(index, ignore_old, ignore_new, 'ignore cleanup')
+
+          listener_anchor = '''        $("#automationPendingList").addEventListener("change", handleAutomationVisualChange);
+                  $("#automationReviewList").addEventListener("change", handleAutomationVisualChange);'''
+          require(index, listener_anchor, 'visual change listeners')
+          listener_block = '''
+                  function handleAutomationTitleInput(event) {
+                    var input = event.target.closest("[data-automation-title-input]");
+                    if (!input) return;
+                    var id = String(input.dataset.automationTitleInput || "");
+                    var value = String(input.value || "").trim();
+                    automationPendingTitleOverrides[id] = value;
+                    var row = input.closest(".automation-import");
+                    var item = automationImports.find(function(entry) { return String(entry.id) === id; });
+                    if (!row || !item || automationPendingVisualOverrides[id]) return;
+                    var category = String(item.category || "أخرى");
+                    var baseTitle = value || String(item.merchant || "").trim() || expenseCategoryDefaultTitle(category);
+                    var key = inferExpenseVisualKey(baseTitle, category) || "other";
+                    var select = row.querySelector("[data-automation-visual-select]");
+                    var preview = row.querySelector("[data-automation-visual-preview]");
+                    if (select && Array.from(select.options).some(function(option){ return option.value === key; })) select.value = key;
+                    if (preview) preview.innerHTML = expenseVisualIcons[key] || expenseVisualIcons.other;
+                  }
+                  $("#automationPendingList").addEventListener("input", handleAutomationTitleInput);
+                  $("#automationReviewList").addEventListener("input", handleAutomationTitleInput);
+          '''
+          index = index.replace(listener_anchor, listener_anchor + listener_block, 1)
+
+          for needle in [
+              'var automationPendingTitleOverrides = Object.create(null);',
+              'اسم العملية بعد الاعتماد',
+              'data-automation-title-input',
+              'function automationVisualCatalog()',
+              'automationVisualOptions(previewKey)',
+              'var depositTitle = customTitle || merchant || "إيداع من البنك";',
+              'var expenseTitle = customTitle || merchant || voiceExpenseTitle',
+              'handleAutomationTitleInput'
+          ]:
+              require(index, needle, needle)
+
+          write(INDEX, index)
+
+          worker = read(WORKER)
+          require(worker, 'const RELEASE_ID = "' + OLD + '";', 'worker r13 release')
+          worker = worker.replace('const RELEASE_ID = "' + OLD + '";', 'const RELEASE_ID = "' + NEW + '";', 1)
+          worker, signal_updates = re.subn(
+              r'const UPDATE_SIGNAL_VERSION = "3\.9\.4[^"]*";',
+              lambda _: 'const UPDATE_SIGNAL_VERSION = "3.9.4' + chr(0x2067) + '";',
+              worker,
+              count=1
+          )
+          if signal_updates != 1:
+              raise SystemExit('Could not bump UPDATE_SIGNAL_VERSION')
+          write(WORKER, worker)
+
+          sw = read(SW)
+          require(sw, 'salary-manager-v3.9.4-quick-expense-icons-r13', 'service worker r13 cache')
+          sw = sw.replace(
+              'salary-manager-v3.9.4-quick-expense-icons-r13',
+              'salary-manager-v3.9.4-automation-review-edit-r14',
+              1
+          )
+          write(SW, sw)
+
+          print('r14 automation review editing applied successfully')
+          PY
+
+      - name: Validate review editing and JavaScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/worker.js
+          node --check public/sw.js
+          grep -Fq 'var APP_RELEASE_ID = "3.9.4-automation-review-edit-r14";' public/index.html
+          grep -Fq 'var automationPendingTitleOverrides = Object.create(null);' public/index.html
+          grep -Fq 'اسم العملية بعد الاعتماد' public/index.html
+          grep -Fq 'data-automation-title-input' public/index.html
+          grep -Fq 'function automationVisualCatalog()' public/index.html
+          if grep -Fq '[["auto","تلقائي"]' public/index.html; then
+            echo "Automatic placeholder still exists in approval icon selector" >&2
+            exit 1
+          fi
+          grep -Fq 'var depositTitle = customTitle || merchant || "إيداع من البنك";' public/index.html
+          grep -Fq 'var expenseTitle = customTitle || merchant || voiceExpenseTitle' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.4-automation-review-edit-r14";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.4-automation-review-edit-r14' public/sw.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+          text = Path('public/index.html').read_text(encoding='utf-8')
+          blocks = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S|re.I)
+          checked = 0
+          for i, block in enumerate(blocks):
+              if not block.strip():
+                  continue
+              p = Path(f'/tmp/r14-inline-{i}.js')
+              p.write_text(block, encoding='utf-8')
+              subprocess.run(['node','--check',str(p)], check=True)
+              checked += 1
+          print(f'validated {checked} inline scripts')
+          PY
+
+      - name: Commit staged r14
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js
+          git commit -m "Salary Manager 3.9.4 r14 editable automation review title and icon"
+          git push
+
+      - name: Deploy staged r14 to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+
+      - name: Verify exact r14 is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?r14_check=$(date +%s)" || true)
+            echo "$BODY"
+            if [[ "$BODY" == *'"version":"3.9.4"'* && "$BODY" == *'"stagedReleaseId":"3.9.4-automation-review-edit-r14"'* ]]; then
+              break
+            fi
+            sleep 4
+          done
+          [[ "$BODY" == *'"stagedReleaseId":"3.9.4-automation-review-edit-r14"'* ]]
+
+      - name: Verify public users remain stable
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_r14_check=$(date +%s)" -o /tmp/public-r14.html
+          grep -Fq '3.9.3-autoapprove-sync-race-r7' /tmp/public-r14.html
+          if grep -Fq '3.9.4-automation-review-edit-r14' /tmp/public-r14.html; then
+            echo "SECURITY FAILURE: staged r14 leaked to public users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        shell: bash
+        run: |
+          echo "### Salary Manager 3.9.4 r14" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Transaction name is editable inside اعتماد المعاملات before approval" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ The edited name is saved into the approved expense/deposit" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Icon selector shows the actual automatically detected icon name instead of تلقائي" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Icon remains editable before approval" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Existing r13 features and public stable release are preserved" >> "$GITHUB_STEP_SUMMARY" 

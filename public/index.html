@@ -44,7 +44,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.4-quick-expense-icons-r13";
+      var v = "3.9.4-automation-review-edit-r14";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -3373,6 +3373,13 @@
     .automation-visual-preview{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;color:var(--teal);background:var(--teal-soft)}
     .automation-visual-preview svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
     .automation-visual-editor select{width:100%;min-height:36px;padding:5px 9px;border:1px solid var(--line);border-radius:10px;color:var(--ink);background:var(--paper);font-size:11px;font-weight:800}
+    .automation-title-editor{display:grid;gap:6px;margin-top:10px;padding:9px 10px;border:1px solid var(--line);border-radius:12px;background:rgba(255,253,249,.72)}
+    .automation-title-editor>span{color:var(--muted);font-size:9px;font-weight:850}
+    .automation-title-editor input{width:100%;min-height:40px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;outline:0;color:var(--ink);background:var(--paper);font-size:12px;font-weight:850}
+    .automation-title-editor input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(20,117,108,.10)}
+    html[data-app-theme="dark"] .automation-title-editor{background:#14211f;border-color:#2b3c38}
+    html[data-app-theme="dark"] .automation-title-editor input{background:#0f1b19;color:#edf5f2;border-color:#31423e}
+
 
     .salary-card-style-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:13px}
     .salary-card-style-choice{appearance:none;min-width:0;padding:9px;border:1px solid var(--line);border-radius:15px;color:var(--ink);background:var(--paper);cursor:pointer;text-align:center;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
@@ -5953,6 +5960,10 @@
       EN_TRANSLATIONS["مواقف"] = "Parking";
       EN_TRANSLATIONS["رياضة"] = "Sports";
       EN_TRANSLATIONS["رسوم حكومية"] = "Government fees";
+      EN_TRANSLATIONS["اسم العملية بعد الاعتماد"] = "Transaction name after approval";
+      EN_TRANSLATIONS["اكتب الاسم الذي تريد ظهوره في سجل المصروفات"] = "Enter the name you want to appear in the expense log";
+      EN_TRANSLATIONS["أيقونة العملية"] = "Transaction icon";
+
       EN_TRANSLATIONS["مناسبات"] = "Occasions";
       EN_TRANSLATIONS["المصروفات حسب التصنيف"] = "Expenses by category";
 
@@ -5983,7 +5994,7 @@
 
 
       var APP_VERSION = "3.9.4";
-      var APP_RELEASE_ID = "3.9.4-quick-expense-icons-r13";
+      var APP_RELEASE_ID = "3.9.4-automation-review-edit-r14";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -6130,6 +6141,7 @@
       var MERCHANT_VISUAL_PREFS_KEY_394 = "monthlySalaryManager.merchantVisualPrefs.v394";
       var SALARY_CARD_STYLES_394 = ["classic","emerald","obsidian","midnight","ivory","burgundy"];
       var automationPendingVisualOverrides = Object.create(null);
+      var automationPendingTitleOverrides = Object.create(null);
 
       var expenseVisualIcons = {
         shopping:'<svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 11H6.2L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
@@ -6207,13 +6219,23 @@
       }
 
 
+      function automationVisualCatalog(){
+        return [["shopping","مشتريات"],["restaurant","مطعم"],["coffee","قهوة"],["fuel","وقود"],["laundry","مغسلة"],["cinema","سينما"],["hotel","فندق"],["parking","مواقف"],["telecom","اتصالات"],["health","صحة / صيدلية"],["delivery","توصيل"],["salon","عناية شخصية"],["sport","رياضة"],["government","جهة حكومية"],["travel","سفر"],["home","منزل"],["gift","هدية / مناسبة"],["pets","حيوانات أليفة"],["education","تعليم"],["bills","فاتورة"],["family","عائلة"],["other","أخرى"]];
+      }
       function automationVisualOptions(selected){
-        var options=[["auto","تلقائي"],["shopping","مشتريات"],["restaurant","مطعم"],["coffee","قهوة"],["fuel","وقود"],["laundry","مغسلة"],["cinema","سينما"],["hotel","فندق"],["parking","مواقف"],["telecom","اتصالات"],["health","صحة / صيدلية"],["delivery","توصيل"],["salon","عناية شخصية"],["sport","رياضة"],["government","جهة حكومية"],["travel","سفر"],["home","منزل"],["gift","هدية / مناسبة"],["pets","حيوانات أليفة"],["education","تعليم"],["bills","فاتورة"],["family","عائلة"],["other","أخرى"]];
+        var options=automationVisualCatalog();
         return options.map(function(row){return '<option value="'+row[0]+'"'+(row[0]===selected?' selected':'')+'>'+row[1]+'</option>'}).join("")
       }
       function automationVisualEditorHTML(item,title,category){
-        var id=String(item&&item.id||"");var selected=String(automationPendingVisualOverrides[id]||"auto");var previewKey=selected!=="auto"?selected:inferExpenseVisualKey(title,category);
-        return '<label class="automation-visual-editor"><span class="automation-visual-preview" data-automation-visual-preview="'+escapeHTML(id)+'">'+(expenseVisualIcons[previewKey]||expenseVisualIcons.other)+'</span><span>أيقونة العملية</span><select data-automation-visual-select="'+escapeHTML(id)+'">'+automationVisualOptions(selected)+'</select></label>'
+        var id=String(item&&item.id||"");
+        var manual=String(automationPendingVisualOverrides[id]||"");
+        var previewKey=manual||inferExpenseVisualKey(title,category)||"other";
+        return '<label class="automation-visual-editor"><span class="automation-visual-preview" data-automation-visual-preview="'+escapeHTML(id)+'">'+(expenseVisualIcons[previewKey]||expenseVisualIcons.other)+'</span><span>أيقونة العملية</span><select data-automation-visual-select="'+escapeHTML(id)+'">'+automationVisualOptions(previewKey)+'</select></label>'
+      }
+      function automationTitleEditorHTML(item,title){
+        var id=String(item&&item.id||"");
+        var stored=Object.prototype.hasOwnProperty.call(automationPendingTitleOverrides,id)?String(automationPendingTitleOverrides[id]||""):String(title||"");
+        return '<label class="automation-title-editor"><span>اسم العملية بعد الاعتماد</span><input type="text" maxlength="80" autocomplete="off" data-automation-title-input="'+escapeHTML(id)+'" value="'+escapeHTML(stored)+'" placeholder="اكتب الاسم الذي تريد ظهوره في سجل المصروفات"></label>'
       }
 
       function themeIconSvg(mode){
@@ -7699,8 +7721,12 @@
           else if (amount > 0 && kind === "deposit") actions += '<button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="deposit">اعتماد كإيداع</button>';
           else if (amount > 0) actions += '<button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="expense">كمصروف</button><button class="mini-btn mark-paid" type="button" data-automation-accept="' + escapeHTML(item.id) + '" data-automation-kind="deposit">كإيداع</button>';
           actions += '<button class="mini-btn" type="button" data-automation-ignore="' + escapeHTML(item.id) + '">تجاهل</button>';
-          var visualEditor = (!automationAutoApproveEnabled && kind === "expense") ? automationVisualEditorHTML(item, merchant, item.category || "أخرى") : "";
-          return '<div class="automation-import"><div class="automation-import-main"><strong>' + escapeHTML(merchant) + '<span class="automation-confidence' + confidenceClass + '">' + escapeHTML(confidenceText) + '</span></strong><small>' + escapeHTML(meta) + '</small></div><div class="automation-import-amount ' + escapeHTML(kind) + '">' + escapeHTML(amountText) + '</div>' + (raw ? '<div class="automation-import-raw">' + escapeHTML(raw.slice(0,260)) + '</div>' : '') + visualEditor + '<div class="automation-import-actions">' + actions + '</div></div>';
+          var idKey = String(item.id || "");
+          var reviewTitle = Object.prototype.hasOwnProperty.call(automationPendingTitleOverrides,idKey) ? String(automationPendingTitleOverrides[idKey] || "").trim() : merchant;
+          if (!reviewTitle) reviewTitle = merchant;
+          var titleEditor = (amount > 0 && kind !== "commitment_confirmation") ? automationTitleEditorHTML(item, reviewTitle) : "";
+          var visualEditor = (kind === "expense") ? automationVisualEditorHTML(item, reviewTitle, item.category || "أخرى") : "";
+          return '<div class="automation-import"><div class="automation-import-main"><strong>' + escapeHTML(merchant) + '<span class="automation-confidence' + confidenceClass + '">' + escapeHTML(confidenceText) + '</span></strong><small>' + escapeHTML(meta) + '</small></div><div class="automation-import-amount ' + escapeHTML(kind) + '">' + escapeHTML(amountText) + '</div>' + (raw ? '<div class="automation-import-raw">' + escapeHTML(raw.slice(0,260)) + '</div>' : '') + titleEditor + visualEditor + '<div class="automation-import-actions">' + actions + '</div></div>';
         }).join("");
         if (root) root.innerHTML = rendered;
         if (reviewRoot) reviewRoot.innerHTML = rendered;
@@ -7742,6 +7768,7 @@
         var date = toDateInput(when);
         if (calendarMonthForDate(date) !== defaultMonth) { if (!options.silent) showToast("هذه العملية تخص شهرًا مؤرشفًا. لم يتم تعديل كشف سابق تلقائيًا؛ سجّلها يدويًا إذا لزم.", true); return false; }
         var merchant = String(item.merchant || "").trim();
+        var customTitle = String(automationPendingTitleOverrides[importId] || "").trim();
         var commitmentMatch = item.kind === "expense" ? findAutomationCommitmentMatchLocal(item) : { strict:null, plausible:null };
         if (kind === "commitment_confirmation") {
           var chosenMatch = options.commitmentId ? commitmentMatch.candidates.find(function (candidate) { return String(candidate.commitment && candidate.commitment.id || "") === String(options.commitmentId); }) : commitmentMatch.plausible;
@@ -7762,7 +7789,7 @@
         if (kind === "expense" && options.auto && commitmentMatch.plausible) return false;
         if (kind === "deposit") {
           if (!Array.isArray(state.deposits)) state.deposits = [];
-          var depositTitle = merchant || "إيداع من البنك";
+          var depositTitle = customTitle || merchant || "إيداع من البنك";
           var deposit = { id:makeId("deposit"), title:depositTitle, source:"تحويل وارد", amount:amount, date:date, createdAt:when.toISOString(), externalImportId:importId, automationSource:String(item.source || "shortcut"), automationSources:Array.isArray(item.sources) ? item.sources.slice() : [String(item.source || "shortcut")] };
           state.deposits.push(deposit);
           state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + amount);
@@ -7771,7 +7798,7 @@
         } else {
           var combined = (merchant + " " + String(item.rawText || "")).trim();
           var category = String(item.category || detectExpenseCategoryFromVoice(combined) || "أخرى");
-          var expenseTitle = merchant || voiceExpenseTitle(combined, category) || expenseCategoryDefaultTitle(category);
+          var expenseTitle = customTitle || merchant || voiceExpenseTitle(combined, category) || expenseCategoryDefaultTitle(category);
           var visualOverride = String(automationPendingVisualOverrides[importId] || "");
           if (visualOverride && visualOverride !== "auto") rememberMerchantVisualPreference(expenseTitle, visualOverride);
           var visualIcon = resolveExpenseVisualKey(expenseTitle, category, visualOverride === "auto" ? "" : visualOverride);
@@ -7794,6 +7821,8 @@
         if (!item) return;
         var ok = await recordAutomationImport(item, kind, { silent:false, commitmentId:String(commitmentId || "") });
         if (!ok) return;
+        delete automationPendingTitleOverrides[String(importId || "")];
+        delete automationPendingVisualOverrides[String(importId || "")];
         await refreshAutomationPending(true);
         showToast(kind === "commitment_confirmation" ? "تم تأكيد تنفيذ القسط من البنك دون خصمه مرة أخرى" : (kind === "deposit" ? "تم اعتماد الإيداع وإضافته إلى الرصيد" : "تم اعتماد المصروف وخصمه من الرصيد"));
       }
@@ -7825,6 +7854,7 @@
 
       async function ignoreAutomationImport(importId) {
         delete automationPendingVisualOverrides[String(importId || "")];
+        delete automationPendingTitleOverrides[String(importId || "")];
         try { await resolveAutomationImport(importId, "ignored", ""); await refreshAutomationPending(true); showToast("تم تجاهل العملية"); }
         catch (error) { showToast(apiErrorMessage(error.code), true); }
       }
@@ -11651,6 +11681,26 @@
         }
         $("#automationPendingList").addEventListener("change", handleAutomationVisualChange);
         $("#automationReviewList").addEventListener("change", handleAutomationVisualChange);
+        function handleAutomationTitleInput(event) {
+          var input = event.target.closest("[data-automation-title-input]");
+          if (!input) return;
+          var id = String(input.dataset.automationTitleInput || "");
+          var value = String(input.value || "").trim();
+          automationPendingTitleOverrides[id] = value;
+          var row = input.closest(".automation-import");
+          var item = automationImports.find(function(entry) { return String(entry.id) === id; });
+          if (!row || !item || automationPendingVisualOverrides[id]) return;
+          var category = String(item.category || "أخرى");
+          var baseTitle = value || String(item.merchant || "").trim() || expenseCategoryDefaultTitle(category);
+          var key = inferExpenseVisualKey(baseTitle, category) || "other";
+          var select = row.querySelector("[data-automation-visual-select]");
+          var preview = row.querySelector("[data-automation-visual-preview]");
+          if (select && Array.from(select.options).some(function(option){ return option.value === key; })) select.value = key;
+          if (preview) preview.innerHTML = expenseVisualIcons[key] || expenseVisualIcons.other;
+        }
+        $("#automationPendingList").addEventListener("input", handleAutomationTitleInput);
+        $("#automationReviewList").addEventListener("input", handleAutomationTitleInput);
+
         $("#enableGeneralPushButton").addEventListener("click", function () { enableGeneralPushNotifications(true); });
         $("#testGeneralPushButton").addEventListener("click", testGeneralPushNotifications);
         $("#disableGeneralPushButton").addEventListener("click", disableGeneralPushNotifications);

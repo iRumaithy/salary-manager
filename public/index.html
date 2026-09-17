@@ -44,7 +44,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.5-outings-fair-settlement-r2";
+      var v = "3.9.5-outings-live-netting-r3";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -3232,6 +3232,14 @@
       #outingsView .section-heading{padding:16px 14px 8px}.outing-card>summary{align-items:flex-start}.outing-total{min-width:108px}.outing-body{padding:12px 13px 18px}.outing-quick-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.outing-actions{grid-template-columns:1fr 1fr}.outing-actions .ghost-btn{grid-column:1/-1}.outing-transfer{grid-template-columns:1fr}.outing-transfer>div:last-child{display:flex;align-items:center;justify-content:space-between;gap:10px}.outing-check-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.outing-check span{font-size:12px;padding:9px 10px}.outing-balance-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
 
+
+    /* 3.9.5 r3 — صافي العمليات مقابل المتبقي بعد التحويلات الفعلية */
+    .outing-balance-person em{font-style:normal;font-size:10px;font-weight:900;line-height:1.5;padding-top:5px;margin-top:2px;border-top:1px dashed rgba(23,51,49,.12)}
+    .outing-balance-person.is-credit em{color:#167247}
+    .outing-balance-person.is-debt em{color:#a35440}
+    .outing-balance-person.is-even em{color:var(--muted)}
+    html[data-app-theme="dark"] .outing-balance-person em{border-top-color:rgba(220,240,234,.12)}
+
     .statement-list { display:grid; gap:18px; }
     .statement-card { border:1px solid rgba(15,72,66,.12); border-radius:24px; background:linear-gradient(180deg,#fff 0%,#fcfbf7 100%); overflow:hidden; box-shadow:0 16px 38px rgba(22,55,50,.08); }
     .statement-card summary { cursor:pointer; list-style:none; padding:18px 20px; display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:14px; align-items:center; font-weight:800; background:linear-gradient(135deg,rgba(233,246,242,.9),rgba(255,251,241,.95)); }
@@ -6127,7 +6135,7 @@
 
 
       var APP_VERSION = "3.9.5";
-      var APP_RELEASE_ID = "3.9.5-outings-fair-settlement-r2";
+      var APP_RELEASE_ID = "3.9.5-outings-live-netting-r3";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -8643,56 +8651,106 @@ return { id:String(p && p.id || makeId("outing-buy")), title:String(p && p.title
         var validIds = new Set(participantIds);
         var order = {};
         participantIds.forEach(function(id,i){ order[id]=i; });
+
         var purchaseDebts = Object.create(null);
+        var paymentByPair = Object.create(null);
         var total = 0;
 
         function debtKey(fromId,toId){ return String(fromId)+">"+String(toId); }
-        function addDebt(fromId,toId,cents){
-          fromId=String(fromId||"");toId=String(toId||"");cents=Math.max(0,Math.round(Number(cents)||0));
+        function readCents(map,fromId,toId){
+          return Math.max(0,Math.round(Number(map[debtKey(fromId,toId)]||0)));
+        }
+        function addToMap(map,fromId,toId,cents){
+          fromId=String(fromId||"");toId=String(toId||"");
+          cents=Math.max(0,Math.round(Number(cents)||0));
           if(!cents||fromId===toId||!validIds.has(fromId)||!validIds.has(toId))return;
-          var key=debtKey(fromId,toId);purchaseDebts[key]=(purchaseDebts[key]||0)+cents;
+          var key=debtKey(fromId,toId);
+          map[key]=(map[key]||0)+cents;
         }
 
         outing.purchases.forEach(function(p){
           var payerId=String(p.payerId||"");
-          var ids=Array.from(new Set((p.participantIds||[]).map(String).filter(function(id){return validIds.has(id);}))); 
+          var ids=Array.from(new Set((p.participantIds||[]).map(String).filter(function(id){return validIds.has(id);})));
           if(!ids.length||!validIds.has(payerId))return;
           var amount=Math.max(0,Math.round(Number(p.amountCents)||0));
           if(!amount)return;
           var shares=splitOutingCents(amount,ids);
-          ids.forEach(function(id){ if(id!==payerId) addDebt(id,payerId,shares[id]||0); });
+          ids.forEach(function(id){
+            if(id!==payerId) addToMap(purchaseDebts,id,payerId,shares[id]||0);
+          });
           total+=amount;
         });
 
-        var paymentByPair=Object.create(null);
         (outing.payments||[]).forEach(function(p){
-          var fromId=String(p.fromId||""),toId=String(p.toId||"");
-          if(!validIds.has(fromId)||!validIds.has(toId)||fromId===toId)return;
-          var key=debtKey(fromId,toId);paymentByPair[key]=(paymentByPair[key]||0)+Math.max(0,Math.round(Number(p.amountCents)||0));
+          addToMap(paymentByPair,String(p.fromId||""),String(p.toId||""),p.amountCents);
+        });
+
+        var purchaseBalances={};
+        var balances={};
+        participantIds.forEach(function(id){
+          purchaseBalances[id]=0;
+          balances[id]=0;
         });
 
         var transfers=[];
-        var remainingBalances={};
-        participantIds.forEach(function(id){remainingBalances[id]=0;});
+        var pairBreakdown=[];
+
         for(var i=0;i<participantIds.length;i++){
           for(var j=i+1;j<participantIds.length;j++){
-            var a=participantIds[i],b=participantIds[j];
-            var ab=Math.max(0,Math.round(Number(purchaseDebts[debtKey(a,b)]||0)));
-            var ba=Math.max(0,Math.round(Number(purchaseDebts[debtKey(b,a)]||0)));
-            var net=ab-ba;
-            var fromId="",toId="",gross=0;
-            if(net>0){fromId=a;toId=b;gross=net;}
-            else if(net<0){fromId=b;toId=a;gross=-net;}
-            else continue;
-            var paid=Math.min(gross,Math.max(0,Math.round(Number(paymentByPair[debtKey(fromId,toId)]||0))));
-            var remaining=gross-paid;
-            if(remaining>0){
-              transfers.push({fromId:fromId,toId:toId,amountCents:remaining,grossCents:gross,paidCents:paid});
-              remainingBalances[fromId]-=remaining;
-              remainingBalances[toId]+=remaining;
+            var a=participantIds[i], b=participantIds[j];
+
+            var debtAB=readCents(purchaseDebts,a,b);
+            var debtBA=readCents(purchaseDebts,b,a);
+            var paidAB=readCents(paymentByPair,a,b);
+            var paidBA=readCents(paymentByPair,b,a);
+
+            var purchaseNet=debtAB-debtBA;
+
+            // Running net after money that actually moved.
+            // If Khalid owes me 100, then I owe him 25:
+            // before payment => 75 Khalid owes me.
+            // after Khalid already paid 100 => -25, so I owe Khalid 25.
+            var outstandingNet=purchaseNet-paidAB+paidBA;
+
+            if(purchaseNet>0){
+              purchaseBalances[a]-=purchaseNet;
+              purchaseBalances[b]+=purchaseNet;
+            }else if(purchaseNet<0){
+              purchaseBalances[a]+=(-purchaseNet);
+              purchaseBalances[b]-=(-purchaseNet);
+            }
+
+            if(outstandingNet>0){
+              balances[a]-=outstandingNet;
+              balances[b]+=outstandingNet;
+              transfers.push({
+                fromId:a,toId:b,amountCents:outstandingNet,
+                purchaseNetCents:purchaseNet,
+                paidAB:paidAB,paidBA:paidBA
+              });
+            }else if(outstandingNet<0){
+              var reverse=-outstandingNet;
+              balances[b]-=reverse;
+              balances[a]+=reverse;
+              transfers.push({
+                fromId:b,toId:a,amountCents:reverse,
+                purchaseNetCents:purchaseNet,
+                paidAB:paidAB,paidBA:paidBA
+              });
+            }
+
+            if(debtAB||debtBA||paidAB||paidBA){
+              pairBreakdown.push({
+                aId:a,bId:b,
+                debtAB:debtAB,debtBA:debtBA,
+                paidAB:paidAB,paidBA:paidBA,
+                purchaseNetCents:purchaseNet,
+                outstandingNetCents:outstandingNet
+              });
             }
           }
         }
+
         transfers.sort(function(a,b){
           var af=Object.prototype.hasOwnProperty.call(order,a.fromId)?order[a.fromId]:999;
           var bf=Object.prototype.hasOwnProperty.call(order,b.fromId)?order[b.fromId]:999;
@@ -8701,7 +8759,17 @@ return { id:String(p && p.id || makeId("outing-buy")), title:String(p && p.title
           var bt=Object.prototype.hasOwnProperty.call(order,b.toId)?order[b.toId]:999;
           return at-bt;
         });
-        return { balances:remainingBalances, transfers:transfers, totalCents:total, purchaseDebts:purchaseDebts, paymentByPair:paymentByPair, settlementModel:"direct-payer-v2" };
+
+        return {
+          balances:balances,
+          purchaseBalances:purchaseBalances,
+          transfers:transfers,
+          totalCents:total,
+          purchaseDebts:purchaseDebts,
+          paymentByPair:paymentByPair,
+          pairBreakdown:pairBreakdown,
+          settlementModel:"running-net-v3"
+        };
       }
       function outingPerson(outing,id){ return (outing.participants||[]).find(function(p){return String(p.id)===String(id);}) || {id:id,name:"شخص",isMe:false}; }
       function outingParticipantNames(outing, ids){ return (ids||[]).map(function(id){return outingPerson(outing,id).name;}).join("، "); }
@@ -8750,27 +8818,42 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         var root=$("#outingList");if(!root)return;
         var list=normalizeOutings(state.outings);state.outings=list;
         if(!list.length){root.innerHTML='<div class="outing-empty">لا توجد طلعات بعد. أضف أول طلعة ثم سجل الأشخاص والعمليات.</div>';return;}
+
+        function outingStatusText(cents){
+          cents=Math.round(Number(cents)||0);
+          if(cents>0)return "له "+formatMoney(outingMoney(cents));
+          if(cents<0)return "عليه "+formatMoney(outingMoney(Math.abs(cents)));
+          return "متوازن";
+        }
+
         root.innerHTML=list.map(function(o){
           var ledger=outingLedger(o);
+
           var balances=o.participants.map(function(person){
-            var cents=Math.round(Number(ledger.balances[person.id]||0));
-            var cls=cents>0?'is-credit':cents<0?'is-debt':'is-even';
-            var label=cents>0?'له '+formatMoney(outingMoney(cents)):cents<0?'عليه '+formatMoney(outingMoney(Math.abs(cents))):'متوازن';
-            return '<div class="outing-balance-person '+cls+'"><span>'+escapeHTML(person.name)+'</span><small>'+escapeHTML(label)+'</small></div>';
-          }).join('');
+            var purchaseCents=Math.round(Number(ledger.purchaseBalances[person.id]||0));
+            var remainingCents=Math.round(Number(ledger.balances[person.id]||0));
+            var cls=remainingCents>0?"is-credit":remainingCents<0?"is-debt":"is-even";
+            return '<div class="outing-balance-person '+cls+'"><span>'+escapeHTML(person.name)+'</span><small>صافي العمليات: '+escapeHTML(outingStatusText(purchaseCents))+'</small><em>بعد التحويلات الفعلية: '+escapeHTML(outingStatusText(remainingCents))+'</em></div>';
+          }).join("");
+
           var purchases=o.purchases.length?o.purchases.map(function(p){
             var payer=outingPerson(o,p.payerId);
             var names=(p.participantIds||[]).map(function(id){return outingPerson(o,id).name;});
-            var participantChips=names.map(function(name){return '<span class="outing-mini-chip">'+escapeHTML(name)+'</span>';}).join('');
+            var participantChips=names.map(function(name){return '<span class="outing-mini-chip">'+escapeHTML(name)+'</span>';}).join("");
             return '<div class="outing-purchase"><div class="outing-purchase-main"><strong>'+escapeHTML(p.title)+'</strong><small>دفعها <b>'+escapeHTML(payer.name)+'</b> · '+names.length+' مشاركين'+(p.linkedExpenseId?' · مسجلة في الرصيد':'')+'</small><div class="outing-purchase-meta">'+participantChips+'</div></div><div><div class="outing-purchase-amount">'+moneyHTML(outingMoney(p.amountCents))+'</div><button class="mini-btn" type="button" data-outing-delete-purchase="'+escapeHTML(o.id)+'" data-purchase-id="'+escapeHTML(p.id)+'">حذف</button></div></div>';
-          }).join(''):'<div class="outing-empty">لا توجد عمليات شراء بعد.</div>';
+          }).join(""):'<div class="outing-empty">لا توجد عمليات شراء بعد.</div>';
+
           var transfers=ledger.transfers.length?ledger.transfers.map(function(t){
             var from=outingPerson(o,t.fromId),to=outingPerson(o,t.toId);
-            return '<div class="outing-transfer"><div class="outing-transfer-main"><div class="outing-transfer-route"><span class="person">'+escapeHTML(from.name)+'</span><span class="arrow">←</span><span>يحوّل إلى</span><span class="arrow">←</span><span class="person">'+escapeHTML(to.name)+'</span></div><small>حصته المتبقية مباشرة للشخص الذي دفع، بعد المقاصة بين هذين الشخصين فقط.</small></div><div><div class="outing-transfer-amount">'+moneyHTML(outingMoney(t.amountCents))+'</div><button class="mini-btn mark-paid" type="button" data-outing-settle="'+escapeHTML(o.id)+'" data-from-id="'+escapeHTML(t.fromId)+'" data-to-id="'+escapeHTML(t.toId)+'" data-amount-cents="'+t.amountCents+'">✓ تم التحويل</button></div></div>';
-          }).join(''):'<div class="outing-empty">✓ جميع المبالغ متوازنة حاليًا.</div>';
-          var payments=o.payments.length?o.payments.slice().reverse().map(function(p){return '<div class="outing-payment"><div><strong>✓ '+escapeHTML(outingPerson(o,p.fromId).name)+' → '+escapeHTML(outingPerson(o,p.toId).name)+'</strong><small>'+escapeHTML(formatDateTimeCompact(p.paidAt))+'</small></div><div><strong>'+moneyHTML(outingMoney(p.amountCents))+'</strong> <button class="mini-btn" type="button" data-outing-undo-payment="'+escapeHTML(o.id)+'" data-payment-id="'+escapeHTML(p.id)+'">تراجع</button></div></div>';}).join(''):'';
-          return '<details class="outing-card" open><summary><div class="outing-card-title"><strong>'+escapeHTML(o.title)+'</strong><small>'+escapeHTML(formatDate(o.date))+' · '+o.participants.length+' أشخاص · '+o.purchases.length+' عمليات</small></div><div class="outing-total"><small>إجمالي الطلعة</small><strong>'+moneyHTML(outingMoney(ledger.totalCents))+'</strong></div></summary><div class="outing-body"><div class="outing-quick-stats"><div class="outing-stat"><small>الأشخاص</small><strong>'+o.participants.length+'</strong></div><div class="outing-stat"><small>العمليات</small><strong>'+o.purchases.length+'</strong></div><div class="outing-stat"><small>التحويلات المتبقية</small><strong>'+ledger.transfers.length+'</strong></div><div class="outing-stat"><small>الإجمالي</small><strong>'+formatMoney(outingMoney(ledger.totalCents))+'</strong></div></div><div class="outing-participants">'+o.participants.map(function(p){return '<span class="outing-chip">'+escapeHTML(p.name)+'</span>';}).join('')+'</div><div class="outing-actions"><button class="primary-btn" type="button" data-outing-add-purchase="'+escapeHTML(o.id)+'">+ عملية شراء</button><button class="soft-btn" type="button" data-outing-edit="'+escapeHTML(o.id)+'">تعديل الأشخاص</button><button class="ghost-btn" type="button" data-outing-delete="'+escapeHTML(o.id)+'">حذف الطلعة</button></div><div class="outing-subtitle"><h4>وضع كل شخص</h4><small>يتحدث مباشرة بعد كل عملية وتحويل</small></div><div class="outing-balance-grid">'+balances+'</div><div class="outing-calc-note">الحسبة الجديدة تربط حصة كل شخص مباشرة بمن دفع العملية. إذا دفع شخصان مختلفان في نفس الطلعة، لا يتم تحويل دين شخص إلى طرف ثالث؛ تتم المقاصة فقط بين نفس الشخصين.</div><div class="outing-subtitle"><h4>العمليات</h4><small>'+o.purchases.length+' عملية</small></div>'+purchases+'<div class="outing-subtitle"><h4>من يحول لمن؟</h4><small>تحويلات مباشرة وواضحة حسب الدافع الفعلي</small></div>'+transfers+(payments?'<div class="outing-subtitle"><h4>التحويلات المنجزة</h4><small>يمكن التراجع عن أي تحويل بالخطأ</small></div>'+payments:'')+'</div></details>';
-        }).join('');
+            return '<div class="outing-transfer"><div class="outing-transfer-main"><div class="outing-transfer-route"><span class="person">'+escapeHTML(from.name)+'</span><span class="arrow">←</span><span>يحوّل إلى</span><span class="arrow">←</span><span class="person">'+escapeHTML(to.name)+'</span></div><small>المتبقي الفعلي بعد صافي جميع العمليات واحتساب التحويلات التي تمت بالفعل.</small></div><div><div class="outing-transfer-amount">'+moneyHTML(outingMoney(t.amountCents))+'</div><button class="mini-btn mark-paid" type="button" data-outing-settle="'+escapeHTML(o.id)+'" data-from-id="'+escapeHTML(t.fromId)+'" data-to-id="'+escapeHTML(t.toId)+'" data-amount-cents="'+t.amountCents+'">✓ تم التحويل</button></div></div>';
+          }).join(""):'<div class="outing-empty">✓ لا توجد مبالغ معلقة حاليًا.</div>';
+
+          var payments=o.payments.length?o.payments.slice().reverse().map(function(p){
+            return '<div class="outing-payment"><div><strong>✓ تحويل فعلي: '+escapeHTML(outingPerson(o,p.fromId).name)+' → '+escapeHTML(outingPerson(o,p.toId).name)+'</strong><small>'+escapeHTML(formatDateTimeCompact(p.paidAt))+'</small></div><div><strong>'+moneyHTML(outingMoney(p.amountCents))+'</strong> <button class="mini-btn" type="button" data-outing-undo-payment="'+escapeHTML(o.id)+'" data-payment-id="'+escapeHTML(p.id)+'">تراجع</button></div></div>';
+          }).join(""):"";
+
+          return '<details class="outing-card" open><summary><div class="outing-card-title"><strong>'+escapeHTML(o.title)+'</strong><small>'+escapeHTML(formatDate(o.date))+' · '+o.participants.length+' أشخاص · '+o.purchases.length+' عمليات</small></div><div class="outing-total"><small>إجمالي الطلعة</small><strong>'+moneyHTML(outingMoney(ledger.totalCents))+'</strong></div></summary><div class="outing-body"><div class="outing-quick-stats"><div class="outing-stat"><small>الأشخاص</small><strong>'+o.participants.length+'</strong></div><div class="outing-stat"><small>العمليات</small><strong>'+o.purchases.length+'</strong></div><div class="outing-stat"><small>التحويلات المعلقة</small><strong>'+ledger.transfers.length+'</strong></div><div class="outing-stat"><small>تحويلات تمت</small><strong>'+o.payments.length+'</strong></div></div><div class="outing-participants">'+o.participants.map(function(p){return '<span class="outing-chip">'+escapeHTML(p.name)+'</span>';}).join("")+'</div><div class="outing-actions"><button class="primary-btn" type="button" data-outing-add-purchase="'+escapeHTML(o.id)+'">+ عملية شراء</button><button class="soft-btn" type="button" data-outing-edit="'+escapeHTML(o.id)+'">تعديل الأشخاص</button><button class="ghost-btn" type="button" data-outing-delete="'+escapeHTML(o.id)+'">حذف الطلعة</button></div><div class="outing-subtitle"><h4>وضع كل شخص</h4><small>صافي العمليات ثم المتبقي بعد التحويلات الفعلية</small></div><div class="outing-balance-grid">'+balances+'</div><div class="outing-calc-note">الحسبة الآن مستمرة طوال الطلعة: إذا كان خالد عليه لك 100 ثم دفعها فعلًا، وبعدها دفع خالد عملية جديدة وأصبحت حصتك له 25، سيظهر أنك تحوّل له 25. أما إذا لم يكن قد حوّل الـ100 أصلًا، فستتم المقاصة ويظهر المتبقي عليه لك 75 فقط.</div><div class="outing-subtitle"><h4>العمليات</h4><small>'+o.purchases.length+' عملية</small></div>'+purchases+'<div class="outing-subtitle"><h4>من يحول لمن؟</h4><small>المتبقي الفعلي الآن</small></div>'+transfers+(payments?'<div class="outing-subtitle"><h4>التحويلات التي تمت فعليًا</h4><small>تبقى محفوظة في السجل وتدخل في أي عملية لاحقة</small></div>'+payments:"")+'</div></details>';
+        }).join("");
       }
 
       function normalizeSavedState(saved) {

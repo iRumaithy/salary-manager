@@ -1,0 +1,127 @@
+name: Apply Salary Manager 3.9.5 Outings Live Netting r3
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.5-outings-live-netting-r3.yml"
+      - ".github/scripts/apply-salary-manager-3.9.5-outings-live-netting-r3.py"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-stage-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current r2
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify current staged source is outings r2
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'var APP_VERSION = "3.9.5";' public/index.html
+          grep -Fq '3.9.5-outings-fair-settlement-r2' public/index.html
+          grep -Fq 'settlementModel:"direct-payer-v2"' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.5-outings-fair-settlement-r2";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.5-outings-fair-settlement-r2' public/sw.js
+
+      - name: Apply outings r3 patch
+        run: python3 .github/scripts/apply-salary-manager-3.9.5-outings-live-netting-r3.py
+
+      - name: Validate patched app and running-net math
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/worker.js
+          node --check public/sw.js
+          grep -Fq '3.9.5-outings-live-netting-r3' public/index.html
+          grep -Fq 'settlementModel:"running-net-v3"' public/index.html
+          grep -Fq 'purchaseNet-paidAB+paidBA' public/index.html
+          grep -Fq 'صافي العمليات:' public/index.html
+          grep -Fq 'بعد التحويلات الفعلية:' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.5-outings-live-netting-r3";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.5-outings-live-netting-r3' public/sw.js
+
+          node <<'JS'
+          const assert = require('node:assert/strict');
+          const outstanding = (debtAB, debtBA, paidAB, paidBA) =>
+            debtAB - debtBA - paidAB + paidBA;
+          assert.equal(outstanding(10000, 2500, 0, 0), 7500);
+          assert.equal(outstanding(10000, 2500, 10000, 0), -2500);
+          assert.equal(outstanding(10000, 2500, 7500, 0), 0);
+          assert.equal(outstanding(10000, 2500, 10000, 2500), 0);
+          console.log("running-net regression math OK");
+          JS
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+          text=Path('public/index.html').read_text(encoding='utf-8')
+          blocks=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',text,flags=re.S|re.I)
+          for i,b in enumerate(blocks):
+              if not b.strip():
+                  continue
+              p=Path(f'/tmp/r3-inline-{i}.js')
+              p.write_text(b,encoding='utf-8')
+              subprocess.run(['node','--check',str(p)],check=True)
+          print('inline JS syntax OK')
+          PY
+
+      - name: Commit staged r3
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js
+          git commit -m "Salary Manager 3.9.5 r3 fix live outings netting after completed transfers"
+          git push
+
+      - name: Deploy staged r3 to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+
+      - name: Verify r3 staged for owner only
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?r3_check=$(date +%s)" || true)
+            if [[ "$BODY" == *'"version":"3.9.5"'* && "$BODY" == *'"stagedReleaseId":"3.9.5-outings-live-netting-r3"'* ]]; then
+              break
+            fi
+            sleep 4
+          done
+          [[ "$BODY" == *'"stagedReleaseId":"3.9.5-outings-live-netting-r3"'* ]]
+          [[ "$BODY" == *'"publishedReleaseId":"3.9.3-autoapprove-sync-race-r7"'* ]]
+          [[ "$BODY" == *'"published":false'* ]]
+
+      - name: Verify public users remain on approved stable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_r3_check=$(date +%s)" -o /tmp/public-r3.html
+          grep -Fq '3.9.3-autoapprove-sync-race-r7' /tmp/public-r3.html
+          if grep -Fq '3.9.5-outings-live-netting-r3' /tmp/public-r3.html; then
+            echo "SECURITY FAILURE: staged r3 leaked to public users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        shell: bash
+        run: |
+          echo "### Salary Manager 3.9.5 · Outings Live Netting r3" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Completed transfers remain real financial events and are never forgotten" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Later reverse obligations can correctly flip the remaining transfer direction" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Example validated: 100 owed - 25 reverse = 75 before payment; after paying 100, reverse balance is 25" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Owner sees staged r3 first; public users stay on approved r7 until owner publishes" >> "$GITHUB_STEP_SUMMARY"

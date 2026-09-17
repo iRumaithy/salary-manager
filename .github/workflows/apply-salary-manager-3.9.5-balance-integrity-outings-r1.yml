@@ -1,0 +1,117 @@
+name: Apply Salary Manager 3.9.5 Balance Integrity + Outings r1
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.5-balance-integrity-outings-r1.yml"
+      - ".github/workflows/apply-salary-manager-3.9.5-balance-integrity-outings-r1.py"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-stage-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current r14
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify current staged source is r14
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'var APP_VERSION = "3.9.4";' public/index.html
+          grep -Fq 'var APP_RELEASE_ID = "3.9.4-automation-review-edit-r14";' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.4-automation-review-edit-r14";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.4-automation-review-edit-r14' public/sw.js
+
+      - name: Apply balance integrity, salary guard, statement search and outings
+        run: python3 .github/workflows/apply-salary-manager-3.9.5-balance-integrity-outings-r1.py
+
+      - name: Validate JavaScript and feature anchors
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/worker.js
+          node --check public/sw.js
+          grep -Fq 'var APP_VERSION = "3.9.5";' public/index.html
+          grep -Fq 'var APP_RELEASE_ID = "3.9.5-balance-integrity-outings-r1";' public/index.html
+          grep -Fq 'id="statementSearchInput"' public/index.html
+          grep -Fq 'جمعية الطلعات' public/index.html
+          grep -Fq 'function outingLedger' public/index.html
+          grep -Fq 'function repairWalletBalanceIntegrity' public/index.html
+          grep -Fq 'function automationLooksLikeSalaryLocal' public/index.html
+          grep -Fq 'acceptedKind:"salary_confirmation"' src/worker.js
+          grep -Fq 'salary-manager-v3.9.5-balance-integrity-outings-r1' public/sw.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+          text=Path('public/index.html').read_text(encoding='utf-8')
+          blocks=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',text,flags=re.S|re.I)
+          checked=0
+          for i,block in enumerate(blocks):
+              if not block.strip(): continue
+              p=Path(f'/tmp/r15-inline-{i}.js')
+              p.write_text(block,encoding='utf-8')
+              subprocess.run(['node','--check',str(p)],check=True)
+              checked += 1
+          print('validated',checked,'inline scripts')
+          PY
+
+      - name: Commit staged 3.9.5 r1
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js package.json
+          git commit -m "Salary Manager 3.9.5 balance integrity, statement search and outings"
+          git push
+
+      - name: Deploy staged owner-preview build to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+
+      - name: Verify owner staged build is live
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?r15_check=$(date +%s)" || true)
+            if [[ "$BODY" == *'"version":"3.9.5"'* && "$BODY" == *'"stagedReleaseId":"3.9.5-balance-integrity-outings-r1"'* ]]; then break; fi
+            sleep 4
+          done
+          echo "$BODY"
+          [[ "$BODY" == *'"stagedReleaseId":"3.9.5-balance-integrity-outings-r1"'* ]]
+          [[ "$BODY" == *'"publishedReleaseId":"3.9.3-autoapprove-sync-race-r7"'* ]]
+          [[ "$BODY" == *'"published":false'* ]]
+
+      - name: Verify public users remain on approved stable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_r15_check=$(date +%s)" -o /tmp/public-r15.html
+          grep -Fq '3.9.3-autoapprove-sync-race-r7' /tmp/public-r15.html
+          if grep -Fq '3.9.5-balance-integrity-outings-r1' /tmp/public-r15.html; then
+            echo "SECURITY FAILURE: staged 3.9.5 leaked to public users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        shell: bash
+        run: |
+          echo "### Salary Manager 3.9.5 — staged for owner only" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Salary messages confirm the monthly salary instead of adding it twice" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Safe wallet-balance ledger integrity audit added" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Instant statement search added" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ جمعية الطلعات added with cent-accurate splitting, multiple payers and settlement tracking" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Public users remain on 3.9.3 r7 until the owner presses Publish" >> "$GITHUB_STEP_SUMMARY"

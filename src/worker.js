@@ -1,9 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.9.4";
-const RELEASE_ID = "3.9.4-automation-review-edit-r14";
-const UPDATE_SIGNAL_VERSION = "3.9.4⁧";
+const VERSION = "3.9.5";
+const RELEASE_ID = "3.9.5-balance-integrity-outings-r1";
+const UPDATE_SIGNAL_VERSION = "3.9.5⁨";
 const PREVIOUS_PUBLISHED_VERSION = "3.9.3";
 const PREVIOUS_RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";
 const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
@@ -295,6 +295,11 @@ function normalizeAutomationPayload(payload = {}) {
   confidence = Math.min(1, Math.round(confidence * 100) / 100);
   const safeToAutoApprove = !sensitiveReason && amount > 0 && (kind === "expense" || kind === "deposit") && strongSignal && confidence >= 0.8;
   return { rawText, amount, merchant, kind, source, category, occurredAt, localDate, reference, cardLast4, confidence, safeToAutoApprove, sensitiveReason };
+}
+
+function automationLooksLikeSalary(item) {
+  const text = normalizeAutomationText(`${item?.merchant || ""} ${item?.rawText || ""}`).toLowerCase();
+  return /(?:^|\s)(?:salary|payroll|راتب|الراتب|رواتب)(?:\s|$)/i.test(text);
 }
 
 function automationSources(item) {
@@ -1565,7 +1570,7 @@ export class SalaryStore extends DurableObject {
     const stored = imports.find(entry => entry.id === String(importId || "") && entry.userId === userId);
     if (!stored) return false;
     stored.status = "accepted";
-    stored.acceptedKind = kind === "commitment_confirmation" ? "commitment_confirmation" : (kind === "deposit" ? "deposit" : "expense");
+    stored.acceptedKind = kind === "salary_confirmation" ? "salary_confirmation" : (kind === "commitment_confirmation" ? "commitment_confirmation" : (kind === "deposit" ? "deposit" : "expense"));
     stored.resolvedAt = new Date().toISOString();
     stored.autoApproved = true;
     stored.applyingAt = 0;
@@ -2308,6 +2313,38 @@ export class SalaryStore extends DurableObject {
         if (commitmentMatch.plausible) {
           return json({ ok:true, applied:false, reason:"POSSIBLE_COMMITMENT_REQUIRES_REVIEW", commitmentId:String(commitmentMatch.plausible.commitment?.id || ""), commitmentName:String(commitmentMatch.plausible.commitment?.name || "") });
         }
+      }
+
+      if (kind === "deposit" && automationLooksLikeSalary(item)) {
+        const salaryTxs = state.transactions.filter(tx => (tx?.type === "salary" || tx?.type === "initial_salary") && String(tx?.month || String(tx?.date || "").slice(0,7)) === month);
+        if (!salaryTxs.length) return json({ ok:true, applied:false, reason:"SALARY_REQUIRES_REVIEW" });
+        salaryTxs.sort((a,b) => Math.abs(Number(a?.amount || 0)-amount) - Math.abs(Number(b?.amount || 0)-amount));
+        const salaryTx = salaryTxs[0];
+        const previousSalary = Math.round(Number(salaryTx.amount || 0) * 100) / 100;
+        const delta = Math.round((amount - previousSalary) * 100) / 100;
+        salaryTx.amount = amount;
+        salaryTx.bankConfirmed = true;
+        salaryTx.bankConfirmedAt = new Date().toISOString();
+        salaryTx.bankConfirmationDate = date;
+        salaryTx.bankConfirmationMerchant = merchant;
+        salaryTx.externalImportId = salaryTx.externalImportId || importId;
+        salaryTx.externalImportIds = [...new Set([...(Array.isArray(salaryTx.externalImportIds) ? salaryTx.externalImportIds : []), importId])];
+        if (Math.abs(delta) >= .005) state.walletBalance = Math.round((Number(state.walletBalance || 0) + delta) * 100) / 100;
+        const paydayKey = String(salaryTx.paydayKey || "");
+        if (paydayKey && state.processedPaydays?.[paydayKey]) {
+const rec = state.processedPaydays[paydayKey];
+rec.salary = amount;
+if (Number.isFinite(Number(rec.balanceAfterSalary))) rec.balanceAfterSalary = Math.round((Number(rec.balanceAfterSalary) + delta) * 100) / 100;
+if (Number.isFinite(Number(rec.balanceAfterCommitments))) rec.balanceAfterCommitments = Math.round((Number(rec.balanceAfterCommitments) + delta) * 100) / 100;
+rec.bankConfirmedAt = salaryTx.bankConfirmedAt;
+        }
+        const current = await this.ctx.storage.get("state");
+        if (current) await this.ctx.storage.put(`history:${Date.now()}:${crypto.randomUUID()}`, current);
+        const now = new Date().toISOString();
+        const revision = Number(await this.ctx.storage.get("revision") || 0) + 1;
+        await this.ctx.storage.put("state", state); await this.ctx.storage.put("updatedAt", now); await this.ctx.storage.put("revision", revision);
+        const message = JSON.stringify({ type:"revision", revision, updatedAt:now }); for (const socket of this.ctx.getWebSockets()) { try { socket.send(message); } catch (_) {} }
+        return json({ ok:true, applied:true, acceptedKind:"salary_confirmation", salaryConfirmed:true, balanceChanged:Math.abs(delta)>=.005, delta, revision, updatedAt:now });
       }
 
       if (kind === "deposit") {

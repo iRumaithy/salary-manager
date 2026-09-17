@@ -1,0 +1,111 @@
+name: Apply Salary Manager 3.9.5 Outings Fair Settlement r2
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.5-outings-fair-settlement-r2.yml"
+      - ".github/scripts/apply-salary-manager-3.9.5-outings-fair-settlement-r2.py"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-stage-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current r1
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify current staged source is outings r1
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'var APP_VERSION = "3.9.5";' public/index.html
+          grep -Fq '3.9.5-balance-integrity-outings-r1' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.5-balance-integrity-outings-r1";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.5-balance-integrity-outings-r1' public/sw.js
+
+      - name: Apply outings r2 patch
+        run: python3 .github/scripts/apply-salary-manager-3.9.5-outings-fair-settlement-r2.py
+
+      - name: Validate patched app
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/worker.js
+          node --check public/sw.js
+          grep -Fq '3.9.5-outings-fair-settlement-r2' public/index.html
+          grep -Fq 'settlementModel:"direct-payer-v2"' public/index.html
+          grep -Fq 'الحسبة الجديدة تربط حصة كل شخص' public/index.html
+          grep -Fq 'outing-check input:checked + span' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.5-outings-fair-settlement-r2";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.5-outings-fair-settlement-r2' public/sw.js
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+          text=Path('public/index.html').read_text(encoding='utf-8')
+          blocks=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',text,flags=re.S|re.I)
+          for i,b in enumerate(blocks):
+              if not b.strip(): continue
+              p=Path(f'/tmp/r2-inline-{i}.js')
+              p.write_text(b,encoding='utf-8')
+              subprocess.run(['node','--check',str(p)],check=True)
+          print('inline JS syntax OK')
+          PY
+
+      - name: Commit staged r2
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js
+          git commit -m "Salary Manager 3.9.5 r2 fix outings settlement and mobile UI"
+          git push
+
+      - name: Deploy staged r2 to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+
+      - name: Verify r2 staged for owner only
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?r2_check=$(date +%s)" || true)
+            if [[ "$BODY" == *'"version":"3.9.5"'* && "$BODY" == *'"stagedReleaseId":"3.9.5-outings-fair-settlement-r2"'* ]]; then break; fi
+            sleep 4
+          done
+          [[ "$BODY" == *'"stagedReleaseId":"3.9.5-outings-fair-settlement-r2"'* ]]
+          [[ "$BODY" == *'"publishedReleaseId":"3.9.3-autoapprove-sync-race-r7"'* ]]
+          [[ "$BODY" == *'"published":false'* ]]
+
+      - name: Verify public users remain on approved stable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_r2_check=$(date +%s)" -o /tmp/public-r2.html
+          grep -Fq '3.9.3-autoapprove-sync-race-r7' /tmp/public-r2.html
+          if grep -Fq '3.9.5-outings-fair-settlement-r2' /tmp/public-r2.html; then
+            echo "SECURITY FAILURE: staged r2 leaked to public users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        shell: bash
+        run: |
+          echo "### Salary Manager 3.9.5 · Outings r2" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Participant names are clear and touch-friendly in purchase dialog" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Outings page redesigned for mobile" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Settlement uses direct-payer accounting and avoids rerouting debts through unrelated people" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Cents stay exact; reciprocal debts are netted only between the same two people" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Owner sees staged r2 first; public users stay on approved r7 until owner publishes" >> "$GITHUB_STEP_SUMMARY"

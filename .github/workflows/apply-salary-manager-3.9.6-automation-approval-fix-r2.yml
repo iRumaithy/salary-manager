@@ -1,0 +1,131 @@
+name: Apply Salary Manager 3.9.6 Automation Approval Fix r2
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.6-automation-approval-fix-r2.yml"
+      - ".github/scripts/apply-salary-manager-3.9.6-automation-approval-fix-r2.py"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-stage-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current 3.9.6 r1
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify current staged source is 3.9.6 r1
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'var APP_VERSION = "3.9.6";' public/index.html
+          grep -Fq '3.9.6-history-payday-order-r1' public/index.html
+          grep -Fq 'const VERSION = "3.9.6";' src/worker.js
+          grep -Fq 'const RELEASE_ID = "3.9.6-history-payday-order-r1";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.6-history-payday-order-r1' public/sw.js
+
+      - name: Apply 3.9.6 r2 approval fix
+        run: python3 .github/scripts/apply-salary-manager-3.9.6-automation-approval-fix-r2.py
+
+      - name: Validate patched app
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/worker.js
+          node --check public/sw.js
+          grep -Fq '3.9.6-automation-approval-fix-r2' public/index.html
+          grep -Fq 'var operationMonth = calendarMonthForDate(date);' public/index.html
+          grep -Fq 'Automation approval failed' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.6-automation-approval-fix-r2";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.6-automation-approval-fix-r2' public/sw.js
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+
+          text = Path('public/index.html').read_text(encoding='utf-8')
+
+          rs = text.index('      async function recordAutomationImport(item, kind, options)')
+          re_ = text.index('      async function acceptAutomationImport', rs)
+          body = text[rs:re_]
+          assert 'var operationMonth = calendarMonthForDate(date);' in body
+          assert 'var latePreviousMonth = operationMonth === previousMonth;' in body
+          assert body.index('var operationMonth = calendarMonthForDate(date);') < body.index('if (kind === "deposit"')
+
+          ms = text.index('      function findAutomationCommitmentMatchLocal(item)')
+          me = text.index('      function confirmAutomationCommitment', ms)
+          matcher = text[ms:me]
+          assert 'options.silent' not in matcher
+          assert 'latePreviousMonth' not in matcher
+
+          blocks = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S|re.I)
+          for i,b in enumerate(blocks):
+              if not b.strip():
+                  continue
+              p = Path(f'/tmp/r396-r2-inline-{i}.js')
+              p.write_text(b, encoding='utf-8')
+              subprocess.run(['node','--check',str(p)], check=True)
+
+          print('automation approval scope regression OK')
+          print('inline JS syntax OK')
+          PY
+
+      - name: Commit staged 3.9.6 r2
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js
+          git commit -m "Salary Manager 3.9.6 r2 fix automation approval button"
+          git push
+
+      - name: Deploy staged 3.9.6 r2 to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+
+      - name: Verify 3.9.6 r2 staged for owner only
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?r396_r2_check=$(date +%s)" || true)
+            if [[ "$BODY" == *'"version":"3.9.6"'* && "$BODY" == *'"stagedReleaseId":"3.9.6-automation-approval-fix-r2"'* ]]; then
+              break
+            fi
+            sleep 4
+          done
+          [[ "$BODY" == *'"stagedReleaseId":"3.9.6-automation-approval-fix-r2"'* ]]
+          [[ "$BODY" == *'"publishedReleaseId":"3.9.3-autoapprove-sync-race-r7"'* ]]
+          [[ "$BODY" == *'"published":false'* ]]
+
+      - name: Verify public users remain on approved stable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_r396_r2_check=$(date +%s)" -o /tmp/public-r396-r2.html
+          grep -Fq '3.9.3-autoapprove-sync-race-r7' /tmp/public-r396-r2.html
+          if grep -Fq '3.9.6-automation-approval-fix-r2' /tmp/public-r396-r2.html; then
+            echo "SECURITY FAILURE: staged r2 leaked to public users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        shell: bash
+        run: |
+          echo "### Salary Manager 3.9.6 · Automation Approval Fix r2" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Fixed dead «اعتماد كمصروف» button" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Previous-month validation now runs in the correct function" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Unexpected approval errors now show a visible message instead of a silent failure" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Owner receives staged r2 first; public users stay on the approved release until owner publishes" >> "$GITHUB_STEP_SUMMARY"

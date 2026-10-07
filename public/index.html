@@ -44,7 +44,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.5-outings-live-netting-r3";
+      var v = "3.9.6-history-payday-order-r1";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -6134,8 +6134,8 @@
       }
 
 
-      var APP_VERSION = "3.9.5";
-      var APP_RELEASE_ID = "3.9.5-outings-live-netting-r3";
+      var APP_VERSION = "3.9.6";
+      var APP_RELEASE_ID = "3.9.6-history-payday-order-r1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -7777,6 +7777,13 @@
         if (amount <= 0) return { strict:null, plausible:null, candidates:[] };
         var when = automationImportDate(item);
         var date = toDateInput(when);
+        var operationMonth = calendarMonthForDate(date);
+        var previousMonth = shiftMonth(defaultMonth, -1);
+        var latePreviousMonth = operationMonth === previousMonth;
+        if (operationMonth !== defaultMonth && !latePreviousMonth) {
+          if (!options.silent) showToast("يمكن اعتماد عمليات الشهر الحالي أو الشهر السابق فقط.", true);
+          return false;
+        }
         var monthKey = date.slice(0,7);
         var previousMonth = shiftMonth(monthKey, -1);
         var rows = [];
@@ -7904,6 +7911,56 @@
       function confirmSalaryAutomationLocal(item,date){var tx=salaryTransactionForAutomation(item,date);if(!tx)return null;var imported=roundMoney(item.amount),before=roundMoney(tx.amount),delta=roundSignedMoney(imported-before);tx.amount=imported;tx.bankConfirmed=true;tx.bankConfirmedAt=new Date().toISOString();tx.bankConfirmationDate=date;tx.bankConfirmationMerchant=String(item.merchant||"");tx.externalImportId=tx.externalImportId||String(item.id||"");tx.externalImportIds=Array.from(new Set((Array.isArray(tx.externalImportIds)?tx.externalImportIds:[]).concat([String(item.id||"")])));if(Math.abs(delta)>=.005)state.walletBalance=roundSignedMoney(signedNumber(state.walletBalance)+delta);var key=String(tx.paydayKey||"");if(key&&state.processedPaydays&&state.processedPaydays[key]){var rec=state.processedPaydays[key];rec.salary=imported;if(Number.isFinite(Number(rec.balanceAfterSalary)))rec.balanceAfterSalary=roundSignedMoney(Number(rec.balanceAfterSalary)+delta);if(Number.isFinite(Number(rec.balanceAfterCommitments)))rec.balanceAfterCommitments=roundSignedMoney(Number(rec.balanceAfterCommitments)+delta);rec.bankConfirmedAt=tx.bankConfirmedAt;}return {transaction:tx,delta:delta};}
       function automationBankBalanceLocal(item){var text=String(item&&item.rawText||"").replace(/,/g,"");var m=/(?:available\s+balance|current\s+balance|balance\s+is|الرصيد\s+(?:المتاح|الحالي)|رصيدك\s+(?:المتاح|الحالي))[^0-9]{0,30}([0-9]{1,10}(?:\.\d{1,2})?)/i.exec(text);var n=m?Number(m[1]):NaN;return Number.isFinite(n)?roundMoney(n):null;}
 
+
+      // r4 — allow previous-month imports after the calendar rolls over.
+      function refreshArchivedStatementAfterLateImport(monthKey) {
+        monthKey = String(monthKey || "");
+        if (!/^\d{4}-\d{2}$/.test(monthKey)) return;
+        if (!state.statements || typeof state.statements !== "object") state.statements = {};
+
+        var previous = state.statements[monthKey] ? Object.assign({}, state.statements[monthKey]) : null;
+        if (state.statements[monthKey]) delete state.statements[monthKey];
+        archiveMonth(monthKey);
+
+        var st = state.statements[monthKey];
+        if (!st) return;
+        if (previous && previous.archivedAt) st.archivedAt = previous.archivedAt;
+        if (previous && Object.prototype.hasOwnProperty.call(previous, "savingsBalanceAtClose")) st.savingsBalanceAtClose = previous.savingsBalanceAtClose;
+        if (previous && Object.prototype.hasOwnProperty.call(previous, "pendingReimbursementsAtClose")) st.pendingReimbursementsAtClose = previous.pendingReimbursementsAtClose;
+
+        var opening = signedNumber(st.openingBalance);
+        var net = (Array.isArray(st.transactions) ? st.transactions : []).reduce(function(sum, tx) {
+          return roundSignedMoney(sum + signedNumber(tx && tx.amount));
+        }, 0);
+        st.closingBalance = roundSignedMoney(opening + net);
+      }
+
+      function applyLatePreviousMonthCashDelta(operationMonth, delta, importId) {
+        operationMonth = String(operationMonth || "");
+        delta = roundSignedMoney(delta);
+        if (!delta || operationMonth === defaultMonth) {
+          if (operationMonth && operationMonth !== defaultMonth) refreshArchivedStatementAfterLateImport(operationMonth);
+          return;
+        }
+
+        if (!state.monthOpeningBalances || typeof state.monthOpeningBalances !== "object") state.monthOpeningBalances = {};
+        var currentOpening = state.monthOpeningBalances[defaultMonth];
+        if (currentOpening == null) currentOpening = state.walletMonthOpeningBalance;
+        state.monthOpeningBalances[defaultMonth] = roundSignedMoney(signedNumber(currentOpening) + delta);
+        state.walletMonthOpeningBalance = roundSignedMoney(signedNumber(state.walletMonthOpeningBalance) + delta);
+
+        refreshArchivedStatementAfterLateImport(operationMonth);
+
+        addTransaction("historical_carry_anchor", 0, "تسوية داخلية لعملية من الشهر السابق", toDateInput(new Date()), "", {
+          hiddenFromStatement:true,
+          balanceAfter:roundSignedMoney(state.walletBalance),
+          historicalMonth:operationMonth,
+          historicalDelta:delta,
+          externalImportId:String(importId || ""),
+          carryCorrection:true
+        });
+      }
+
       async function recordAutomationImport(item, kind, options) {
         options = options || {};
         if (!item) return false;
@@ -7919,13 +7976,17 @@
         var date = toDateInput(when);
         if (kind === "deposit" && automationLooksLikeSalaryLocal(item)) {
           var salaryConfirmation = confirmSalaryAutomationLocal(item, date);
-          if (!salaryConfirmation) { if (!options.silent) showToast("تم التعرف على راتب. أكمل دورة نزول الراتب أولًا ثم اعتمد رسالة البنك حتى لا يُحتسب مرتين.", true); return false; }
+          if (!salaryConfirmation) { if (!options.silent) showToast("تم التعرف على راتب. اختر أولًا إبقاء الرصيد السابق أو تحويله للمدخرات؛ بعدها يُضاف الراتب ثم تُخصم السلف والأقساط، وبعد ذلك اعتمد رسالة البنك للتأكيد فقط.", true); return false; }
+          if (latePreviousMonth) {
+            if (Math.abs(salaryConfirmation.delta) >= .005) applyLatePreviousMonthCashDelta(operationMonth, salaryConfirmation.delta, importId);
+            else refreshArchivedStatementAfterLateImport(operationMonth);
+          }
           try { await resolveAutomationImport(importId, "accepted", "deposit"); } catch (_) {}
           saveState(); render();
           if (!options.silent) showToast(Math.abs(salaryConfirmation.delta) >= .005 ? "تم تأكيد الراتب من البنك وتطبيق الفرق فقط دون تكرار الراتب" : "تم تأكيد نزول الراتب من البنك دون إضافته مرة ثانية");
           return true;
         }
-        if (calendarMonthForDate(date) !== defaultMonth) { if (!options.silent) showToast("هذه العملية تخص شهرًا مؤرشفًا. لم يتم تعديل كشف سابق تلقائيًا؛ سجّلها يدويًا إذا لزم.", true); return false; }
+        // r4: previous-month dated operations are valid and carried forward safely.
         var merchant = String(item.merchant || "").trim();
         var customTitle = String(automationPendingTitleOverrides[importId] || "").trim();
         var commitmentMatch = item.kind === "expense" ? findAutomationCommitmentMatchLocal(item) : { strict:null, plausible:null };
@@ -7933,6 +7994,7 @@
           var chosenMatch = options.commitmentId ? commitmentMatch.candidates.find(function (candidate) { return String(candidate.commitment && candidate.commitment.id || "") === String(options.commitmentId); }) : commitmentMatch.plausible;
           if (!chosenMatch) { if (!options.silent) showToast("لم يعد هناك قسط مطابق لهذه العملية. اعتمدها كمصروف مستقل إذا كانت عملية جديدة.", true); return false; }
           confirmAutomationCommitment(item, chosenMatch);
+          if (latePreviousMonth) refreshArchivedStatementAfterLateImport(operationMonth);
           saveState();
           render();
           try { await resolveAutomationImport(importId, "accepted", "commitment_confirmation"); } catch (_) {}
@@ -7940,6 +8002,7 @@
         }
         if (kind === "expense" && options.auto && commitmentMatch.strict) {
           confirmAutomationCommitment(item, commitmentMatch.strict);
+          if (latePreviousMonth) refreshArchivedStatementAfterLateImport(operationMonth);
           saveState();
           render();
           try { await resolveAutomationImport(importId, "accepted", "commitment_confirmation"); } catch (_) {}
@@ -7961,12 +8024,15 @@
           var visualOverride = String(automationPendingVisualOverrides[importId] || "");
           if (visualOverride && visualOverride !== "auto") rememberMerchantVisualPreference(expenseTitle, visualOverride);
           var visualIcon = resolveExpenseVisualKey(expenseTitle, category, visualOverride === "auto" ? "" : visualOverride);
-          var expense = { id:makeId("expense"), title:expenseTitle, category:category, visualIcon:visualIcon, amount:amount, date:date, excludeFromBudget:false, createdAt:when.toISOString(), accountMonth:defaultMonth, externalImportId:importId, automationSource:String(item.source || "shortcut"), automationSources:Array.isArray(item.sources) ? item.sources.slice() : [String(item.source || "shortcut")] };
+          var expense = { id:makeId("expense"), title:expenseTitle, category:category, visualIcon:visualIcon, amount:amount, date:date, excludeFromBudget:false, createdAt:when.toISOString(), accountMonth:operationMonth, externalImportId:importId, automationSource:String(item.source || "shortcut"), automationSources:Array.isArray(item.sources) ? item.sources.slice() : [String(item.source || "shortcut")] };
           delete automationPendingVisualOverrides[importId];
           state.expenses.push(expense);
           state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - amount);
           state.walletStarted = true;
           addTransaction("expense", -amount, expenseTitle, date, expense.id, { externalImportId:importId, automationSource:expense.automationSource, automationSources:expense.automationSources });
+        }
+        if (latePreviousMonth) {
+          applyLatePreviousMonthCashDelta(operationMonth, kind === "deposit" ? amount : -amount, importId);
         }
         saveState();
         render();
@@ -9349,7 +9415,10 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
       }
 
       function transactionsForMonth(monthKey) {
-        return (Array.isArray(state.transactions) ? state.transactions : []).filter(function (tx) { return String(tx.month || calendarMonthForDate(tx.date)) === monthKey; });
+        return (Array.isArray(state.transactions) ? state.transactions : []).filter(function (tx) {
+          if (tx && tx.hiddenFromStatement) return false;
+          return String(tx.month || calendarMonthForDate(tx.date)) === monthKey;
+        });
       }
 
       function monthTransactionTotal(monthKey, types, direction) {
@@ -9464,17 +9533,35 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         var chargedCommitments = [];
         var totalCommitments = 0;
 
-        // 1) نحسم مصير الرصيد السابق أولًا، لكن لا نخصم أي قسط بعد.
+        // 1) يقرر المستخدم مصير الرصيد السابق أولًا.
+        var balanceAfterCarry = carry;
         if (choice === "savings" && carry > 0) {
           movedToSavings = carry;
           state.savingsBalance = roundMoney(savingsBefore + carry);
-          addTransaction("savings_transfer", -carry, "ترحيل الرصيد السابق إلى المدخرات", paydayKey, "", { savingsDelta: carry, source: "payday-carry", paydayKey: paydayKey });
+          balanceAfterCarry = 0;
+        }
+        state.walletBalance = roundSignedMoney(balanceAfterCarry);
+        if (movedToSavings > 0) {
+          addTransaction("savings_transfer", -movedToSavings, "ترحيل الرصيد السابق إلى المدخرات", paydayKey, "", {
+            savingsDelta:movedToSavings,
+            source:"payday-carry",
+            paydayKey:paydayKey,
+            balanceBefore:carry,
+            balanceAfter:state.walletBalance,
+            paydayPhase:1
+          });
         }
 
-        // 2) نسجل الراتب كاملًا أولًا. هذا الترتيب مقصود لمنع أخطاء الخصم قبل إضافة الراتب.
-        var balanceAfterCarry = choice === "savings" && carry > 0 ? 0 : carry;
-        var balanceAfterSalary = roundSignedMoney(balanceAfterCarry + salaryAdded);
-        addTransaction("salary", salaryAdded, "نزول الراتب", paydayKey, "", { paydayKey: paydayKey, balanceBefore:balanceAfterCarry, balanceAfter:balanceAfterSalary });
+        // 2) بعد تثبيت قرار الرصيد السابق فقط، يضاف الراتب كاملًا.
+        var balanceAfterSalary = roundSignedMoney(state.walletBalance + salaryAdded);
+        state.walletBalance = balanceAfterSalary;
+        addTransaction("salary", salaryAdded, "نزول الراتب", paydayKey, "", {
+          paydayKey:paydayKey,
+          balanceBefore:balanceAfterCarry,
+          balanceAfter:balanceAfterSalary,
+          paydayPhase:2,
+          paydayOrder:"carry-salary-commitments-v2"
+        });
 
         // 3) بعد تسجيل الراتب فقط، نحسب الأقساط والسلف النشطة مرة واحدة ثم نخصمها دفعة حسابية واحدة.
         var chargeMap = getCommitmentChargeMap(defaultMonth);
@@ -9531,7 +9618,8 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
           salary: salaryAdded,
           commitmentsTotal: totalCommitments,
           chargedCommitments: chargedCommitments,
-          choice: choice === "savings" ? "savings" : "keep"
+          choice: choice === "savings" ? "savings" : "keep",
+          paydayOrder: "carry-salary-commitments-v2"
         };
         state.walletStarted = true;
         saveState();

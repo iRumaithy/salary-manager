@@ -44,7 +44,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.6-history-payday-order-r1";
+      var v = "3.9.6-automation-approval-fix-r2";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -6135,7 +6135,7 @@
 
 
       var APP_VERSION = "3.9.6";
-      var APP_RELEASE_ID = "3.9.6-history-payday-order-r1";
+      var APP_RELEASE_ID = "3.9.6-automation-approval-fix-r2";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -7777,13 +7777,6 @@
         if (amount <= 0) return { strict:null, plausible:null, candidates:[] };
         var when = automationImportDate(item);
         var date = toDateInput(when);
-        var operationMonth = calendarMonthForDate(date);
-        var previousMonth = shiftMonth(defaultMonth, -1);
-        var latePreviousMonth = operationMonth === previousMonth;
-        if (operationMonth !== defaultMonth && !latePreviousMonth) {
-          if (!options.silent) showToast("يمكن اعتماد عمليات الشهر الحالي أو الشهر السابق فقط.", true);
-          return false;
-        }
         var monthKey = date.slice(0,7);
         var previousMonth = shiftMonth(monthKey, -1);
         var rows = [];
@@ -7974,6 +7967,16 @@
         ensureWalletCalendarCurrent(false);
         var when = automationImportDate(item);
         var date = toDateInput(when);
+        var operationMonth = calendarMonthForDate(date);
+        var previousMonth = shiftMonth(defaultMonth, -1);
+        var latePreviousMonth = operationMonth === previousMonth;
+
+        // Allow the current month and the immediately previous month only.
+        if (operationMonth !== defaultMonth && !latePreviousMonth) {
+          if (!options.silent) showToast("يمكن اعتماد عمليات الشهر الحالي أو الشهر السابق فقط.", true);
+          return false;
+        }
+
         if (kind === "deposit" && automationLooksLikeSalaryLocal(item)) {
           var salaryConfirmation = confirmSalaryAutomationLocal(item, date);
           if (!salaryConfirmation) { if (!options.silent) showToast("تم التعرف على راتب. اختر أولًا إبقاء الرصيد السابق أو تحويله للمدخرات؛ بعدها يُضاف الراتب ثم تُخصم السلف والأقساط، وبعد ذلك اعتمد رسالة البنك للتأكيد فقط.", true); return false; }
@@ -8043,13 +8046,18 @@
 
       async function acceptAutomationImport(importId, kind, commitmentId) {
         var item = automationImports.find(entry => String(entry.id) === String(importId));
-        if (!item) return;
-        var ok = await recordAutomationImport(item, kind, { silent:false, commitmentId:String(commitmentId || "") });
-        if (!ok) return;
-        delete automationPendingTitleOverrides[String(importId || "")];
-        delete automationPendingVisualOverrides[String(importId || "")];
-        await refreshAutomationPending(true);
-        showToast(kind === "commitment_confirmation" ? "تم تأكيد تنفيذ القسط من البنك دون خصمه مرة أخرى" : (kind === "deposit" ? "تم اعتماد الإيداع وإضافته إلى الرصيد" : "تم اعتماد المصروف وخصمه من الرصيد"));
+        if (!item) { showToast("تعذر العثور على العملية. اضغط تحديث ثم حاول مرة أخرى.", true); return; }
+        try {
+          var ok = await recordAutomationImport(item, kind, { silent:false, commitmentId:String(commitmentId || "") });
+          if (!ok) return;
+          delete automationPendingTitleOverrides[String(importId || "")];
+          delete automationPendingVisualOverrides[String(importId || "")];
+          await refreshAutomationPending(true);
+          showToast(kind === "commitment_confirmation" ? "تم تأكيد تنفيذ القسط من البنك دون خصمه مرة أخرى" : (kind === "deposit" ? "تم اعتماد الإيداع وإضافته إلى الرصيد" : "تم اعتماد المصروف وخصمه من الرصيد"));
+        } catch (error) {
+          console.error("Automation approval failed", error);
+          showToast("تعذر اعتماد العملية بسبب خطأ داخلي. اضغط تحديث ثم حاول مرة أخرى.", true);
+        }
       }
 
       async function autoApproveAutomationPending() {

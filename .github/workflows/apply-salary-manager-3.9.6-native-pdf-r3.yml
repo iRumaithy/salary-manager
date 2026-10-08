@@ -1,0 +1,118 @@
+name: Apply Salary Manager 3.9.6 Native PDF r3
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-salary-manager-3.9.6-native-pdf-r3.yml"
+      - ".github/scripts/apply-salary-manager-3.9.6-native-pdf-r3.py"
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test-stage-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current 3.9.6 r2
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify current staged source is r2
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq 'var APP_VERSION = "3.9.6";' public/index.html
+          grep -Fq '3.9.6-automation-approval-fix-r2' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.6-automation-approval-fix-r2";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.6-automation-approval-fix-r2' public/sw.js
+
+      - name: Apply native PDF r3 patch
+        run: python3 .github/scripts/apply-salary-manager-3.9.6-native-pdf-r3.py
+
+      - name: Validate PDF export source
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check src/worker.js
+          node --check public/sw.js
+          grep -Fq '3.9.6-native-pdf-r3' public/index.html
+          grep -Fq 'statementBuildNativePdf' public/index.html
+          grep -Fq 'statementPdfBuildBinary' public/index.html
+          grep -Fq 'navigator.share' public/index.html
+          grep -Fq 'const RELEASE_ID = "3.9.6-native-pdf-r3";' src/worker.js
+          grep -Fq 'salary-manager-v3.9.6-native-pdf-r3' public/sw.js
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, subprocess
+          text = Path('public/index.html').read_text(encoding='utf-8')
+          assert 'showToast("سيُفتح نموذج الطباعة؛ اختر حفظ كملف PDF")' not in text
+          assert 'statementBuildNativePdf' in text
+          assert 'statementPdfBuildBinary' in text
+          blocks = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S|re.I)
+          for i,b in enumerate(blocks):
+              if not b.strip():
+                  continue
+              p=Path(f'/tmp/r396-r3-inline-{i}.js')
+              p.write_text(b,encoding='utf-8')
+              subprocess.run(['node','--check',str(p)],check=True)
+          print('native PDF JS syntax OK')
+          PY
+
+      - name: Commit staged 3.9.6 r3
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/index.html public/sw.js src/worker.js
+          git commit -m "Salary Manager 3.9.6 r3 replace iOS print with native PDF export"
+          git push
+
+      - name: Deploy staged 3.9.6 r3 to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy
+
+      - name: Verify r3 staged for owner only
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://salary-manager.alromaithi-3bo0d.workers.dev/api/health"
+          BODY=""
+          for i in $(seq 1 90); do
+            BODY=$(curl -fsS --max-time 8 "${URL}?pdf_r3_check=$(date +%s)" || true)
+            if [[ "$BODY" == *'"version":"3.9.6"'* && "$BODY" == *'"stagedReleaseId":"3.9.6-native-pdf-r3"'* ]]; then
+              break
+            fi
+            sleep 4
+          done
+          [[ "$BODY" == *'"stagedReleaseId":"3.9.6-native-pdf-r3"'* ]]
+          [[ "$BODY" == *'"publishedReleaseId":"3.9.3-autoapprove-sync-race-r7"'* ]]
+          [[ "$BODY" == *'"published":false'* ]]
+
+      - name: Verify public users remain on approved release
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL --max-time 15 "https://salary-manager.alromaithi-3bo0d.workers.dev/?public_pdf_r3_check=$(date +%s)" -o /tmp/public-r396-r3.html
+          grep -Fq '3.9.3-autoapprove-sync-race-r7' /tmp/public-r396-r3.html
+          if grep -Fq '3.9.6-native-pdf-r3' /tmp/public-r396-r3.html; then
+            echo "SECURITY FAILURE: staged r3 leaked to public users" >&2
+            exit 1
+          fi
+
+      - name: Summary
+        shell: bash
+        run: |
+          echo "### Salary Manager 3.9.6 · Native PDF r3" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ PDF is generated directly inside the app; no window.print dependency" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Works around iOS 27 standalone-PWA print regression" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Multi-page statements supported, including long transaction histories" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Uses native share sheet on supported iPhones, with download fallback" >> "$GITHUB_STEP_SUMMARY"
+          echo "✅ Owner receives r3 first; public users remain on approved release until owner publishes" >> "$GITHUB_STEP_SUMMARY"

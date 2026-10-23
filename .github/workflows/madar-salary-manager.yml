@@ -44,6 +44,10 @@ jobs:
         with:
           node-version: '24'
           package-manager-cache: false
+      - name: Validate accounting, concurrency, and release isolation
+        run: |
+          npm run check
+          npm test
       - name: Automatically prepare private review from this exact commit
         run: node scripts/madar-auto.mjs submit
         env:

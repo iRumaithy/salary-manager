@@ -1,13 +1,7 @@
 name: Notify owner after deploy
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "public/**"
-      - "src/**"
-      - "package.json"
-      - "wrangler.jsonc"
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -1,12 +1,13 @@
 {
   "name": "salary-manager",
-  "version": "3.9.6",
+  "version": "3.10.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "check": "node --check src/worker.js"
+    "check": "node scripts/check-source.mjs && node --check src/worker.js",
+    "test": "node --test tests/*.test.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.20.0"

@@ -1,0 +1,13 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+const core=readFileSync('public/finance-core-v3.10.0.js','utf8');
+const css=readFileSync('public/experience-v3.10.0.css','utf8');
+const exports=[...core.matchAll(/export (?:const|function) (\w+)/g)].map(x=>x[1]);
+const embedded='/* FINANCE_CORE_START */\n      var Finance = (function() {\n'+core.replace(/export /g,'')+'\nreturn {'+exports.join(',')+'};\n})();\n      /* FINANCE_CORE_END */';
+let html=readFileSync('public/index.html','utf8');
+html=html.replace('  <script type="module">\n    import * as Finance from "./finance-core-v3.10.0.js";', '  <script>');
+if(html.includes('/* FINANCE_CORE_START */'))html=html.replace(/\/\* FINANCE_CORE_START \*\/[\s\S]*?\/\* FINANCE_CORE_END \*\//,embedded);
+else html=html.replace('      "use strict";', '      "use strict";\n      '+embedded);
+const style='<style id="experience-v310">\n'+css+'\n</style>';
+if(html.includes('<style id="experience-v310">'))html=html.replace(/<style id="experience-v310">[\s\S]*?<\/style>/,style);
+else html=html.replace('<link rel="stylesheet" href="./experience-v3.10.0.css">',style);
+writeFileSync('public/index.html',html);

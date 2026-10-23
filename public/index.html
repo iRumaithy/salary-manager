@@ -44,7 +44,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.9.6-native-pdf-r3";
+      var v = "3.10.0-balance-experience-r1";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -4148,6 +4148,80 @@
     }
 
   </style>
+  <style id="experience-v310">
+:root{--ink:#24334b;--muted:#728099;--paper:#fff;--canvas:#f3f5fa;--line:#e4e9f2;--teal:#4562d5;--forest:#263b80;--teal-soft:#edf0ff;--gold:#8c74cf;--gold-soft:#f0edfa;--shadow:0 8px 32px #22376307;--radius-xl:25px}
+body{background:var(--canvas);font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;letter-spacing:-.15px}
+.topbar{background:#ffffffed;border-color:var(--line);backdrop-filter:blur(16px)}
+.salary-card:not(.salary-card-bank){background:linear-gradient(135deg,#283966,#4562b8);box-shadow:0 14px 40px #28396618}
+.available-card{background:var(--paper);border:1px solid var(--line);box-shadow:var(--shadow)}
+.available-value{color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-1.5px}
+.primary-btn,.mobile-fab{background:#4562d5}.primary-btn:hover{background:#354db1}
+.summary-card{box-shadow:none;border:1px solid var(--line);background:var(--paper)}
+.summary-card:before,.summary-card:after{opacity:.25}.summary-icon{border-radius:13px}
+.summary-value{font-variant-numeric:tabular-nums;letter-spacing:-.6px}
+.summary-label{font-size:12px}.summary-note{font-size:10px;line-height:1.7}
+.tabs{gap:6px;padding:7px;background:var(--paper);border:1px solid var(--line);border-radius:18px;scrollbar-width:none;box-shadow:none}
+.tab{border-radius:12px;white-space:nowrap}.tab.active{background:var(--teal-soft);color:var(--teal);box-shadow:none}
+.panel{border:1px solid var(--line);box-shadow:var(--shadow)}.panel-title{font-size:17px}.panel-subtitle{font-size:11px;line-height:1.8}
+.balance-actions{display:flex;flex-wrap:wrap;gap:7px}.balance-edit-btn{background:#edf0ff;border:0;color:#4562d5;margin:10px 0 0;font-size:11px;padding:9px 13px}.balance-secondary{background:transparent;color:var(--muted);text-decoration:underline;text-underline-offset:4px}
+.bank-check-status{font-size:10px;line-height:1.8;color:var(--muted);margin:10px 0 14px}
+.balance-planning{display:grid;gap:7px;margin:10px 0 18px;font-size:11px;color:var(--muted)}.balance-planning>span{display:flex;align-items:center;justify-content:space-between;gap:12px}.balance-planning b{color:var(--ink);font-size:12px;font-weight:650}
+.daily-box{background:var(--canvas);border:0}.daily-box strong{color:var(--teal)}
+.days-badge{background:var(--paper);color:var(--teal)}.status-chip{font-size:10px}
+.cash-trend-panel{grid-column:1/-1}.chart-range{display:flex;gap:3px;background:var(--canvas);padding:4px;border-radius:11px;flex-shrink:0}
+.chart-range button{border:0;font:inherit;font-size:10px;padding:7px 11px;color:var(--muted);background:transparent;border-radius:8px;cursor:pointer;min-height:32px}
+.chart-range [aria-pressed=true]{background:var(--paper);color:var(--teal);box-shadow:0 1px 5px #24334b0c}
+#balanceTrend{position:relative;padding:8px 0 0;direction:ltr;overflow:hidden}#balanceTrend svg{width:100%;height:180px;display:block}.trend-scale{display:flex;justify-content:space-between;gap:16px;color:var(--muted);font-size:10px}
+.trend-days{display:flex;direction:ltr;justify-content:space-between;gap:2px;overflow-x:auto;scrollbar-width:thin;padding:4px 1px 8px}
+.trend-days button{min-width:24px;min-height:32px;padding:5px 3px;border:0;background:transparent;font:inherit;font-size:10px;color:var(--muted);border-radius:8px;cursor:pointer}.trend-days [aria-pressed=true]{background:var(--teal-soft);color:var(--teal);font-weight:700}
+.chart-detail{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:11px;margin:12px 0 0;color:var(--muted);min-height:32px}.chart-detail b{color:var(--ink)}.chart-detail .money-with-symbol{font-weight:650;color:var(--ink)}
+.chart-data{margin:14px 0 0;font-size:11px;color:var(--muted)}.chart-data summary{cursor:pointer;padding:8px 0}.chart-data>div{overflow:auto;max-height:240px}.chart-data table{width:100%;border-collapse:collapse;white-space:nowrap}.chart-data th,.chart-data td{padding:10px;border-bottom:1px solid var(--line);text-align:start}.chart-data th{font-weight:600}
+.cash-legend-row{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;text-align:start;border:0;background:transparent;font:inherit;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;color:var(--ink);font-size:11px}
+.cash-legend-row>span:nth-child(2){display:grid;gap:4px}.cash-legend-row small{color:var(--muted);font-size:10px}.cash-legend-row strong{font-size:13px;white-space:nowrap;font-weight:650}.cash-legend-row:hover{color:var(--teal)}
+.donut{width:180px;height:180px}.donut-center{inset:15px;background:var(--paper)}.donut-center strong{font-size:19px!important;line-height:1.5}.donut-center span{font-size:10px}
+.payday-preview,.payday-result,.bank-audit{display:grid;gap:12px;border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0;text-align:start;background:var(--canvas)}
+.payday-preview>div,.payday-result>div,.bank-audit>div,.bank-recent>div{display:flex;justify-content:space-between;align-items:center;gap:14px;font-size:12px}.payday-result{background:var(--teal-soft);border-color:transparent}.payday-result strong{color:var(--teal);white-space:nowrap}.payday-carry-amount{color:var(--ink);font-variant-numeric:tabular-nums}
+.bank-recent>div{padding:10px 0;border-bottom:1px solid var(--line)}.bank-recent>div>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bank-recent strong{white-space:nowrap}
+.owner-review-note{display:grid;gap:8px;padding:18px;border-radius:17px;background:var(--teal-soft);margin-bottom:18px;font-size:12px}.owner-review-note p{margin:0;color:var(--muted);line-height:1.9}.owner-review-note a{color:var(--teal);font-weight:650;width:max-content;text-decoration:none;padding:6px 0}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #8fa8ff;outline-offset:3px}button:disabled{opacity:.45;cursor:default}
+.modal-body{line-height:1.8}.modal-foot{flex-wrap:wrap}.modal-foot button{min-height:42px}
+html[data-app-theme=dark]{--ink:#e8edf9!important;--muted:#97a5c1!important;--canvas:#101725!important;--paper:#192236!important;--line:#2b3853!important;--teal:#98adff!important;--teal-soft:#273452!important;--forest:#a4b6fa!important;background:#101725!important}
+html[data-app-theme=dark] body,html[data-app-theme=dark] .app{background:#101725!important}
+html[data-app-theme=dark] .topbar{background:#111a2bee!important;border-color:#2b3853!important}
+html[data-app-theme=dark] .available-card,html[data-app-theme=dark] .summary-card,html[data-app-theme=dark] .panel,html[data-app-theme=dark] .modal,html[data-app-theme=dark] .tabs,html[data-app-theme=dark] .salary-dark-auto-surface{background:#192236!important;border-color:#2b3853!important;color:#e8edf9!important}
+html[data-app-theme=dark] .daily-box,html[data-app-theme=dark] .payday-preview,html[data-app-theme=dark] .bank-audit{background:#101725!important}
+html[data-app-theme=dark] .primary-btn{background:#4562d5!important;color:white!important}
+html[data-app-theme=dark] .donut-center{background:#192236!important}
+html[data-app-theme=dark] .cash-legend-row{color:#e8edf9;background:transparent!important}
+@media(max-width:700px){.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.summary-card{padding:15px 13px;min-height:132px}.summary-card:last-child{grid-column:1/-1;min-height:110px}.summary-value{font-size:20px}.summary-note{font-size:10px}.hero{gap:12px}.panel-pad{padding:19px 16px}.distribution{gap:20px}.trend-days{justify-content:space-between}.trend-days button{min-width:23px}.chart-detail{gap:8px;font-size:10px}.panel-head{gap:10px}.available-value{font-size:36px}.cash-legend-row{padding:13px 0}.payday-result>div,.payday-preview>div{font-size:11px}.bank-check-status{min-height:18px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.payday-pending-notice{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;margin:0 0 16px;background:var(--teal-soft);border-radius:16px;font-size:12px;color:var(--ink)}.payday-pending-notice[hidden]{display:none}.payday-pending-notice .soft-btn{font-size:11px}
+
+.tabs{max-width:100%;min-width:0;overflow-x:auto;scrollbar-width:none}.tab{flex:0 0 auto;min-width:110px}.container{min-width:0}
+@media(max-width:700px){
+ html[dir] .topbar-inner{display:grid!important;grid-template-columns:minmax(0,1fr) repeat(4,34px)!important;grid-template-areas:"brand brand account account account" "month lang theme refresh data"!important;gap:7px!important;width:calc(100% - 26px)!important;padding:11px 0!important;min-height:0!important}
+ html[dir] .topbar-inner .brand{grid-area:brand!important;display:flex!important;gap:8px!important;margin:0!important;max-width:100%!important;min-width:0!important}
+ html[dir] .topbar-inner .brand-mark{width:34px!important;height:34px!important;min-width:34px!important;border-radius:11px!important}
+ html[dir] .topbar-inner .brand-copy{max-width:100%!important;min-width:0!important;display:grid!important;gap:2px!important}
+ html[dir] .topbar-inner .brand-title{font-size:14px!important;line-height:1.3!important;white-space:nowrap!important;max-width:100%!important}
+ html[dir] .topbar-inner .today-date-text{font-size:9px!important;margin:0!important;line-height:1.2!important;white-space:nowrap!important}
+ html[dir] .topbar-inner .today-clock-text{font-size:8px!important;margin:0!important;padding:0!important;line-height:1.2!important}
+ html[dir] .topbar-inner .top-actions{display:contents!important}
+ html[dir] .topbar-inner .top-actions .ghost-btn{width:34px!important;min-width:34px!important;max-width:none!important;height:34px!important;min-height:34px!important;padding:6px!important;margin:0!important;border-radius:10px!important;font-size:11px!important}
+ html[dir] .topbar-inner #accountButton{grid-area:account!important;width:auto!important;min-width:112px!important;justify-self:end!important;max-width:132px!important;gap:6px!important;padding-inline:10px!important;flex-basis:auto!important}
+ html[dir] .topbar-inner #accountButton .action-label{display:inline!important;max-width:100px!important;font-size:11px!important;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+ html[dir] .topbar-inner #languageToggleButton{grid-area:lang!important}html[dir] .topbar-inner #themeToggleButton{grid-area:theme!important}html[dir] .topbar-inner #refreshPageButton{grid-area:refresh!important}html[dir] .topbar-inner #backupButton{grid-area:data!important}
+ html[dir] .topbar-inner .month-control{grid-area:month!important;width:100%!important;min-width:0!important;margin:0!important;order:initial!important}
+ html[dir] .topbar-inner .month-picker-shell{width:100%!important;min-height:34px!important}.month-display-text{font-size:12px!important}
+ .hero{align-items:start;gap:12px;padding-top:14px}.salary-card:not(.salary-card-bank){min-height:0!important;height:auto!important;padding:22px!important}.salary-card:not(.salary-card-bank) .hero-kicker{margin-bottom:14px}.salary-card:not(.salary-card-bank) .salary-payday-chip{margin-top:14px}
+ .available-card{padding:22px!important}.tabs{top:111px!important;margin-inline:0!important;width:100%!important;max-width:100%!important}.tab{min-width:100px;min-height:40px;font-size:11px;padding:8px 12px}
+}
+.panel,.content-grid,.distribution,.legend{min-width:0}.content-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.distribution{grid-template-columns:180px minmax(0,1fr);gap:20px}.expense-category-overview-panel{grid-column:2!important;grid-row:1}.cash-trend-panel{grid-row:2}.donut-center{width:142px;height:142px}.legend{gap:0}#balanceTrend svg{max-width:100%;min-width:0}
+@media(max-width:700px){.content-grid{grid-template-columns:minmax(0,1fr)}.distribution{grid-template-columns:minmax(0,1fr);justify-items:center}.distribution .legend{width:100%}.cash-trend-panel{grid-row:auto}.expense-category-overview-panel{grid-column:1!important;grid-row:auto}.tabs{top:119px!important}}
+html[data-app-theme=dark] .insight{background:#263451!important;color:#ced8f5!important;border-color:#354462!important}
+
+</style>
 </head>
 <body>
   <div class="app-update-banner" id="appUpdateBanner" role="status" aria-live="polite">
@@ -4238,9 +4312,11 @@
             <span class="status-chip" id="balanceStatus">وضع مريح</span>
           </div>
           <div class="available-value" id="availableHero"><span class="money-with-symbol"><span class="aed-symbol" aria-hidden="true"></span><span>0.00</span></span></div>
-          <button class="balance-edit-btn" id="editCurrentBalanceButton" type="button">تحرير الرصيد الحالي</button>
+          <div class="balance-actions"><button class="balance-edit-btn" id="bankCheckButton" type="button">مطابقة مع البنك</button><button class="balance-edit-btn balance-secondary" id="editCurrentBalanceButton" type="button">تسوية الرصيد</button></div>
+          <p class="bank-check-status" id="bankCheckStatus">لم تتم المطابقة بعد</p>
           <div class="carryover-note" id="carryoverNote" hidden>رصيد مرحّل من الشهر السابق: <strong id="carryoverAmount">0.00</strong></div>
           <p class="available-caption" id="availableCaption">بعد خصم الأقساط المستحقة والمدفوعات الثابتة المؤكدة والمصروفات</p>
+          <div class="balance-planning"><span>التزامات لم تُدفع <b id="reservedAmount"></b></span><span>المتاح بعد حجزها <b id="spendableAmount"></b></span></div>
           <div class="daily-box">
             <div>
               <span>حد الصرف اليومي المقترح</span>
@@ -4255,6 +4331,7 @@
         </article>
       </section>
 
+<div class="payday-pending-notice" id="paydayPendingNotice" hidden><span>الراتب بانتظار تأكيدك</span><button class="soft-btn" type="button" id="reviewPaydayButton">مراجعة الراتب</button></div>
       <nav class="tabs" role="tablist" aria-label="أقسام مدير الراتب">
         <button class="tab active" type="button" role="tab" aria-selected="true" aria-controls="overviewView" data-view="overviewView">نظرة الشهر</button>
         <button class="tab" type="button" role="tab" aria-selected="false" aria-controls="commitmentsView" data-view="commitmentsView">السلف والأقساط</button>
@@ -4318,20 +4395,20 @@
           <article class="panel panel-pad">
             <div class="panel-head">
               <div>
-                <h2 class="panel-title">توزيع الراتب</h2>
-                <p class="panel-subtitle">مقارنة الأقساط والمدفوعات الثابتة والمصروفات والمدخرات لمعرفة أكبر قسم</p>
+                <h2 class="panel-title">أين ذهب رصيدك؟</h2>
+                <p class="panel-subtitle">حركات الشهر الفعلية بعد الإلغاءات · الادخار المحوّل هذا الشهر فقط</p>
               </div>
             </div>
             <div class="distribution">
-              <div class="donut" id="salaryDonut" aria-label="رسم توزيع الراتب">
+              <div class="donut" id="salaryDonut" role="img" aria-label="توزيع حركات الصرف الفعلية">
                 <div class="donut-center">
                   <div>
                     <strong id="remainingPercent">—</strong>
-                    <span>أكبر قسم في التوزيع</span>
+                    <span>إجمالي حركة الصرف</span>
                   </div>
                 </div>
               </div>
-              <div class="legend">
+              <div class="legend" id="cashDistributionLegend">
                 <div class="legend-row">
                   <span class="legend-dot" style="background:#14756c"></span>
                   <span>الأقساط والسلف</span>
@@ -4357,6 +4434,11 @@
             </div>
           </article>
 
+          <article class="panel panel-pad cash-trend-panel">
+            <div class="panel-head"><div><h2 class="panel-title">رحلة الرصيد</h2><p class="panel-subtitle">رصيد نهاية كل يوم حسب الحركات المسجلة</p></div><div class="chart-range" role="group" aria-label="فترة الرسم"><button type="button" data-chart-range="week">٧ أيام</button><button type="button" data-chart-range="month" aria-pressed="true">الشهر</button></div></div>
+            <div id="balanceTrend"></div><p class="chart-detail" id="balanceTrendDetail" aria-live="polite"></p>
+            <details class="chart-data"><summary>عرض بيانات الرسم</summary><div id="balanceTrendTable"></div></details>
+          </article>
           <article class="panel panel-pad expense-category-overview-panel">
             <div class="panel-head">
               <div>
@@ -4782,10 +4864,11 @@
         <div class="section-heading">
           <div>
             <h2>إدارة المستخدمين</h2>
-            <p>هذا القسم يظهر لحساب المالك فقط، وجميع الصلاحيات يتم التحقق منها على الخادم.</p>
+            <p>إدارة الحسابات والصلاحيات ومتابعة التحديثات الخاصة بتطبيق مدير الراتب.</p>
           </div>
         </div>
         <article class="panel panel-pad">
+          <div class="owner-review-note"><strong>التجربة أولًا، والنشر باعتمادك</strong><p>راجع النسخة من مدار ← الاعتمادات. لا يصل هذا التحديث للمستخدمين قبل اعتماد الإصدار نفسه.</p><a href="https://owner-hub-rumaithy.alromaithi-3bo0d.chatgpt.site" target="_blank" rel="noopener">فتح مدار</a></div>
           <div class="release-control-box" id="releaseControlBox">
             <div>
               <strong>مراجعة ونشر التحديث</strong>
@@ -4822,7 +4905,7 @@
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.9.3" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.10.0" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
         <span class="version-badge">الإصدار <b id="appVersion">3.8.2</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
@@ -4898,6 +4981,18 @@
     </form>
   </dialog>
 
+
+  <dialog class="modal" id="bankCheckDialog" aria-labelledby="bankCheckTitle">
+    <form id="bankCheckForm"><div class="modal-head"><h2 id="bankCheckTitle">مطابقة مع البنك</h2><button class="close-btn" type="button" data-close-dialog="bankCheckDialog" aria-label="إغلاق">×</button></div>
+      <div class="modal-body"><p class="helper">استخدم رصيد الحساب نفسه، وبنفس احتساب العمليات المعلقة. المدخرات تُطابق مع الحساب الذي حوّلت إليه.</p>
+        <div class="field"><label for="bankCheckInput">رصيد البنك الآن (بالدرهم)</label><input id="bankCheckInput" type="number" step="0.01" inputmode="decimal" placeholder="0.00" required></div>
+        <div class="bank-audit"><div><span>الرصيد المسجل</span><strong id="bankCheckAppBalance"></strong></div><div><span>الفرق مع البنك</span><strong id="bankCheckDifference"></strong></div></div>
+        <p class="helper" id="bankCheckHint" aria-live="polite"></p><details><summary>تفصيل الحساب وآخر الحركات</summary><div class="bank-audit" id="bankCheckLedger"></div><div class="bank-recent" id="bankCheckRecent"></div></details>
+      </div><div class="modal-foot"><button class="ghost-btn" type="button" id="bankCheckAdjustButton">تسوية يدوية بعد المراجعة</button><button class="primary-btn" type="submit" id="bankCheckSubmit">حفظ نتيجة المطابقة</button></div>
+    </form>
+  </dialog>
+  <dialog class="modal" id="syncConflictDialog" aria-labelledby="syncConflictTitle"><div class="modal-head"><h2 id="syncConflictTitle">تعديل من جهاز آخر</h2></div><div class="modal-body"><p>تعدّلت نفس البيانات في جهازين. حُفظت نسختك محليًا ولم يُستبدل الحساب.</p><p><span>عدد مواضع التعارض</span>: <b id="syncConflictCount"></b></p><p class="helper">اختيارك يطبق على البيانات المتعارضة فقط؛ تبقى التعديلات المستقلة من الجهازين محفوظة.</p></div><div class="modal-foot"><button class="ghost-btn" type="button" id="syncUseLocalButton">اعتماد تعديل هذا الجهاز</button><button class="primary-btn" type="button" id="syncUseRemoteButton">اعتماد تعديل الحساب</button></div></dialog>
+
   <dialog class="modal" id="currentBalanceDialog">
     <form id="currentBalanceForm">
       <div class="modal-head">
@@ -4931,14 +5026,17 @@
       </div>
       <div class="modal-body payday-carry-body">
         <div class="payday-carry-icon" aria-hidden="true">د</div>
-        <p>لديك رصيد متبقٍ من الراتب السابق بقيمة:</p>
+        <p>رصيدك قبل إضافة الراتب:</p>
         <strong class="payday-carry-amount" id="paydayCarryAmount">0.00</strong>
         <p>هل ترغب بإضافته إلى المدخرات، أم الإبقاء عليه مع الراتب الجديد؟</p>
+        <div class="payday-preview"><div><span>الراتب الذي سيضاف</span><strong id="paydayPreviewSalary"></strong></div><div><span>السلف والأقساط التي ستُخصم</span><strong id="paydayPreviewCommitments"></strong></div></div>
+        <div class="payday-result"><div><span>الرصيد مع الإبقاء على السابق</span><strong id="paydayKeepResult"></strong></div><div><span>الرصيد بعد تحويل السابق للادخار</span><strong id="paydaySavingsResult"></strong></div></div>
         <div class="payday-choice-grid">
-          <button class="primary-btn" id="carryToSavingsButton" type="button">إضافته إلى المدخرات</button>
+          <button class="primary-btn" id="carryToSavingsButton" type="button">تحويل السابق للادخار</button>
           <button class="soft-btn" id="carryWithSalaryButton" type="button">الإبقاء مع الراتب الجديد</button>
         </div>
-        <p class="helper">بعد اختيارك سيُضاف الراتب الجديد، ثم تُخصم السلف والأقساط النشطة تلقائيًا مرة واحدة.</p>
+        <p class="helper">اختر بعد التأكد من نزول الراتب فعليًا. اختيار الادخار يسجل تحويلًا؛ طابقه مع التحويل الفعلي في البنك.</p>
+        <button class="ghost-btn" id="paydayLaterButton" type="button">لم ينزل الراتب بعد</button>
       </div>
     </form>
   </dialog>
@@ -5441,7 +5539,8 @@
     </div>
     <div class="modal-body">
       <div class="changelog-list">
-        <section class="changelog-entry current">
+        <section class="changelog-entry current"><div class="changelog-version"><strong>الإصدار 3.10.0</strong><time>24 أكتوبر 2026</time></div><ul><li>حساب الرصيد بالفلس ومراجعته من سجل الحركات، مع حماية تعديلات الأجهزة من التعارض.</li><li>قرار واضح قبل إضافة الراتب، ومعاينة خصم الأقساط والسلف مرة واحدة.</li><li>مطابقة البنك دون تسوية تلقائية، ورسم تفاعلي لحركة الرصيد، وتوزيع يعتمد على الشهر الفعلي.</li><li>تجربة مرئية أخف وأوضح في الوضعين، مع حجز الالتزامات غير المدفوعة قبل حساب حد الصرف.</li></ul></section>
+        <section class="changelog-entry">
           <div class="changelog-version">
             <strong>الإصدار 3.9.4</strong>
             <time datetime="2026-09-04">4 سبتمبر 2026</time>
@@ -5721,6 +5820,132 @@
   <script>
     (function () {
       "use strict";
+      /* FINANCE_CORE_START */
+      var Finance = (function() {
+// Shared by the app and Worker. All accounting is in integer fils.
+function cents(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || Math.abs(n) > Number.MAX_SAFE_INTEGER / 100) return 0;
+  return Math.sign(n) * Math.round((Math.abs(n) + Number.EPSILON) * 100);
+}
+const money = value => cents(value) / 100;
+function transactionTotals(state) {
+  return (state.transactions || []).reduce((sum, tx) => ({
+    cash: sum.cash + cents(tx.amount), savings: sum.savings + cents(tx.savingsDelta)
+  }), {cash: 0, savings: 0});
+}
+function ensureLedger(state) {
+  if (state.cashLedger?.version === 1 && Number.isSafeInteger(state.cashLedger.baseCents) && Number.isSafeInteger(state.cashLedger.savingsBaseCents)) return false;
+  const totals = transactionTotals(state);
+  // Legacy balance is preserved, including earlier explicit bank reconciliations.
+  // Historical balanceAfter fields are receipts, never calculation anchors.
+  state.cashLedger = {version: 1, baseCents: cents(state.walletBalance) - totals.cash,
+    savingsBaseCents: cents(state.savingsBalance) - totals.savings, migratedAt: new Date().toISOString()};
+  return true;
+}
+function balances(state) {
+  const totals = transactionTotals(state);
+  return {cash: (state.cashLedger.baseCents + totals.cash) / 100,
+    savings: (state.cashLedger.savingsBaseCents + totals.savings) / 100};
+}
+function audit(state) {
+  ensureLedger(state);
+  const expected = balances(state);
+  return {...expected, difference: (cents(expected.cash) - cents(state.walletBalance)) / 100,
+    savingsDifference: (cents(expected.savings) - cents(state.savingsBalance)) / 100};
+}
+function paydayPreview(state, choice, month, paydayKey) {
+  const before = cents(state.walletBalance), salary = Math.max(0, cents(state.salary));
+  const moved = choice === 'savings' ? Math.max(0, before) : 0;
+  const charged = new Set((state.transactions || []).filter(tx => tx.type === 'commitment' && tx.paydayKey === paydayKey).map(tx => String(tx.refId)));
+  const commitments = (state.commitments || []).filter(item => !charged.has(String(item.id)) &&
+    String(item.startDate || '').slice(0, 7) <= month && String(item.endDate || '').slice(0, 7) >= month && cents(item.amount) > 0);
+  const total = commitments.reduce((sum, item) => sum + cents(item.amount), 0);
+  return {before: before / 100, salary: salary / 100, moved: moved / 100,
+    commitments: total / 100, after: (before - moved + salary - total) / 100};
+}
+
+const copy = value => value === undefined ? undefined : structuredClone(value);
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const isObject = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+const identity = v => String(v?.operationKey || v?.id || '');
+const derived = new Set(['walletBalance', 'savingsBalance', 'balanceIntegrity']);
+// Three-way merging preserves independent edits. Conflicting edits are explicit.
+function mergeStates(base, local, remote, strategy = 'remote') {
+  const conflicts = [];
+  function merge(b, l, r, path) {
+    if (same(l, r)) return copy(l);
+    if (same(l, b)) return copy(r);
+    if (same(r, b)) return copy(l);
+    if (Array.isArray(l) && Array.isArray(r) && (b === undefined || Array.isArray(b))) {
+      const all = [...(b || []), ...l, ...r];
+      if (all.every(v => isObject(v) && identity(v))) {
+        const bm = new Map((b || []).map(v => [identity(v), v]));
+        const lm = new Map(l.map(v => [identity(v), v]));
+        const rm = new Map(r.map(v => [identity(v), v]));
+        const keys = new Set([...rm.keys(), ...lm.keys(), ...bm.keys()]);
+        return [...keys].map(key => merge(bm.get(key), lm.get(key), rm.get(key), path + '[' + key + ']')).filter(v => v !== undefined);
+      }
+      if (all.every(v => typeof v === 'string')) {
+        const bs = new Set(b || []), ls = new Set(l), rs = new Set(r);
+        return [...new Set([...r, ...l])].filter(v => !bs.has(v) || (ls.has(v) && rs.has(v)));
+      }
+    }
+    if (isObject(l) && isObject(r) && (b === undefined || isObject(b))) {
+      const out = {};
+      for (const key of new Set([...Object.keys(b || {}), ...Object.keys(l), ...Object.keys(r)])) {
+        if (!path && derived.has(key)) continue;
+        // Concurrent identical logical operations may have different client ids/times.
+        if (b === undefined && ['id', 'createdAt', 'processedAt', 'updatedAt', 'migratedAt'].includes(key)) {out[key] = copy(r[key] ?? l[key]); continue;}
+        const value = merge(b?.[key], l[key], r[key], path ? path + '.' + key : key);
+        if (value !== undefined) out[key] = value;
+      }
+      return out;
+    }
+    conflicts.push({path, local: copy(l), remote: copy(r)});
+    return copy(strategy === 'local' ? l : r);
+  }
+  const state = merge(base || {}, local, remote, '');
+  // A new payday is one atomic decision. Conflicting carry choices must not
+  // leave a savings transfer from one device combined with the other's choice.
+  for (const key of Object.keys(local.processedPaydays || {})) {
+    const l = local.processedPaydays[key], r = remote.processedPaydays?.[key];
+    if (!r || base?.processedPaydays?.[key]) continue;
+    const signature = v => JSON.stringify([v.choice, cents(v.salary), cents(v.movedToSavings), cents(v.commitmentsTotal), cents(v.balanceBeforePayday)]);
+    if (signature(l) === signature(r)) continue;
+    conflicts.push({path:'processedPaydays.' + key, local:copy(l), remote:copy(r)});
+    const chosen = strategy === 'local' ? local : remote;
+    const isPayroll = tx => tx.paydayKey === key && ['salary','commitment','savings_transfer'].includes(tx.type);
+    state.transactions = (state.transactions || []).filter(tx => !isPayroll(tx)).concat(copy((chosen.transactions || []).filter(isPayroll)));
+    state.processedPaydays[key] = copy(chosen.processedPaydays[key]);
+  }
+  ensureLedger(state);
+  const expected = balances(state);
+  state.walletBalance = expected.cash;
+  state.savingsBalance = expected.savings;
+  return {state, conflicts};
+}
+
+function dailyBalances(state, month, lastDay) {
+  const totals = Array.from({length: lastDay}, () => ({incoming: 0, outgoing: 0}));
+  for (const tx of state.transactions || []) {
+    if (String(tx.month || String(tx.date || '').slice(0, 7)) !== month || tx.hiddenFromStatement) continue;
+    const day = Number(String(tx.date || '').slice(8, 10));
+    if (day < 1 || day > lastDay) continue;
+    const amount = cents(tx.amount);
+    if (amount >= 0) totals[day - 1].incoming += amount;
+    else totals[day - 1].outgoing -= amount;
+  }
+  let running = cents(state.monthOpeningBalances?.[month] ?? state.walletMonthOpeningBalance);
+  return totals.map((row, i) => {
+    running += row.incoming - row.outgoing;
+    return {day: i + 1, incoming: row.incoming / 100, outgoing: row.outgoing / 100, balance: running / 100};
+  });
+}
+
+return {cents,money,transactionTotals,ensureLedger,balances,audit,paydayPreview,mergeStates,dailyBalances};
+})();
+      /* FINANCE_CORE_END */
 
       var LANGUAGE_KEY = "monthlySalaryManager.language";
       var currentLanguage = localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "ar";
@@ -5958,6 +6183,70 @@
         return window.confirm(localizedText(value));
       }
 
+      EN_TRANSLATIONS["أين ذهب رصيدك؟"] = "Where did your balance go?";
+      EN_TRANSLATIONS["حركات الشهر الفعلية بعد الإلغاءات · الادخار المحوّل هذا الشهر فقط"] = "Actual monthly movements after reversals · savings transferred this month only";
+      EN_TRANSLATIONS["إجمالي حركة الصرف"] = "Total cash outflow";
+      EN_TRANSLATIONS["ادخار هذا الشهر"] = "Savings this month";
+      EN_TRANSLATIONS["رحلة الرصيد"] = "Balance over time";
+      EN_TRANSLATIONS["رصيد نهاية كل يوم حسب الحركات المسجلة"] = "End-of-day balance from recorded transactions";
+      EN_TRANSLATIONS["فترة الرسم"] = "Chart period";
+      EN_TRANSLATIONS["٧ أيام"] = "7 days";
+      EN_TRANSLATIONS["الشهر"] = "Month";
+      EN_TRANSLATIONS["عرض بيانات الرسم"] = "View chart data";
+      EN_TRANSLATIONS["اليوم"] = "Day";
+      EN_TRANSLATIONS["الرصيد"] = "Balance";
+      EN_TRANSLATIONS["وارد"] = "In";
+      EN_TRANSLATIONS["صادر"] = "Out";
+      EN_TRANSLATIONS["مطابقة مع البنك"] = "Compare with bank";
+      EN_TRANSLATIONS["تسوية الرصيد"] = "Adjust balance";
+      EN_TRANSLATIONS["لم تتم المطابقة بعد"] = "Not compared yet";
+      EN_TRANSLATIONS["التزامات لم تُدفع"] = "Unpaid commitments";
+      EN_TRANSLATIONS["المتاح بعد حجزها"] = "Available after reserving them";
+      EN_TRANSLATIONS["الرصيد المسجل بعد الحركات الفعلية · راجعه مع البنك"] = "Recorded balance after actual movements · compare with your bank";
+      EN_TRANSLATIONS["تمت المطابقة مع البنك"] = "Compared with bank";
+      EN_TRANSLATIONS["توجد حركات بعد آخر مطابقة؛ راجع البنك"] = "Review bank comparison after new movements";
+      EN_TRANSLATIONS["رصيد البنك الآن (بالدرهم)"] = "Current bank balance (AED)";
+      EN_TRANSLATIONS["الرصيد المسجل"] = "Recorded balance";
+      EN_TRANSLATIONS["الفرق مع البنك"] = "Difference from bank";
+      EN_TRANSLATIONS["أدخل رصيد البنك الحالي للمقارنة."] = "Enter the current bank balance to compare.";
+      EN_TRANSLATIONS["الرصيدان متطابقان."] = "Both balances match.";
+      EN_TRANSLATIONS["راجع العمليات المعلقة والخصومات والادخار. لن يتغير الرصيد تلقائيًا."] = "Review pending transactions, deductions and savings. The balance will not change automatically.";
+      EN_TRANSLATIONS["استخدم رصيد الحساب نفسه، وبنفس احتساب العمليات المعلقة. المدخرات تُطابق مع الحساب الذي حوّلت إليه."] = "Use the same account and treatment of pending transactions. Compare savings with the account they were transferred to.";
+      EN_TRANSLATIONS["تفصيل الحساب وآخر الحركات"] = "Calculation and recent transactions";
+      EN_TRANSLATIONS["رصيد بداية الشهر"] = "Month opening balance";
+      EN_TRANSLATIONS["صافي حركات الشهر"] = "Net monthly movements";
+      EN_TRANSLATIONS["الرصيد المحسوب من السجل"] = "Balance calculated from ledger";
+      EN_TRANSLATIONS["لا توجد حركات مسجلة"] = "No recorded movements";
+      EN_TRANSLATIONS["تسوية يدوية بعد المراجعة"] = "Manual adjustment after review";
+      EN_TRANSLATIONS["حفظ نتيجة المطابقة"] = "Save comparison";
+      EN_TRANSLATIONS["تم حفظ المطابقة مع البنك"] = "Bank comparison saved";
+      EN_TRANSLATIONS["تم حفظ المراجعة دون تغيير الرصيد"] = "Review saved without changing the balance";
+      EN_TRANSLATIONS["تسوية يدوية بعد مراجعة البنك"] = "Manual adjustment after checking the bank";
+      EN_TRANSLATIONS["رصيدك قبل إضافة الراتب:"] = "Your balance before adding salary:";
+      EN_TRANSLATIONS["الراتب الذي سيضاف"] = "Salary to be added";
+      EN_TRANSLATIONS["السلف والأقساط التي ستُخصم"] = "Loans and installments to deduct";
+      EN_TRANSLATIONS["الرصيد مع الإبقاء على السابق"] = "Balance when keeping the remainder";
+      EN_TRANSLATIONS["الرصيد بعد تحويل السابق للادخار"] = "Balance after transferring the remainder to savings";
+      EN_TRANSLATIONS["تحويل السابق للادخار"] = "Move remainder to savings";
+      EN_TRANSLATIONS["اختر بعد التأكد من نزول الراتب فعليًا. اختيار الادخار يسجل تحويلًا؛ طابقه مع التحويل الفعلي في البنك."] = "Choose after salary is actually received. Choosing savings records a transfer; match it with the actual bank transfer.";
+      EN_TRANSLATIONS["لم ينزل الراتب بعد"] = "Salary has not arrived yet";
+      EN_TRANSLATIONS["التجربة أولًا، والنشر باعتمادك"] = "Review first, publish after approval";
+      EN_TRANSLATIONS["راجع النسخة من مدار ← الاعتمادات. لا يصل هذا التحديث للمستخدمين قبل اعتماد الإصدار نفسه."] = "Review in Madar → Approvals. Users receive this update after you approve that exact version.";
+      EN_TRANSLATIONS["فتح مدار"] = "Open Madar";
+      EN_TRANSLATIONS["تعديل من جهاز آخر"] = "Change from another device";
+      EN_TRANSLATIONS["تعارض يحتاج مراجعتك"] = "Conflict needs review";
+      EN_TRANSLATIONS["تعدّلت نفس البيانات في جهازين. حُفظت نسختك محليًا ولم يُستبدل الحساب."] = "The same data changed on two devices. Your local copy is saved and the account has not been overwritten.";
+      EN_TRANSLATIONS["عدد مواضع التعارض"] = "Conflicting fields";
+      EN_TRANSLATIONS["اختيارك يطبق على البيانات المتعارضة فقط؛ تبقى التعديلات المستقلة من الجهازين محفوظة."] = "Your choice applies only to conflicting fields; independent changes from both devices are retained.";
+      EN_TRANSLATIONS["اعتماد تعديل هذا الجهاز"] = "Use this device’s changes";
+      EN_TRANSLATIONS["اعتماد تعديل الحساب"] = "Use account’s changes";
+      EN_TRANSLATIONS["تم حذف الجدول مع الاحتفاظ بالدفعات المنفذة"] = "Schedule removed; completed payments kept";
+      EN_TRANSLATIONS["إنفوغرافي حي يتغير تلقائيًا مع كل مصروف ويعرض ألوان وأيقونات التصنيفات ونسبها."] = "Monthly spending by category, amount and percentage.";
+
+      EN_TRANSLATIONS["آخر مراجعة أظهرت فرقًا؛ راجع الحركات"] = "Last review found a difference; check transactions";
+      EN_TRANSLATIONS["الراتب بانتظار تأكيدك"] = "Salary awaits your confirmation";
+      EN_TRANSLATIONS["مراجعة الراتب"] = "Review salary";
+      EN_TRANSLATIONS["مراجعة واعتماد من مدار"] = "Review and approve in Madar";
       var AR_TRANSLATIONS = Object.create(null);
       Object.keys(EN_TRANSLATIONS).forEach(function(ar) {
         var en = EN_TRANSLATIONS[ar];
@@ -6134,8 +6423,8 @@
       }
 
 
-      var APP_VERSION = "3.9.6";
-      var APP_RELEASE_ID = "3.9.6-native-pdf-r3";
+      var APP_VERSION = "3.10.0";
+      var APP_RELEASE_ID = "3.10.0-balance-experience-r1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -6155,6 +6444,13 @@
       var localChangeSeq = 0;
       var lastSavedSeq = 0;
       var suppressCloudSave = false;
+      var cloudBaseState = null;
+      var syncConflict = null;
+      var lastPersistedSnapshot = "";
+      var lastQueuedCloudSnapshot = "";
+      var syncRetryDelay = 800;
+      var chartRange = "month";
+      var paydaySnoozedKey = "";
       var deferredRemoteRevision = 0;
       var liveSyncSocket = null;
       var liveSyncStarting = false;
@@ -6164,6 +6460,8 @@
       var authState = { authenticated: false, sessionVerified: false, token: localStorage.getItem(AUTH_TOKEN_KEY) || "", user: null, backendReady: false, bootstrapRequired: false };
       try { authState.user = JSON.parse(localStorage.getItem(AUTH_USER_KEY) || "null"); } catch (e) { authState.user = null; }
       authState.authenticated = Boolean(authState.token && authState.user);
+      var stateAccountId = String(authState.user && authState.user.accountId || "");
+      var LAST_ACCOUNT_KEY = "monthlySalaryManager.lastAccountId";
       var automationImports = [];
       var automationShortcutToken = "";
       var automationAutoApproveEnabled = false;
@@ -6191,6 +6489,8 @@
           walletLedgerVersion: 1,
           currentCalendarMonth: defaultMonth,
           walletBalance: 0,
+          cashLedger: {version:1, baseCents:0, savingsBaseCents:0},
+          bankChecks: [],
           walletMonthOpeningBalance: 0,
           monthOpeningBalances: {},
           savingsBalance: 0,
@@ -6994,6 +7294,7 @@
           var error = new Error(data && data.error ? data.error : "REQUEST_FAILED");
           error.code = data && data.error ? data.error : "REQUEST_FAILED";
           error.status = response.status;
+          error.data = data;
           error.detail = data && data.detail ? data.detail : "";
           throw error;
         }
@@ -7040,7 +7341,13 @@
       }
 
       function rememberAuth(data) {
+        var previousAccount = stateAccountId;
+        var nextAccount = String(data.user && data.user.accountId || "");
+        var allowGuestMigration = !previousAccount && !localStorage.getItem(LAST_ACCOUNT_KEY);
         stopLiveSync();
+        cloudBaseState = null; syncConflict = null;
+        lastPersistedSnapshot = ""; lastQueuedCloudSnapshot = "";
+        if ($("#syncConflictDialog").open) $("#syncConflictDialog").close();
         cloudRevision = 0;
         localChangeSeq = 0;
         lastSavedSeq = 0;
@@ -7049,6 +7356,12 @@
         authState.user = data.user || null;
         authState.authenticated = Boolean(authState.token && authState.user);
         authState.sessionVerified = authState.authenticated;
+        stateAccountId = nextAccount;
+        if (nextAccount && nextAccount !== previousAccount) {
+          var ownLocalState = localStorage.getItem("monthlySalaryManager.account." + nextAccount);
+          if (!allowGuestMigration || ownLocalState) { state = makeFreshState(); loadState(); }
+        }
+        if (nextAccount) localStorage.setItem(LAST_ACCOUNT_KEY, nextAccount);
         if (authState.token) localStorage.setItem(AUTH_TOKEN_KEY, authState.token); else localStorage.removeItem(AUTH_TOKEN_KEY);
         if (authState.user) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authState.user)); else localStorage.removeItem(AUTH_USER_KEY);
         updateAccountUI();
@@ -7057,6 +7370,11 @@
 
       function clearAuth() {
         stopLiveSync();
+        cloudBaseState = null; syncConflict = null;
+        lastPersistedSnapshot = ""; lastQueuedCloudSnapshot = "";
+        stateAccountId = "";
+        state = makeFreshState();
+        if ($("#syncConflictDialog").open) $("#syncConflictDialog").close();
         cloudRevision = 0;
         localChangeSeq = 0;
         lastSavedSeq = 0;
@@ -7068,23 +7386,30 @@
         localStorage.removeItem(AUTH_TOKEN_KEY);
         localStorage.removeItem(AUTH_USER_KEY);
         releaseAppLock();
+        render();
         updateAccountUI();
         refreshAppLockSettings();
       }
 
       async function cloudSaveNow(silent) {
         if (!authState.authenticated || !authState.sessionVerified || !authState.token || !navigator.onLine) return false;
-        if (cloudSaveBusy) return false;
+        if (cloudSaveBusy || syncConflict) return false;
         cloudSaveBusy = true;
         if (cloudSaveTimer) { clearTimeout(cloudSaveTimer); cloudSaveTimer = null; }
         var sentSeq = localChangeSeq;
-        var snapshot = JSON.stringify({ state: state, baseRevision: cloudRevision });
+        var sentAccountId = stateAccountId;
+        var sentState = structuredClone(state);
+        var snapshot = JSON.stringify({ state: sentState, baseRevision: cloudRevision });
         try {
           setSyncStatus("جارٍ الحفظ الفوري…", true);
           var saved = await apiFetch("/api/data", { method: "PUT", body: snapshot });
+          if (sentAccountId !== stateAccountId) return false;
           cloudRevision = Math.max(cloudRevision, Number(saved.revision || 0));
           lastSavedSeq = Math.max(lastSavedSeq, sentSeq);
+          cloudBaseState = sentState;
+          syncRetryDelay = 800;
           var mergedAutomationChanges = Math.max(0, Number(saved.mergedAutomationChanges || 0));
+          if (saved.balanceRecomputed && localChangeSeq === sentSeq) mergedAutomationChanges += 1;
           if (mergedAutomationChanges > 0) {
             await syncFromCloud({ silent:true, background:true, force:true, reason:"automation-merge-after-save" });
           }
@@ -7092,6 +7417,24 @@
           if (!silent) showToast("تم حفظ بياناتك ومزامنتها مع أجهزتك");
           return true;
         } catch (error) {
+          if (sentAccountId !== stateAccountId) return false;
+          if (error.code === "STATE_CONFLICT" && error.data && error.data.state) {
+            var remoteState = error.data.state;
+            var merged = Finance.mergeStates(cloudBaseState || remoteState, state, remoteState);
+            if (merged.conflicts.length) {
+              syncConflict = {base:cloudBaseState || remoteState, local:structuredClone(state), remote:remoteState, revision:Number(error.data.revision || 0)};
+              setSyncStatus("تعارض يحتاج مراجعتك", false);
+              document.querySelector("#syncConflictCount").textContent = merged.conflicts.length;
+              document.querySelector("#syncConflictDialog").showModal();
+              return false;
+            }
+            cloudRevision = Number(error.data.revision || 0);
+            cloudBaseState = structuredClone(remoteState);
+            normalizeSavedState(merged.state);
+            lastQueuedCloudSnapshot = "";
+            render();
+            return false;
+          }
           if (error.code === "AUTH_REQUIRED") {
             clearAuth();
             showToast("انتهت جلسة الحساب. بياناتك المحلية ما زالت محفوظة.", true);
@@ -7102,7 +7445,7 @@
           return false;
         } finally {
           cloudSaveBusy = false;
-          if (authState.authenticated && navigator.onLine && localChangeSeq > lastSavedSeq) queueCloudSave(80);
+          if (authState.authenticated && navigator.onLine && !syncConflict && localChangeSeq > lastSavedSeq) { queueCloudSave(syncRetryDelay); syncRetryDelay = Math.min(30000, syncRetryDelay * 2); }
           else if (deferredRemoteRevision > cloudRevision) {
             var pendingRevision = deferredRemoteRevision;
             deferredRemoteRevision = 0;
@@ -7112,7 +7455,7 @@
       }
 
       function queueCloudSave(delay) {
-        if (!authState.authenticated || !authState.sessionVerified || suppressCloudSave) return;
+        if (!authState.authenticated || !authState.sessionVerified || suppressCloudSave || syncConflict) return;
         clearTimeout(cloudSaveTimer);
         cloudSaveTimer = setTimeout(function () { cloudSaveNow(true); }, Number(delay == null ? 120 : delay));
       }
@@ -7124,7 +7467,9 @@
         }
         suppressCloudSave = true;
         try {
+          cloudBaseState = structuredClone(remoteState);
           normalizeSavedState(remoteState);
+          lastQueuedCloudSnapshot = JSON.stringify(state);
           var serialized = JSON.stringify(state);
           localStorage.setItem(accountStorageKey(), serialized);
           localStorage.setItem(accountStorageKey() + ".backup", serialized);
@@ -7146,7 +7491,11 @@
         }
         try {
           if (!options.background) setSyncStatus("جارٍ مزامنة الحساب…", true);
+          var readSeq = localChangeSeq;
+          var readAccountId = stateAccountId;
           var remote = await apiFetch("/api/data");
+          if (readAccountId !== stateAccountId) return false;
+          if (localChangeSeq !== readSeq && !options.initial) { deferredRemoteRevision = Math.max(deferredRemoteRevision, Number(remote.revision || 0)); return false; }
           var remoteRevision = Number(remote.revision || 0);
           if (remote.state && typeof remote.state === "object") {
             if (remoteRevision > cloudRevision || options.force || options.initial || cloudRevision === 0) {
@@ -7414,7 +7763,7 @@
                   ? "تحديث جديد لنفس الإصدار " + staged + " وصل لك للمراجعة فقط. يمكنك نشره أو رفضه والعودة للإصدار المنشور."
                   : "الإصدار " + staged + " وصل لك للمراجعة فقط. المستخدمون ما زالوا على " + published + ". يمكنك نشره أو رفضه.")
               : "الإصدار " + published + " منشور للمستخدمين حاليًا ولا يوجد إصدار بانتظار المراجعة.");
-          if (button) { button.disabled = !pending || rejected; button.textContent = pending && !rejected ? "نشر التحديث للمستخدمين" : "تم نشر الإصدار " + published + " ✓"; }
+          if (button) { button.disabled = !pending || rejected; button.textContent = pending && !rejected ? "مراجعة واعتماد من مدار" : "تم نشر الإصدار " + published + " ✓"; }
           if (rejectButton) { rejectButton.disabled = !pending || rejected; rejectButton.textContent = rejected ? "تم رفض التحديث ✓" : "رفض التحديث والعودة للإصدار الحالي"; }
           translateDom($("#releaseControlBox") || document.body);
         } catch (error) {
@@ -7448,17 +7797,7 @@
 
       async function publishUpdateToUsers() {
         if (!authState.authenticated || authState.user?.role !== "super_admin") return;
-        var button = $("#publishUpdateButton");
-        if (!localizedConfirm("هل تأكدت من سلامة التحديث؟ بعد النشر سيظهر التحديث للمستخدمين وستُرسل إشعارات خارجية للأجهزة التي فعّلت الإشعارات.")) return;
-        try {
-          if (button) { button.disabled = true; button.textContent = "جارٍ نشر التحديث…"; }
-          var data = await apiFetch("/api/admin/publish-update", { method: "POST", body: "{}" });
-          showToast("تم نشر التحديث للمستخدمين" + (data.sent != null ? " · أُرسلت " + Number(data.sent) + " إشعارات" : ""));
-          await refreshReleaseStatus();
-        } catch (error) {
-          showToast("تعذر نشر التحديث الآن. حاول مرة أخرى.", true);
-          if (button) button.disabled = false;
-        }
+        window.open("https://owner-hub-rumaithy.alromaithi-3bo0d.chatgpt.site", "_blank", "noopener");
       }
 
       async function rejectUpdateAndReturnToPublished() {
@@ -8661,36 +9000,171 @@
         });
       }
 
+      function renderCashDistribution(metrics) {
+        var reversals = monthTransactionTotal(defaultMonth, 'expense_reversal', 'in');
+        var gross = Math.max(0, -monthTransactionTotal(defaultMonth, 'expense') - reversals);
+        var items = [
+          {label:'الأقساط والسلف', value:metrics.commitmentsTotal, color:'#4562d5', view:'commitmentsView'},
+          {label:'المدفوعات الثابتة', value:metrics.recurringTotal, color:'#8b62c8', view:'recurringView'},
+          {label:'ادخار هذا الشهر', value:metrics.savingsMoved, color:'#219eac', view:'savingsView'},
+          {label:'المصروفات اليومية', value:gross, color:'#e5905b', view:'expensesView'}
+        ];
+        var total = items.reduce(function(sum, item) {return sum + Finance.cents(item.value);}, 0) / 100;
+        var cursor = 0;
+        var stops = items.map(function(item) {
+          var start = cursor;
+          cursor += total ? item.value / total * 100 : 0;
+          return item.color + ' ' + start + '% ' + cursor + '%';
+        });
+        $('#salaryDonut').style.background = total ? 'conic-gradient(' + stops.join(',') + ')' : 'var(--line)';
+        setMoney('#remainingPercent', total);
+        $('#salaryDonut').setAttribute('aria-label', localizedText('إجمالي حركة الصرف') + ': ' + formatMoney(total));
+        $('#cashDistributionLegend').innerHTML = items.map(function(item) {
+          var pct = total ? Math.round(item.value / total * 1000) / 10 : 0;
+          return '<button type="button" class="cash-legend-row" data-view="' + item.view + '"><span class="legend-dot" style="background:' + item.color + '"></span><span>' + escapeHTML(localizedText(item.label)) + '<small>' + pct + '%</small></span><strong>' + moneyHTML(item.value) + '</strong></button>';
+        }).join('') + '<div class="insight" id="monthlyInsight"></div>';
+      }
+
+      function trendRows() {
+        var rows = Finance.dailyBalances(state, defaultMonth, new Date().getDate());
+        return chartRange === 'week' ? rows.slice(-7) : rows;
+      }
+
+      function showTrendDay(day) {
+        var row = trendRows().find(function(x) {return x.day === day;});
+        if (!row) return;
+        $('#balanceTrendDetail').innerHTML = '<b>' + escapeHTML(formatDate(defaultMonth + '-' + String(day).padStart(2, '0'))) + '</b><span>' + escapeHTML(localizedText('الرصيد')) + ' ' + moneyHTML(row.balance) + '</span><span>' + escapeHTML(localizedText('وارد')) + ' ' + moneyHTML(row.incoming) + '</span><span>' + escapeHTML(localizedText('صادر')) + ' ' + moneyHTML(row.outgoing) + '</span>';
+        $all('[data-trend-day]').forEach(function(node) {node.setAttribute('aria-pressed', String(Number(node.dataset.trendDay) === day));});
+      }
+
+      function renderBalanceTrend() {
+        var rows = trendRows();
+        var root = $('#balanceTrend');
+        if (!root || !rows.length) return;
+        var values = rows.map(function(row) {return row.balance;});
+        var low = Math.min.apply(null, values), high = Math.max.apply(null, values);
+        var padding = Math.max(10, (high - low) * .15);
+        low -= padding; high += padding;
+        var width = 640, height = 180, span = Math.max(1, high - low);
+        var x = function(i) {return 16 + i / Math.max(1, rows.length - 1) * (width - 32);};
+        var y = function(value) {return 12 + (high - value) / span * (height - 24);};
+        var points = rows.map(function(row, i) {return x(i).toFixed(2) + ',' + y(row.balance).toFixed(2);}).join(' ');
+        var grid = [.2, .5, .8].map(function(ratio) {return '<line x1="0" x2="640" y1="' + (height * ratio) + '" y2="' + (height * ratio) + '" stroke="currentColor" opacity=".08"/>';}).join('');
+        var dots = rows.map(function(row, i) {return '<circle cx="' + x(i) + '" cy="' + y(row.balance) + '" r="3" fill="var(--teal)"><title>' + row.day + ': ' + escapeHTML(formatAmount(row.balance)) + '</title></circle>';}).join('');
+        root.innerHTML = '<div class="trend-scale"><span>' + moneyHTML(high - padding) + '</span><span>' + moneyHTML(low + padding) + '</span></div><svg viewBox="0 0 640 180" role="img" aria-label="' + escapeHTML(localizedText('رصيد نهاية كل يوم حسب الحركات المسجلة')) + '">' + grid + '<polygon points="16,180 ' + points + ' ' + x(rows.length - 1) + ',180" fill="var(--teal)" opacity=".07"/><polyline points="' + points + '" fill="none" stroke="var(--teal)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>' + dots + '</svg><div class="trend-days">' + rows.map(function(row) {return '<button type="button" data-trend-day="' + row.day + '" aria-label="' + escapeHTML(localizedText('اليوم') + ' ' + row.day + ': ' + formatMoney(row.balance)) + '">' + row.day + '</button>';}).join('') + '</div>';
+        $('#balanceTrendTable').innerHTML = '<table><thead><tr>' + ['اليوم','وارد','صادر','الرصيد'].map(function(label) {return '<th scope="col">' + escapeHTML(localizedText(label)) + '</th>';}).join('') + '</tr></thead><tbody>' + rows.map(function(row) {return '<tr><th scope="row">' + row.day + '</th><td>' + moneyHTML(row.incoming) + '</td><td>' + moneyHTML(row.outgoing) + '</td><td>' + moneyHTML(row.balance) + '</td></tr>';}).join('') + '</tbody></table>';
+        $all('[data-chart-range]').forEach(function(node) {node.setAttribute('aria-pressed', String(node.dataset.chartRange === chartRange));});
+        showTrendDay(rows[rows.length - 1].day);
+      }
+
+      function renderBankCheckStatus() {
+        var checks = state.bankChecks || [];
+        var last = checks[checks.length - 1];
+        var node = $('#bankCheckStatus');
+        if (!node) return;
+        if (!last) {node.textContent = localizedText('لم تتم المطابقة بعد'); return;}
+        var unchanged = last.transactionFingerprint === cashFingerprint();
+        node.textContent = localizedText(unchanged && Finance.cents(last.difference) === 0 ? 'تمت المطابقة مع البنك' : unchanged ? 'آخر مراجعة أظهرت فرقًا؛ راجع الحركات' : 'توجد حركات بعد آخر مطابقة؛ راجع البنك') + ' · ' + formatDate(last.date);
+      }
+
+      function cashFingerprint() {
+        var value = JSON.stringify([Finance.cents(state.walletBalance), (state.transactions || []).map(function(tx) {return [tx.id, Finance.cents(tx.amount)];})]);
+        var hash = 2166136261;
+        for (var i=0; i<value.length; i++) hash = Math.imul(hash ^ value.charCodeAt(i), 16777619);
+        return (hash >>> 0).toString(16) + ':' + value.length;
+      }
+
+      function bankCheckDifference() {
+        var raw = String($('#bankCheckInput').value || '').trim();
+        var valid = raw !== '' && Number.isFinite(Number(raw));
+        var diff = valid ? roundSignedMoney(Number(raw) - state.walletBalance) : 0;
+        setMoney('#bankCheckAppBalance', state.walletBalance);
+        setMoney('#bankCheckDifference', diff);
+        $('#bankCheckSubmit').disabled = !valid;
+        $('#bankCheckAdjustButton').disabled = !valid;
+        $('#bankCheckHint').textContent = localizedText(!valid ? 'أدخل رصيد البنك الحالي للمقارنة.' : Finance.cents(diff) === 0 ? 'الرصيدان متطابقان.' : 'راجع العمليات المعلقة والخصومات والادخار. لن يتغير الرصيد تلقائيًا.');
+        return {valid:valid, target:roundSignedMoney(Number(raw)), difference:diff};
+      }
+
+      function openBankCheck() {
+        $('#bankCheckInput').value = '';
+        bankCheckDifference();
+        var result = Finance.audit(state);
+        var txs = transactionsForMonth(defaultMonth);
+        var sum = txs.reduce(function(total, tx) {return total + Finance.cents(tx.amount);}, 0) / 100;
+        $('#bankCheckLedger').innerHTML = '<div><span>' + escapeHTML(localizedText('رصيد بداية الشهر')) + '</span><strong>' + moneyHTML(state.walletMonthOpeningBalance) + '</strong></div><div><span>' + escapeHTML(localizedText('صافي حركات الشهر')) + '</span><strong>' + moneyHTML(sum) + '</strong></div><div><span>' + escapeHTML(localizedText('الرصيد المحسوب من السجل')) + '</span><strong>' + moneyHTML(result.cash) + '</strong></div>';
+        $('#bankCheckRecent').innerHTML = txs.slice(-6).reverse().map(function(tx) {return '<div><span>' + escapeHTML(tx.title) + '</span><strong>' + moneyHTML(tx.amount) + '</strong></div>';}).join('') || '<p>' + escapeHTML(localizedText('لا توجد حركات مسجلة')) + '</p>';
+        $('#bankCheckDialog').showModal();
+        setTimeout(function() {$('#bankCheckInput').focus();}, 40);
+      }
+
+      function submitBankCheck(event) {
+        event.preventDefault();
+        var result = bankCheckDifference();
+        if (!result.valid) return;
+        if (!Array.isArray(state.bankChecks)) state.bankChecks = [];
+        state.bankChecks.push({id:makeId('bank-check'), date:toDateInput(new Date()), checkedAt:new Date().toISOString(), appBalance:roundSignedMoney(state.walletBalance), bankBalance:result.target, difference:result.difference, transactionFingerprint:cashFingerprint()});
+        state.bankChecks = state.bankChecks.slice(-30);
+        $('#bankCheckDialog').close();
+        render();
+        showToast(result.difference === 0 ? 'تم حفظ المطابقة مع البنك' : 'تم حفظ المراجعة دون تغيير الرصيد');
+      }
+
+      function resolveSyncConflict(strategy) {
+        if (!syncConflict) return;
+        var conflict = syncConflict;
+        try {localStorage.setItem(accountStorageKey() + '.beforeConflictResolution', JSON.stringify({savedAt:new Date().toISOString(), local:state, remote:conflict.remote}));} catch (_) {}
+        // Re-merge the latest local state so edits made during review also survive.
+        var result = Finance.mergeStates(conflict.base, state, conflict.remote, strategy);
+        cloudRevision = conflict.revision;
+        cloudBaseState = structuredClone(conflict.remote);
+        syncConflict = null;
+        normalizeSavedState(result.state);
+        lastPersistedSnapshot = '';
+        lastQueuedCloudSnapshot = '';
+        $('#syncConflictDialog').close();
+        render();
+        queueCloudSave(50);
+      }
+
+      function bindExperienceEvents() {
+        $('#bankCheckButton').addEventListener('click', openBankCheck);
+        $('#reviewPaydayButton').addEventListener('click', function() {paydaySnoozedKey = ''; maybeShowPaydayPrompt();});
+        $('#bankCheckForm').addEventListener('submit', submitBankCheck);
+        $('#bankCheckInput').addEventListener('input', bankCheckDifference);
+        $('#bankCheckAdjustButton').addEventListener('click', function() {
+          var result = bankCheckDifference();
+          if (!result.valid) return;
+          $('#bankCheckDialog').close();
+          openCurrentBalanceDialog();
+          $('#currentBalanceInput').value = result.target.toFixed(2);
+          $('#currentBalanceNote').value = localizedText('تسوية يدوية بعد مراجعة البنك');
+        });
+        $('#paydayLaterButton').addEventListener('click', function() {paydaySnoozedKey = currentPaydayKey(); $('#paydayCarryDialog').close();});
+        $('#syncUseLocalButton').addEventListener('click', function() {resolveSyncConflict('local');});
+        $('#syncUseRemoteButton').addEventListener('click', function() {resolveSyncConflict('remote');});
+        $('#syncConflictDialog').addEventListener('cancel', function(event) {event.preventDefault();});
+        document.addEventListener('click', function(event) {
+          var range = event.target.closest('[data-chart-range]');
+          if (range) {chartRange = range.dataset.chartRange; renderBalanceTrend();}
+          var day = event.target.closest('[data-trend-day]');
+          if (day) showTrendDay(Number(day.dataset.trendDay));
+          var legend = event.target.closest('.cash-legend-row[data-view]');
+          if (legend) setView(legend.dataset.view);
+        });
+      }
+
       function ledgerExpectedWalletBalance() {
-        if (!state || !Array.isArray(state.transactions)) return null;
-        var month = String(state.currentCalendarMonth || defaultMonth || "");
-        var txs = state.transactions;
-        var anchorIndex = -1, anchorBalance = 0;
-        for (var i = txs.length - 1; i >= 0; i -= 1) {
-var tx = txs[i] || {};
-var txMonth = String(tx.month || calendarMonthForDate(tx.date));
-if (txMonth !== month) continue;
-var after = Number(tx.balanceAfter);
-if (Number.isFinite(after)) { anchorIndex = i; anchorBalance = after; break; }
-        }
-        if (anchorIndex < 0) return null;
-        var expected = anchorBalance;
-        for (var j = anchorIndex + 1; j < txs.length; j += 1) {
-var row = txs[j] || {};
-if (String(row.month || calendarMonthForDate(row.date)) !== month) continue;
-expected += signedNumber(row.amount);
-        }
-        return roundSignedMoney(expected);
+        Finance.ensureLedger(state);
+        return Finance.balances(state).cash;
       }
 
       function repairWalletBalanceIntegrity(reason) {
-        var expected = ledgerExpectedWalletBalance();
-        if (expected == null) return false;
-        var actual = roundSignedMoney(state.walletBalance);
-        var diff = roundSignedMoney(expected - actual);
-        if (Math.abs(diff) < .005) return false;
-        state.walletBalance = expected;
-        state.balanceIntegrity = { repairedAt:new Date().toISOString(), reason:String(reason || "audit"), difference:diff, expected:expected, previous:actual };
+        var result = Finance.audit(state);
+        if (Finance.cents(result.difference) === 0 && Finance.cents(result.savingsDifference) === 0) return false;
+        state.balanceIntegrity = {repairedAt:new Date().toISOString(), reason:String(reason || "audit"), difference:result.difference, previous:state.walletBalance};
+        state.walletBalance = result.cash;
+        state.savingsBalance = result.savings;
         return true;
       }
 
@@ -8932,6 +9406,8 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
 
       function normalizeSavedState(saved) {
         if (!saved || typeof saved !== "object") return false;
+        state.cashLedger = saved.cashLedger ? structuredClone(saved.cashLedger) : null;
+        state.bankChecks = Array.isArray(saved.bankChecks) ? saved.bankChecks.slice(-30) : [];
         state.salary = safeNumber(saved.salary);
         state.salaryPayDay = Math.min(31, Math.max(0, Math.round(Number(saved.salaryPayDay) || 0)));
         state.commitments = Array.isArray(saved.commitments) ? saved.commitments.map(function (item) { return normalizeCommitmentRecord(item); }) : [];
@@ -9026,6 +9502,14 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         if (!state.monthOpeningBalances[defaultMonth] && state.currentCalendarMonth === defaultMonth && state.walletMonthOpeningBalance) {
           state.monthOpeningBalances[defaultMonth] = state.walletMonthOpeningBalance;
         }
+        if (Finance.ensureLedger(state)) {
+          // One-time migration keeps the current balance and makes the month opening auditable.
+          var monthNet = (state.transactions || []).reduce(function(sum, tx) {
+            return sum + (String(tx.month || calendarMonthForDate(tx.date)) === state.currentCalendarMonth ? Finance.cents(tx.amount) : 0);
+          }, 0);
+          state.monthOpeningBalances[state.currentCalendarMonth] = (Finance.cents(state.walletBalance) - monthNet) / 100;
+          state.walletMonthOpeningBalance = state.monthOpeningBalances[state.currentCalendarMonth];
+        }
         ensureWalletCalendarCurrent(false);
         repairWalletBalanceIntegrity("load");
         return true;
@@ -9035,6 +9519,7 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         try {
           repairWalletBalanceIntegrity("save");
           var serialized = JSON.stringify(state);
+          if (serialized === lastPersistedSnapshot) return;
           var key = accountStorageKey();
           localStorage.setItem(key, serialized);
           localStorage.setItem(key + ".backup", serialized);
@@ -9047,9 +9532,11 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
             lastSavedAt: new Date().toISOString(),
             accountId: authState.user ? authState.user.accountId : null
           }));
+          lastPersistedSnapshot = serialized;
           var note = $("#storageNote");
           if (note) note.textContent = authState.authenticated ? "البيانات تُحفظ وتُزامن تلقائيًا مع الحساب مع نسخة محلية على هذا الجهاز" : "البيانات محفوظة محليًا على هذا الجهاز";
-          if (authState.authenticated && authState.sessionVerified && !suppressCloudSave) {
+          if (authState.authenticated && authState.sessionVerified && !suppressCloudSave && serialized !== lastQueuedCloudSnapshot) {
+            lastQueuedCloudSnapshot = serialized;
             localChangeSeq += 1;
             queueCloudSave(120);
           }
@@ -9119,15 +9606,8 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         return calendarMonthForDate(item && item.date);
       }
 
-      function roundMoney(value) {
-        return Math.round((safeNumber(value) + Number.EPSILON) * 100) / 100;
-      }
-
-      function roundSignedMoney(value) {
-        var number = signedNumber(value);
-        var rounded = Math.round((Math.abs(number) + Number.EPSILON) * 100) / 100;
-        return number < 0 ? -rounded : rounded;
-      }
+      function roundMoney(value) { return Finance.money(Math.max(0, Number(value) || 0)); }
+      function roundSignedMoney(value) { return Finance.money(value); }
 
       function splitAmountEvenly(amount, count) {
         count = Math.max(2, Math.min(20, Math.round(Number(count) || 2)));
@@ -9418,6 +9898,14 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
           createdAt: new Date().toISOString()
         }, extra || {});
         if (!Array.isArray(state.transactions)) state.transactions = [];
+        var logicalKey = "";
+        if (tx.paydayKey && (tx.type === "salary" || tx.type === "commitment" || (tx.type === "savings_transfer" && tx.source === "payday-carry"))) {
+          logicalKey = "payday:" + tx.paydayKey + ":" + tx.type + ":" + tx.refId;
+        } else if ((tx.type === "recurring" || tx.type === "recurring_reversal") && tx.paymentCycleKey) {
+          var ordinal = state.transactions.filter(function(row) {return row.type === tx.type && row.refId === tx.refId && row.paymentCycleKey === tx.paymentCycleKey;}).length;
+          logicalKey = tx.type + ":" + tx.refId + ":" + tx.paymentCycleKey + ":" + ordinal;
+        } else if (tx.type === "expense_reversal" || tx.type === "deposit_reversal") logicalKey = tx.type + ":" + tx.refId;
+        if (logicalKey) tx.operationKey = logicalKey;
         state.transactions.push(tx);
         return tx;
       }
@@ -9459,8 +9947,8 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
           depositsTotal: monthTransactionTotal(monthKey, ["deposit","deposit_reversal"]),
           balanceAdjustmentTotal: monthTransactionTotal(monthKey, "balance_adjustment"),
           commitmentsTotal: monthTransactionTotal(monthKey, "commitment", "out"),
-          recurringTotal: monthTransactionTotal(monthKey, "recurring", "out"),
-          savingsTransferTotal: monthTransactionTotal(monthKey, ["savings_transfer","savings_plan"], "out"),
+          recurringTotal: Math.max(0, -monthTransactionTotal(monthKey, ["recurring", "recurring_reversal"])),
+          savingsTransferTotal: Math.max(0, -monthTransactionTotal(monthKey, ["savings_transfer","savings_plan","savings_manual","savings_reversal","savings_withdrawal"])),
           expensesGrossTotal: monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0),
           expensesTotal: monthExpenses.reduce(function (sum, item) { return sum + netExpenseAmountForMonth(item, monthKey); }, 0),
           expenseCategoryBreakdown: expenseCategoryBreakdownForItems(monthExpenses, monthKey),
@@ -9532,6 +10020,8 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         if (now < payday) return false;
         var paydayKey = toDateInput(payday);
         if (state.processedPaydays[paydayKey]) return false;
+        if (choice !== "keep" && choice !== "savings") return false;
+        repairWalletBalanceIntegrity("before-payday");
 
         var balanceBeforePayday = roundSignedMoney(state.walletBalance);
         var carry = balanceBeforePayday;
@@ -9637,24 +10127,25 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
       function maybeShowPaydayPrompt() {
         ensureWalletCalendarCurrent(false);
         var payday = paydayDateForCurrentMonth();
-        if (!payday || safeNumber(state.salary) <= 0) return;
-        var now = currentDateAtMidnight();
-        if (now < payday) return;
+        if (!payday || safeNumber(state.salary) <= 0 || currentDateAtMidnight() < payday || (authState.authenticated && !authState.sessionVerified)) return;
         var key = toDateInput(payday);
-        if (state.processedPaydays && state.processedPaydays[key]) return;
-        var carry = signedNumber(state.walletBalance);
-        if (carry > 0) {
-          var dialog = $("#paydayCarryDialog");
-          if (dialog && !dialog.open) {
-            setMoney("#paydayCarryAmount", carry);
-            dialog.showModal();
-          }
-          return;
-        }
-        if (processPayday("keep")) {
-          showToast("تمت إضافة الراتب وخصم السلف والأقساط النشطة تلقائيًا");
-          render();
-        }
+        if ((state.processedPaydays && state.processedPaydays[key]) || paydaySnoozedKey === key) return;
+        var dialog = $("#paydayCarryDialog");
+        if (!dialog || dialog.open || $all("dialog[open]").length || syncConflict) return;
+        refreshPaydayPreview();
+        dialog.showModal();
+      }
+
+      function refreshPaydayPreview() {
+        var key = currentPaydayKey();
+        var keep = Finance.paydayPreview(state, "keep", defaultMonth, key);
+        var savings = Finance.paydayPreview(state, "savings", defaultMonth, key);
+        setMoney("#paydayCarryAmount", keep.before);
+        setMoney("#paydayPreviewSalary", keep.salary);
+        setMoney("#paydayPreviewCommitments", keep.commitments);
+        setMoney("#paydayKeepResult", keep.after);
+        setMoney("#paydaySavingsResult", savings.after);
+        $("#carryToSavingsButton").disabled = keep.before <= 0;
       }
 
       function getMetrics() {
@@ -9664,10 +10155,10 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         var activeRecurring = getActiveRecurring();
         var monthExpenses = getMonthExpenses(monthKey);
         var commitmentsTotal = monthTransactionTotal(monthKey, "commitment", "out");
-        var recurringTotal = monthTransactionTotal(monthKey, "recurring", "out");
+        var recurringTotal = Math.max(0, -monthTransactionTotal(monthKey, ["recurring", "recurring_reversal"]));
         var scheduledCommitmentsTotal = activeCommitments.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
         var scheduledRecurringTotal = activeRecurring.reduce(function (sum, item) { return sum + safeNumber(item.amount); }, 0);
-        var savingsMoved = monthTransactionTotal(monthKey, ["savings_transfer","savings_plan"], "out");
+        var savingsMoved = Math.max(0, -monthTransactionTotal(monthKey, ["savings_transfer","savings_plan","savings_manual","savings_reversal","savings_withdrawal"]));
         var grossExpensesTotal = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : safeNumber(item.amount)); }, 0);
         var sameMonthExpenseReimbursements = monthExpenses.reduce(function (sum, item) { return sum + (item.excludeFromBudget ? 0 : reimbursementsInMonth(item, monthKey)); }, 0);
         var expensesTotal = monthExpenses.reduce(function (sum, item) { return sum + netExpenseAmountForMonth(item, monthKey); }, 0);
@@ -9685,13 +10176,17 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         // الرصيد المتاح المرجعي يجب أن يبقى صحيحًا أيضًا للحسابات التي انتقلت من البنايات التجريبية السابقة
         // والتي قد لا تحتوي على عملية راتب افتتاحية في سجل المعاملات.
         var ledgerAvailableBase = Math.max(0, opening) + salaryDeposits + manualDeposits + balanceAdjustmentIn;
-        var availableBase = Math.max(ledgerAvailableBase, Math.max(0, safeNumber(state.salary)));
+        var availableBase = ledgerAvailableBase;
         var used = commitmentsTotal + recurringTotal + savingsMoved + expensesTotal + balanceAdjustmentOut;
         // نسبة الاستخدام تعكس الفرق الحقيقي بين الرصيد الذي كان متاحًا والرصيد الحالي، بدل الاعتماد فقط على اكتمال سجل المعاملات القديم.
         var usedForPercent = availableBase > 0 ? Math.max(0, availableBase - balance) : 0;
         var nextSalaryInfo = getNextSalaryInfo();
         var calendarDaysLeft = getDaysRemaining(monthKey);
         var daysLeft = nextSalaryInfo.days == null ? calendarDaysLeft : nextSalaryInfo.days;
+        var pendingFixed = activeRecurring.reduce(function(sum, item) { return sum + (isRecurringPaidForMonth(item, monthKey) ? 0 : Finance.cents(item.amount)); }, 0) / 100;
+        var paydayPending = Boolean(currentPaydayKey() && !state.processedPaydays[currentPaydayKey()]);
+        var pendingLoans = paydayPending ? activeCommitments.reduce(function(sum, item) {return sum + (commitmentAlreadyCharged(currentPaydayKey(), item.id) ? 0 : Finance.cents(item.amount));}, 0) / 100 : 0;
+        var reserved = roundMoney(pendingFixed + pendingLoans);
         return {
           future:false,
           opening:opening,
@@ -9727,7 +10222,9 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
           calendarDaysLeft:calendarDaysLeft,
           nextSalary:nextSalaryInfo,
           usingSalaryCountdown:nextSalaryInfo.days != null,
-          daily:Math.max(0,balance) / Math.max(1,daysLeft),
+          daily:Math.max(0,balance - reserved) / Math.max(1,daysLeft),
+          reserved:reserved,
+          spendable:Math.max(0,balance - reserved),
           carryover:0
         };
       }
@@ -9747,6 +10244,8 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
 
       function render() {
         var metrics = getMetrics();
+        var pendingPayday = paydayDateForCurrentMonth();
+        $("#paydayPendingNotice").hidden = !(pendingPayday && currentDateAtMidnight() >= pendingPayday && state.salary > 0 && !state.processedPaydays[currentPaydayKey()]);
         state.selectedMonth = defaultMonth;
         setText("#monthDisplayText", formatMonthControl(defaultMonth));
         updateHeaderDateTime();
@@ -9775,7 +10274,7 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         if ($("#legendRemaining")) setMoney("#legendRemaining", metrics.balance);
         var carryoverNote = $("#carryoverNote");
         if (carryoverNote) carryoverNote.hidden = true;
-        setText("#availableCaption", "بعد خصم السلف والأقساط والمدفوعات الثابتة المؤكدة والمصروفات");
+        setText("#availableCaption", "الرصيد المسجل بعد الحركات الفعلية · راجعه مع البنك");
         setText("#salaryPaydayText", state.salaryPayDay ? "يوم " + state.salaryPayDay + " من كل شهر" : "غير محدد");
         var nextSalary = getNextSalaryInfo();
         if (nextSalary.days == null) {
@@ -9810,38 +10309,11 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         $("#usedPercentBar").style.width = clampedUsed + "%";
         setText("#usedPercentText", Math.round(metrics.usedPercent) + "%");
 
-        // توزيع الراتب في r16 يقارن الأقسام الأربعة فقط ويعرض رصيد المدخرات الحالي
-        // حتى يكون اللون الأكبر هو القسم الأعلى تخصيصًا/صرفًا بوضوح.
-        var distributionCommitments = Math.max(0, metrics.scheduledCommitmentsTotal);
-        var distributionRecurring = Math.max(0, metrics.scheduledRecurringTotal);
-        var distributionSavings = Math.max(0, metrics.savingsTotal);
-        var distributionExpenses = Math.max(0, metrics.expensesTotal);
-        var distributionItems = [
-          { label:"الأقساط والسلف", value:distributionCommitments, color:"#14756c" },
-          { label:"المدفوعات الثابتة", value:distributionRecurring, color:"#705a9b" },
-          { label:"المدخرات", value:distributionSavings, color:"#73c9e6" },
-          { label:"المصروفات", value:distributionExpenses, color:"#ef7e5b" }
-        ];
-        var distributionTotal = distributionItems.reduce(function (sum, item) { return sum + item.value; }, 0);
-        setMoney("#legendCommitments", distributionCommitments);
-        setMoney("#legendRecurring", distributionRecurring);
-        setMoney("#legendSavings", distributionSavings);
-        setMoney("#legendExpenses", distributionExpenses);
-        if (distributionTotal > 0) {
-          var stops = [];
-          var cursor = 0;
-          distributionItems.forEach(function (item, index) {
-            var start = cursor;
-            cursor = index === distributionItems.length - 1 ? 100 : Math.min(100, cursor + (item.value / distributionTotal) * 100);
-            stops.push(item.color + " " + start + "% " + cursor + "%");
-          });
-          $("#salaryDonut").style.background = "conic-gradient(" + stops.join(", ") + ")";
-          var leader = distributionItems.slice().sort(function (a, b) { return b.value - a.value; })[0];
-          setText("#remainingPercent", leader && leader.value > 0 ? leader.label : "—");
-        } else {
-          $("#salaryDonut").style.background = "#e6e5df";
-          setText("#remainingPercent", "لا يوجد صرف");
-        }
+        renderCashDistribution(metrics);
+        renderBalanceTrend();
+        renderBankCheckStatus();
+        setMoney("#reservedAmount", metrics.reserved);
+        setMoney("#spendableAmount", metrics.spendable);
 
         updateBalanceMessage(metrics);
         renderUpcoming(metrics.activeCommitments, metrics.activeRecurring);
@@ -11350,14 +11822,6 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
           paydayRecord.salaryEditedAt = new Date().toISOString();
         }
 
-        // في الحسابات القديمة كان رصيد افتتاح الشهر قد يُحفظ بعد إضافة initial_salary؛
-        // نحركه بنفس الفرق حتى يبقى كشف الشهر والرصيد متوافقين مع القيمة المصححة.
-        if (target.type === "initial_salary" && state.monthOpeningBalances && state.monthOpeningBalances[monthKey] != null) {
-          state.monthOpeningBalances[monthKey] = roundSignedMoney(signedNumber(state.monthOpeningBalances[monthKey]) + delta);
-          if (String(state.currentCalendarMonth || "") === monthKey) {
-            state.walletMonthOpeningBalance = roundSignedMoney(signedNumber(state.walletMonthOpeningBalance) + delta);
-          }
-        }
         return { adjusted: true, delta: delta, transactionId: target.id };
       }
 
@@ -11394,8 +11858,8 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
           state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + value);
           addTransaction("initial_salary", value, "رصيد بداية مدير الراتب", toDateInput(new Date()));
           state.walletStarted = true;
-          state.walletMonthOpeningBalance = state.walletBalance;
-          state.monthOpeningBalances[defaultMonth] = state.walletBalance;
+          state.walletMonthOpeningBalance = roundSignedMoney(state.walletBalance - value);
+          state.monthOpeningBalances[defaultMonth] = state.walletMonthOpeningBalance;
         }
         closeDialog("salaryDialog");
         render();
@@ -12259,6 +12723,11 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         var index = paidCycles.indexOf(cycleKey);
         var paidMonths = Array.isArray(item.paidMonths) ? item.paidMonths.slice() : [];
         var amount = safeNumber(item.amount);
+        if (index !== -1) {
+          amount = Math.max(0, -((state.transactions || []).reduce(function(sum, tx) {
+            return sum + (tx.refId === item.id && tx.paymentCycleKey === cycleKey && (tx.type === "recurring" || tx.type === "recurring_reversal") ? Finance.cents(tx.amount) : 0);
+          }, 0) / 100));
+        }
         if (index === -1) {
           state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - amount);
           addTransaction("recurring", -amount, item.name || "دفعة ثابتة", toDateInput(new Date()), item.id, { paymentCycleKey:cycleKey });
@@ -12289,6 +12758,9 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         var paidMonths = Array.isArray(item.paidMonths) ? item.paidMonths.slice() : [];
         var index = paidMonths.indexOf(defaultMonth);
         var amount = safeNumber(item.amount);
+        if (index !== -1) amount = Math.max(0, (state.transactions || []).reduce(function(sum, tx) {
+          return sum + (tx.refId === item.id && String(tx.month || "") === defaultMonth ? Finance.cents(tx.savingsDelta) : 0);
+        }, 0) / 100);
         if (index === -1) {
           if (amount > state.walletBalance) { showToast("الرصيد المتاح لا يكفي لتحويل مبلغ الادخار", true); return; }
           state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) - amount);
@@ -12322,7 +12794,7 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         ensureWalletCalendarCurrent(false);
         var data = new FormData(event.currentTarget);
         var mode = String(data.get("mode") || "deposit");
-        var amount = safeNumber(data.get("amount"));
+        var amount = roundMoney(data.get("amount"));
         var note = String(data.get("note") || "").trim();
         if (amount <= 0) { showToast("أدخل مبلغًا صحيحًا", true); return; }
         if (mode === "withdraw") {
@@ -12363,19 +12835,10 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
       function deleteRecurring(id) {
         var item = state.recurringPayments.find(function (current) { return current.id === id; });
         if (!item) return;
-        if (!localizedConfirm('هل تريد حذف الدفعة الثابتة "' + item.name + '" نهائيًا؟')) return;
-        if (isRecurringPaidForMonth(item, defaultMonth)) {
-          if (item.type === "ادخار") {
-            var amount = safeNumber(item.amount);
-            if (state.savingsBalance >= amount) { state.savingsBalance = roundMoney(state.savingsBalance - amount); state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + amount); addTransaction("savings_reversal", amount, "إلغاء " + item.name, toDateInput(new Date()), item.id, { savingsDelta: -amount }); }
-          } else {
-            state.walletBalance = roundSignedMoney(signedNumber(state.walletBalance) + safeNumber(item.amount));
-            addTransaction("recurring_reversal", safeNumber(item.amount), "إلغاء " + item.name, toDateInput(new Date()), item.id);
-          }
-        }
+        if (!localizedConfirm('حذف جدول "' + item.name + '"؟ تبقى الدفعات المنفذة محفوظة في كشف الحساب.')) return;
         state.recurringPayments = state.recurringPayments.filter(function (current) { return current.id !== id; });
         render();
-        showToast(item.type === "ادخار" ? "تم حذف خطة الادخار" : "تم حذف الدفعة الثابتة وتحديث الرصيد");
+        showToast("تم حذف الجدول مع الاحتفاظ بالدفعات المنفذة");
       }
 
       function deleteExpense(id) {
@@ -12971,6 +13434,7 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
       requestPersistentStorage();
       installZoomLock();
       bindEvents();
+      bindExperienceEvents();
       initAppearance394();
       updateSharedExpenseForm();
       updateSharedCommitmentForm();

@@ -1,7 +1,9 @@
-const CACHE = "salary-manager-v3.9.6-native-pdf-r3";
+const CACHE = "salary-manager-v3.10.0-balance-experience-r1";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = [
+  "./finance-core-v3.10.0.js",
+  "./experience-v3.10.0.css",
   "./config.js",
   "./manifest.webmanifest",
   "./manifests/gold.webmanifest",

@@ -1,9 +1,10 @@
+import * as Finance from "../public/finance-core-v3.10.0.js";
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.9.6";
-const RELEASE_ID = "3.9.6-native-pdf-r3";
-const UPDATE_SIGNAL_VERSION = "3.9.6⁩";
+const VERSION = "3.10.0";
+const RELEASE_ID = "3.10.0-balance-experience-r1";
+const UPDATE_SIGNAL_VERSION = "3.10.0";
 const PREVIOUS_PUBLISHED_VERSION = "3.9.3";
 const PREVIOUS_RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";
 const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
@@ -779,10 +780,9 @@ async function handleApi(request, env, url) {
   }
 
   if (p === "/api/admin/publish-update" && request.method === "POST") {
-    const a = await requireAuth(request, env, { admin: true });
+    const a = await requireAuth(request, env, {admin:true});
     if (!a.ok) return a.response;
-    const { response, body } = await internal(env, "/auth/admin/publish-update", { token: a.token, version: VERSION, releaseId: RELEASE_ID, previousVersion: PREVIOUS_PUBLISHED_VERSION, previousReleaseId: PREVIOUS_RELEASE_ID, subject: url.origin });
-    return apiJson(request, env, body || { ok: false }, response.status);
+    return apiJson(request, env, {ok:false,error:"USE_MADAR_APPROVAL"}, 409);
   }
 
   if (p === "/api/admin/reject-update" && request.method === "POST") {
@@ -2237,6 +2237,7 @@ export class SalaryStore extends DurableObject {
       }
       if (!Array.isArray(state.deposits)) state.deposits = [];
       if (!Array.isArray(state.transactions)) state.transactions = [];
+      Finance.ensureLedger(state);
 
       const importId = String(item.id);
       const hasImportId = entry => String(entry?.externalImportId || "") === importId || (Array.isArray(entry?.externalImportIds) && entry.externalImportIds.some(id => String(id) === importId));
@@ -2436,6 +2437,9 @@ rec.bankConfirmedAt = salaryTx.bankConfirmedAt;
       const baseRevisionRaw = Number(b.baseRevision);
       const hasBaseRevision = Number.isFinite(baseRevisionRaw) && baseRevisionRaw >= 0;
       const staleSave = Boolean(current && hasBaseRevision && baseRevisionRaw < currentRevision);
+      if (current && (!hasBaseRevision || baseRevisionRaw !== currentRevision)) {
+        return json({ok:false, error:"STATE_CONFLICT", revision:currentRevision, state:current}, 409);
+      }
       const nextState = b.state;
 
       if (!Array.isArray(nextState.deposits)) nextState.deposits = [];
@@ -2444,148 +2448,11 @@ rec.bankConfirmedAt = salaryTx.bankConfirmedAt;
       let mergedAutomationImports = 0;
       let automationBalanceDelta = 0;
 
-      if (staleSave) {
-        const importIdsOf = entry => {
-          const ids = [];
-          const one = String(entry?.externalImportId || "");
-          if (one) ids.push(one);
-          if (Array.isArray(entry?.externalImportIds)) {
-            for (const raw of entry.externalImportIds) {
-              const id = String(raw || "");
-              if (id && !ids.includes(id)) ids.push(id);
-            }
-          }
-          return ids;
-        };
-        const overlaps = (ids, set) => ids.some(id => set.has(id));
-        const allIncomingImportIds = new Set();
-        for (const row of [...nextState.expenses, ...nextState.deposits, ...nextState.transactions]) {
-          for (const id of importIdsOf(row)) allIncomingImportIds.add(id);
-        }
-
-        const incomingExpenseIds = new Set(nextState.expenses.map(row => String(row?.id || "")));
-        const incomingDepositIds = new Set(nextState.deposits.map(row => String(row?.id || "")));
-
-        for (const expense of Array.isArray(current.expenses) ? current.expenses : []) {
-          const ids = importIdsOf(expense);
-          if (!ids.length) continue;
-          const idSet = new Set(ids);
-          const exists = incomingExpenseIds.has(String(expense?.id || "")) ||
-            nextState.expenses.some(row => overlaps(importIdsOf(row), idSet));
-          if (exists) continue;
-
-          const wasCompletelyMissing = !overlaps(ids, allIncomingImportIds);
-          nextState.expenses.push(structuredClone(expense));
-          incomingExpenseIds.add(String(expense?.id || ""));
-          for (const id of ids) allIncomingImportIds.add(id);
-          if (wasCompletelyMissing && !expense.excludeFromBudget) {
-            automationBalanceDelta -= Math.abs(Number(expense.amount || 0));
-          }
-          mergedAutomationImports += 1;
-          mergedAutomationChanges += 1;
-        }
-
-        for (const deposit of Array.isArray(current.deposits) ? current.deposits : []) {
-          const ids = importIdsOf(deposit);
-          if (!ids.length) continue;
-          const idSet = new Set(ids);
-          const exists = incomingDepositIds.has(String(deposit?.id || "")) ||
-            nextState.deposits.some(row => overlaps(importIdsOf(row), idSet));
-          if (exists) continue;
-
-          const wasCompletelyMissing = !overlaps(ids, allIncomingImportIds);
-          nextState.deposits.push(structuredClone(deposit));
-          incomingDepositIds.add(String(deposit?.id || ""));
-          for (const id of ids) allIncomingImportIds.add(id);
-          if (wasCompletelyMissing) automationBalanceDelta += Math.abs(Number(deposit.amount || 0));
-          mergedAutomationImports += 1;
-          mergedAutomationChanges += 1;
-        }
-
-        for (const currentTx of Array.isArray(current.transactions) ? current.transactions : []) {
-          const ids = importIdsOf(currentTx);
-          if (!ids.length) continue;
-          const target = nextState.transactions.find(row => String(row?.id || "") === String(currentTx?.id || ""));
-          if (!target) {
-            nextState.transactions.push(structuredClone(currentTx));
-            for (const id of ids) allIncomingImportIds.add(id);
-            mergedAutomationChanges += 1;
-            continue;
-          }
-
-          const before = JSON.stringify({
-            externalImportId:target.externalImportId,
-            externalImportIds:target.externalImportIds,
-            bankConfirmed:target.bankConfirmed,
-            bankConfirmedAt:target.bankConfirmedAt,
-            bankConfirmationDate:target.bankConfirmationDate,
-            bankConfirmationMerchant:target.bankConfirmationMerchant,
-            bankConfirmationSources:target.bankConfirmationSources,
-            automationReference:target.automationReference,
-            automationCardLast4:target.automationCardLast4,
-            automationSource:target.automationSource,
-            automationSources:target.automationSources
-          });
-
-          if (currentTx.externalImportId) target.externalImportId = target.externalImportId || currentTx.externalImportId;
-          target.externalImportIds = [...new Set([
-            ...(Array.isArray(target.externalImportIds) ? target.externalImportIds : []),
-            ...(Array.isArray(currentTx.externalImportIds) ? currentTx.externalImportIds : []),
-            ...(currentTx.externalImportId ? [currentTx.externalImportId] : [])
-          ])];
-          if (currentTx.bankConfirmed) target.bankConfirmed = true;
-          if (currentTx.bankConfirmedAt) target.bankConfirmedAt = currentTx.bankConfirmedAt;
-          if (currentTx.bankConfirmationDate) target.bankConfirmationDate = currentTx.bankConfirmationDate;
-          if (currentTx.bankConfirmationMerchant) target.bankConfirmationMerchant = currentTx.bankConfirmationMerchant;
-          target.bankConfirmationSources = [...new Set([
-            ...(Array.isArray(target.bankConfirmationSources) ? target.bankConfirmationSources : []),
-            ...(Array.isArray(currentTx.bankConfirmationSources) ? currentTx.bankConfirmationSources : [])
-          ])];
-          if (currentTx.automationReference) target.automationReference = target.automationReference || currentTx.automationReference;
-          if (currentTx.automationCardLast4) target.automationCardLast4 = target.automationCardLast4 || currentTx.automationCardLast4;
-          if (currentTx.automationSource) target.automationSource = target.automationSource || currentTx.automationSource;
-          target.automationSources = [...new Set([
-            ...(Array.isArray(target.automationSources) ? target.automationSources : []),
-            ...(Array.isArray(currentTx.automationSources) ? currentTx.automationSources : [])
-          ])];
-
-          const after = JSON.stringify({
-            externalImportId:target.externalImportId,
-            externalImportIds:target.externalImportIds,
-            bankConfirmed:target.bankConfirmed,
-            bankConfirmedAt:target.bankConfirmedAt,
-            bankConfirmationDate:target.bankConfirmationDate,
-            bankConfirmationMerchant:target.bankConfirmationMerchant,
-            bankConfirmationSources:target.bankConfirmationSources,
-            automationReference:target.automationReference,
-            automationCardLast4:target.automationCardLast4,
-            automationSource:target.automationSource,
-            automationSources:target.automationSources
-          });
-          if (before !== after) mergedAutomationChanges += 1;
-        }
-
-        const currentCommitments = Array.isArray(current.commitments) ? current.commitments : [];
-        for (const currentCommitment of currentCommitments) {
-          const confirmations = currentCommitment && typeof currentCommitment.bankConfirmations === "object"
-            ? currentCommitment.bankConfirmations : null;
-          if (!confirmations || !Object.keys(confirmations).length) continue;
-          const target = nextState.commitments.find(row => String(row?.id || "") === String(currentCommitment?.id || ""));
-          if (!target) continue;
-          const before = JSON.stringify(target.bankConfirmations || {});
-          target.bankConfirmations = {
-            ...(target.bankConfirmations && typeof target.bankConfirmations === "object" ? target.bankConfirmations : {}),
-            ...structuredClone(confirmations)
-          };
-          if (before !== JSON.stringify(target.bankConfirmations)) mergedAutomationChanges += 1;
-        }
-
-        if (Math.abs(automationBalanceDelta) >= 0.005) {
-          nextState.walletBalance = Math.round((Number(nextState.walletBalance || 0) + automationBalanceDelta) * 100) / 100;
-          nextState.walletStarted = true;
-          mergedAutomationChanges += 1;
-        }
-      }
+      Finance.ensureLedger(nextState);
+      const verified = Finance.balances(nextState);
+      const balanceRecomputed = Finance.cents(nextState.walletBalance) !== Finance.cents(verified.cash) || Finance.cents(nextState.savingsBalance) !== Finance.cents(verified.savings);
+      nextState.walletBalance = verified.cash;
+      nextState.savingsBalance = verified.savings;
 
       if (current) {
         const historyKey = `history:${Date.now()}:${crypto.randomUUID()}`;
@@ -2609,7 +2476,8 @@ rec.bankConfirmedAt = salaryTx.bankConfirmedAt;
         ok:true,
         updatedAt:now,
         revision,
-        staleSaveMerged:staleSave && mergedAutomationChanges > 0,
+        balanceRecomputed,
+        staleSaveMerged:false,
         mergedAutomationChanges,
         mergedAutomationImports
       });
@@ -2637,7 +2505,8 @@ rec.bankConfirmedAt = salaryTx.bankConfirmedAt;
     }
     if (url.pathname.startsWith("/data/")) {
       try {
-        return await this.dataFetch(request, url);
+        // Serialize the whole read-modify-write, including request-body awaits and revision checks.
+        return await this.ctx.blockConcurrencyWhile(() => this.dataFetch(request, url));
       } catch (e) {
         console.error("Salary data store error", url.pathname, e);
         return json({ ok: false, error: "DATA_RUNTIME_ERROR", detail: String(e?.message || e || "Unknown data runtime error").slice(0, 220), phase: url.pathname }, 500);

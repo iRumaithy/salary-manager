@@ -1,0 +1,92 @@
+/* Every informational surface follows the selected palette, in both modes. */
+:root[data-color-theme] body,
+:root[data-color-theme] .app { background:var(--canvas)!important; color:var(--ink); }
+:root[data-color-theme] body::before { background:var(--canvas)!important; }
+:root[data-color-theme] .topbar { background:color-mix(in srgb,var(--paper) 96%,transparent)!important; border-color:var(--line)!important; }
+:root[data-color-theme] :is(.modal-head,.modal-foot) { background:var(--paper)!important; color:var(--ink)!important; border-color:var(--line)!important; }
+:root[data-color-theme] .modal::backdrop { background:rgba(15,23,42,.55); }
+:root[data-color-theme] .settings-status { background:var(--accent-wash)!important; color:var(--muted)!important; }
+:root[data-color-theme] .settings-status.on { background:var(--teal-soft)!important; color:var(--teal)!important; }
+:root[data-color-theme] .icon-choice:not(.selected) { background:var(--accent-wash)!important; }
+:root[data-color-theme] .icon-choice.selected { background:var(--teal-soft)!important; box-shadow:0 0 0 3px var(--teal-soft)!important; }
+:root[data-color-theme] :is(.icon-choice .icon-check,.app-lock-icon,.toast) { background:var(--accent-solid)!important; color:white!important; }
+:root[data-color-theme] .helper { color:var(--muted)!important; }
+:root[data-color-theme] :is(.available-card,.panel,.summary-card,.tabs,dialog.modal,.settings-section,.account-card,.admin-user,.automation-import,.statement-card,.expense-item,.commitment-card,.recurring-card,.upcoming-item,.backup-menu,.outing-card,.outing-purchase,.outing-total,.outing-stat,.outing-balance-person,.reimbursement-item,.salary-dark-auto-surface,.app-lock-card,.automation-step,.automation-title-editor,.automation-visual-editor,.automation-toggle-row,.automation-setup-btn,.participant-pay-chip) {
+  background:var(--paper)!important; color:var(--ink)!important; border-color:var(--line)!important;
+}
+:root[data-color-theme] :is(.expense-category-choice,.expense-voice-button,.outing-check span) { background:var(--paper)!important; color:var(--ink)!important; border-color:var(--line)!important; }
+:root[data-color-theme] :is(.expense-quick-capture,.payment-note,.shared-expense-panel,.shared-expense-summary,.shared-split-summary-box,.admin-notification-box,.release-control-box,.pwa-note,.install-followup-note,.owner-config-status.ready,.changelog-entry.current,.reset-code-box,.outing-transfer,.outing-calc-note,.automation-connect-card) {
+  background:linear-gradient(145deg,var(--paper),var(--accent-wash))!important;
+  color:var(--ink)!important; border-color:var(--accent-line)!important;
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--paper) 85%,transparent);
+}
+:root[data-color-theme] .payment-note :is(strong,p),
+:root[data-color-theme] .shared-expense-summary :is(strong,span),
+:root[data-color-theme] .outing-calc-note { color:var(--ink)!important; }
+:root[data-color-theme] :is(.soft-btn,.balance-edit-btn,.participant-editor-toggle,.mini-btn.mark-paid,.payday-carry-icon,.outing-chip,.outing-check input:checked + span,.participant-pay-chip.paid,.salary-dark-auto-button) {
+  background:var(--teal-soft)!important; color:var(--teal)!important; border-color:var(--accent-line)!important;
+}
+:root[data-color-theme] :is(.primary-btn,.mobile-fab,.automation-review-fab,.expense-voice-mic,.payment-note-symbol,.guide-step-number,.usage-badge .badge-star) {
+  background:var(--accent-solid)!important; color:#fff!important;
+  box-shadow:0 6px 18px color-mix(in srgb,var(--accent-solid) 18%,transparent)!important;
+}
+:root[data-color-theme] .primary-btn:hover { background:var(--accent-hover)!important; }
+:root[data-color-theme] .expense-voice-button.is-listening .expense-voice-mic { background:#bb4f49!important; }
+:root[data-color-theme] .expense-voice-mic svg { fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+:root[data-color-theme] .expense-voice-status:not(.is-error):not(.is-listening) { background:var(--teal-soft)!important; color:var(--teal)!important; }
+:root[data-color-theme] .expense-voice-bars i { background:var(--muted); }
+:root[data-color-theme] .expense-category-choice.is-selected {
+  background:var(--teal-soft)!important; border-color:var(--teal)!important;
+  box-shadow:0 5px 14px color-mix(in srgb,var(--accent-solid) 10%,transparent)!important;
+}
+:root[data-color-theme] .expense-category-choice:hover { border-color:var(--teal)!important; }
+:root[data-color-theme] .expense-category-choice.is-selected .expense-category-icon,
+:root[data-color-theme] :is([data-expense-category="مشتريات"],[data-expense-category="رياضة"],[data-expense-category="منزل"]) .expense-category-icon {
+  background:var(--teal-soft)!important; color:var(--teal)!important;
+}
+:root[data-color-theme] :is(.quick-form,.deposit-form,.form-panel) { border-color:var(--line)!important; background:var(--paper)!important; }
+:root[data-color-theme] .field :is(input,textarea,select),
+:root[data-color-theme] :is(.automation-visual-editor select,.automation-title-editor input,.app-lock-pin,.automation-secret-row input) {
+  color:var(--ink)!important; background:var(--paper)!important; border-color:var(--line)!important;
+}
+:root[data-color-theme] .field :is(input,textarea,select):focus { border-color:var(--teal)!important; box-shadow:0 0 0 3px var(--teal-soft)!important; }
+:root[data-color-theme] :is(.ghost-btn,.month-control,.month-picker-shell,.close-btn,.icon-btn,.outing-mini-chip,.participant-pay-chip.me) { background:var(--paper)!important; color:var(--ink)!important; border-color:var(--line)!important; }
+:root[data-color-theme] .ghost-btn:hover { background:var(--accent-wash)!important; }
+:root[data-color-theme] :is(.daily-box,.payday-preview,.bank-audit,.automation-code,.auth-tabs,.expense-category-empty,.empty-state,.statement-search-wrap,.outing-card > summary,.outing-payment,.reimbursement-stat,.automation-import-raw,.participant-pay-chip:not(.paid):not(.me):hover) { background:var(--accent-wash)!important; border-color:var(--line)!important; color:var(--ink)!important; }
+:root[data-color-theme] :is(.payday-result,.owner-review-note,.payday-pending-notice,.insight,.statement-audit,.statement-audit-badge) { background:var(--teal-soft)!important; color:var(--ink)!important; border-color:var(--accent-line)!important; }
+:root[data-color-theme] .donut-center,
+:root[data-color-theme] .expense-category-donut::after { background:var(--paper)!important; }
+:root[data-color-theme] .cash-legend-row { color:var(--ink)!important; background:transparent!important; }
+:root[data-color-theme] .status-chip:not(.warning):not(.danger) { color:var(--teal); background:var(--teal-soft); }
+:root[data-color-theme] :is(.salary-card:not(.salary-card-bank),.preview-classic,.guide-summary,.statement-hero) {
+  background:linear-gradient(135deg,var(--hero-start),var(--hero-end))!important; color:white;
+}
+:root[data-color-theme] .brand-mark { background:var(--accent-solid)!important; color:white!important; }
+:root[data-color-theme] :is(.summary-card:nth-child(1),.summary-card:nth-child(4),.summary-card:nth-child(6),.summary-card:nth-child(7)) { --accent:var(--teal)!important; --accent-soft:var(--teal-soft)!important; }
+:root[data-color-theme] .balance-secondary { background:transparent!important; color:var(--muted)!important; }
+:root[data-color-theme] :is(.next-salary-countdown,.guide-copy p,.automation-mini-guide li) { color:var(--muted)!important; }
+:root[data-color-theme] .app-lock-overlay { background:linear-gradient(155deg,var(--hero-start),var(--hero-end))!important; }
+:root[data-color-theme] .shared-expense-fields { border-color:var(--accent-line)!important; }
+:root[data-color-theme] .participant-circle,
+:root[data-color-theme] .outing-check span::before { background:var(--paper)!important; border-color:var(--accent-line)!important; color:var(--teal)!important; }
+:root[data-color-theme] :is(.participant-pay-chip.paid .participant-circle,.participant-pay-chip.me .participant-circle),
+:root[data-color-theme] .outing-check input:checked + span::before { background:var(--accent-solid)!important; border-color:var(--accent-solid)!important; color:white!important; }
+:root[data-color-theme][data-app-theme="dark"] #outingsView .section-heading { background:var(--paper)!important; border-color:var(--line)!important; }
+:root[data-color-theme] button:focus-visible,
+:root[data-color-theme] a:focus-visible,
+:root[data-color-theme] summary:focus-visible { outline-color:var(--teal); }
+
+.app-color-theme-grid { border:0; padding:0; margin:16px 0 12px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; min-width:0; }
+.app-color-theme-choice { position:relative; min-width:0; margin:0; cursor:pointer; }
+.app-color-theme-choice .theme-option { display:grid; gap:9px; padding:10px; border:1px solid var(--line); border-radius:15px; background:var(--paper); min-height:116px; color:var(--ink); }
+.app-color-theme-choice input:checked + .theme-option { border-color:var(--teal); box-shadow:0 0 0 2px var(--teal-soft); }
+.app-color-theme-choice input:focus-visible + .theme-option { outline:3px solid var(--teal); outline-offset:3px; }
+.theme-mini-preview { display:block; position:relative; height:58px; border-radius:10px; background:var(--preview-canvas); padding:8px; overflow:hidden; border:1px solid #00000008; }
+.theme-mini-header { display:block; height:7px; width:42%; border-radius:4px; background:var(--preview-accent); margin-bottom:7px; }
+.theme-mini-cards { display:grid; gap:5px; grid-template-columns:1fr 1fr; height:26px; }
+.theme-mini-cards i { display:block; border-radius:6px; background:var(--preview-paper); border:1px solid #00000008; }
+.theme-mini-cards i:last-child { background:var(--preview-soft); }
+.theme-choice-copy { display:flex; align-items:center; justify-content:space-between; gap:5px; font-size:11px; font-weight:650; line-height:1.5; }
+.theme-choice-check { display:grid; place-items:center; width:18px; height:18px; flex:0 0 auto; border:1px solid var(--line); border-radius:50%; font-size:11px; color:transparent; }
+.app-color-theme-choice input:checked + .theme-option .theme-choice-check { color:white; background:var(--accent-solid); border-color:var(--accent-solid); }
+@media(max-width:620px) { .app-color-theme-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; } .theme-choice-copy { font-size:11px; } }

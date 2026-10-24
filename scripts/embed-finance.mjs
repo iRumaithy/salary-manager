@@ -1,4 +1,5 @@
 import {readFileSync,writeFileSync} from 'node:fs';
+import {COLOR_THEMES,THEME_VARIABLES,COLOR_THEME_KEY} from '../public/color-themes-v3.10.1.js';
 const core=readFileSync('public/finance-core-v3.10.0.js','utf8');
 const css=readFileSync('public/experience-v3.10.0.css','utf8');
 const exports=[...core.matchAll(/export (?:const|function) (\w+)/g)].map(x=>x[1]);
@@ -7,7 +8,20 @@ let html=readFileSync('public/index.html','utf8');
 html=html.replace('  <script type="module">\n    import * as Finance from "./finance-core-v3.10.0.js";', '  <script>');
 if(html.includes('/* FINANCE_CORE_START */'))html=html.replace(/\/\* FINANCE_CORE_START \*\/[\s\S]*?\/\* FINANCE_CORE_END \*\//,embedded);
 else html=html.replace('      "use strict";', '      "use strict";\n      '+embedded);
-const style='<style id="experience-v310">\n'+css+'\n</style>';
+const themeSource=readFileSync('public/color-themes-v3.10.1.js','utf8').replace(/export /g,'');
+const themeCode='/* COLOR_THEMES_START */\n'+themeSource+'\n/* COLOR_THEMES_END */';
+if(html.includes('/* COLOR_THEMES_START */'))html=html.replace(/\/\* COLOR_THEMES_START \*\/[\s\S]*?\/\* COLOR_THEMES_END \*\//,()=>themeCode);
+else html=html.replace('      var LANGUAGE_KEY',themeCode+'\n      var LANGUAGE_KEY');
+const prepaint='<script id="colorThemePrepaint">(function(){var ids='+JSON.stringify(COLOR_THEMES.map(x=>x.id))+',id="blue";try{var saved=localStorage.getItem('+JSON.stringify(COLOR_THEME_KEY)+');if(ids.indexOf(saved)!==-1)id=saved;}catch(_){}document.documentElement.setAttribute("data-color-theme",id);})();</script>';
+if(html.includes('<script id="colorThemePrepaint">'))html=html.replace(/<script id="colorThemePrepaint">[\s\S]*?<\/script>/,()=>prepaint);
+else html=html.replace('  <meta name="apple-mobile-web-app-capable"',prepaint+'\n  <meta name="apple-mobile-web-app-capable"');
+const themeCss=COLOR_THEMES.map(theme=>['light','dark'].map(mode=>{
+  const values=theme[mode];
+  const variables=THEME_VARIABLES.map((key,i)=>'--'+key+':'+values[i]+'!important;').join('')+'--accent-solid:'+theme[mode==='dark'?'dark':'light'][mode==='dark'?6:5]+'!important;';
+  return 'html[data-color-theme="'+theme.id+'"]'+(mode==='dark'?'[data-app-theme="dark"]':'')+'{'+variables+'}';
+}).join('\n')).join('\n');
+const surfaces=readFileSync('public/theme-surfaces-v3.10.1.css','utf8');
+const style='<style id="experience-v310">\n'+css+'\n'+themeCss+'\n'+surfaces+'\n</style>';
 if(html.includes('<style id="experience-v310">'))html=html.replace(/<style id="experience-v310">[\s\S]*?<\/style>/,style);
 else html=html.replace('<link rel="stylesheet" href="./experience-v3.10.0.css">',style);
 writeFileSync('public/index.html',html);

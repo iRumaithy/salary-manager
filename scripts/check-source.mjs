@@ -12,4 +12,6 @@ assert(!readFileSync('.github/workflows/pages.yml','utf8').includes('  push:'));
 const core=readFileSync('public/finance-core-v3.10.0.js','utf8').replace(/export /g,'');
 assert(html.includes(core),'Embedded accounting must match the Worker accounting source');
 assert(html.includes(readFileSync('public/experience-v3.10.0.css','utf8')),'Embedded design must match its source');
+assert(html.includes(readFileSync('public/color-themes-v3.10.1.js','utf8').replace(/export /g,'')),'Embedded palettes must match their source');
+assert(html.includes(readFileSync('public/theme-surfaces-v3.10.1.css','utf8')),'Embedded theme surfaces must match their source');
 console.log('Inline JavaScript, release identifiers and owner-only publication checks passed.');

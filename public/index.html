@@ -28,6 +28,7 @@
       } catch (_) {}
     })();
   </script>
+<script id="colorThemePrepaint">(function(){var ids=["blue","green","burgundy","violet","slate","sand"],id="blue";try{var saved=localStorage.getItem("monthlySalaryManager.colorTheme.v1");if(ids.indexOf(saved)!==-1)id=saved;}catch(_){}document.documentElement.setAttribute("data-color-theme",id);})();</script>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="مدير الراتب">
@@ -44,7 +45,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.10.0-balance-experience-r1";
+      var v = "3.10.1-color-themes-r1";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -4221,6 +4222,111 @@ html[data-app-theme=dark] .cash-legend-row{color:#e8edf9;background:transparent!
 @media(max-width:700px){.content-grid{grid-template-columns:minmax(0,1fr)}.distribution{grid-template-columns:minmax(0,1fr);justify-items:center}.distribution .legend{width:100%}.cash-trend-panel{grid-row:auto}.expense-category-overview-panel{grid-column:1!important;grid-row:auto}.tabs{top:119px!important}}
 html[data-app-theme=dark] .insight{background:#263451!important;color:#ced8f5!important;border-color:#354462!important}
 
+html[data-color-theme="blue"]{--canvas:#f3f5fa!important;--paper:#ffffff!important;--ink:#24334b!important;--muted:#64718a!important;--line:#e4e9f2!important;--teal:#4562d5!important;--accent-hover:#354db1!important;--teal-soft:#edf0ff!important;--accent-wash:#f0f3ff!important;--accent-line:#d4ddf5!important;--forest:#263b80!important;--hero-start:#283966!important;--hero-end:#4562b8!important;--accent-solid:#4562d5!important;}
+html[data-color-theme="blue"][data-app-theme="dark"]{--canvas:#101725!important;--paper:#192236!important;--ink:#e8edf9!important;--muted:#a4b1cb!important;--line:#2b3853!important;--teal:#a4b7ff!important;--accent-hover:#4b66d0!important;--teal-soft:#273452!important;--accent-wash:#1d2942!important;--accent-line:#3d4d73!important;--forest:#b7c5ff!important;--hero-start:#202e53!important;--hero-end:#3d53a1!important;--accent-solid:#4b66d0!important;}
+html[data-color-theme="green"]{--canvas:#f3efe7!important;--paper:#fffdf9!important;--ink:#173331!important;--muted:#60706a!important;--line:#e4e2da!important;--teal:#14756c!important;--accent-hover:#0f665e!important;--teal-soft:#dff2ed!important;--accent-wash:#edf7f4!important;--accent-line:#c9e2da!important;--forest:#123f3b!important;--hero-start:#123f3b!important;--hero-end:#0f5c55!important;--accent-solid:#14756c!important;}
+html[data-color-theme="green"][data-app-theme="dark"]{--canvas:#0d1715!important;--paper:#182923!important;--ink:#edf5f2!important;--muted:#a2b5ac!important;--line:#2d4038!important;--teal:#8bd5c5!important;--accent-hover:#298477!important;--teal-soft:#1c3934!important;--accent-wash:#182f29!important;--accent-line:#3c5c50!important;--forest:#b5e6da!important;--hero-start:#123c35!important;--hero-end:#1f5b4b!important;--accent-solid:#298477!important;}
+html[data-color-theme="burgundy"]{--canvas:#f8f1f4!important;--paper:#fffdfd!important;--ink:#402d38!important;--muted:#7d6471!important;--line:#eadde3!important;--teal:#9d3c5a!important;--accent-hover:#812b46!important;--teal-soft:#f6e7ed!important;--accent-wash:#fbf0f4!important;--accent-line:#e8c7d3!important;--forest:#64283f!important;--hero-start:#4c1e31!important;--hero-end:#913752!important;--accent-solid:#9d3c5a!important;}
+html[data-color-theme="burgundy"][data-app-theme="dark"]{--canvas:#1b1218!important;--paper:#2b1d26!important;--ink:#f8edf3!important;--muted:#c6a8b8!important;--line:#48303e!important;--teal:#eba9c0!important;--accent-hover:#ae4d6b!important;--teal-soft:#472a39!important;--accent-wash:#36222e!important;--accent-line:#674252!important;--forest:#f1bfd1!important;--hero-start:#4b2032!important;--hero-end:#7b304b!important;--accent-solid:#ae4d6b!important;}
+html[data-color-theme="violet"]{--canvas:#f6f3fb!important;--paper:#fffefe!important;--ink:#382e4c!important;--muted:#786985!important;--line:#e7e0f0!important;--teal:#7851ad!important;--accent-hover:#603c92!important;--teal-soft:#efe8f8!important;--accent-wash:#f6f0fc!important;--accent-line:#d9c9ed!important;--forest:#533579!important;--hero-start:#352552!important;--hero-end:#7752af!important;--accent-solid:#7851ad!important;}
+html[data-color-theme="violet"][data-app-theme="dark"]{--canvas:#161222!important;--paper:#251e34!important;--ink:#f0eafa!important;--muted:#b8a9cd!important;--line:#3d3152!important;--teal:#c5acf2!important;--accent-hover:#8863bd!important;--teal-soft:#3c2e54!important;--accent-wash:#2f2542!important;--accent-line:#594573!important;--forest:#d5c0f8!important;--hero-start:#33234e!important;--hero-end:#62418e!important;--accent-solid:#8863bd!important;}
+html[data-color-theme="slate"]{--canvas:#f1f5f7!important;--paper:#ffffff!important;--ink:#2a3e49!important;--muted:#60717b!important;--line:#dfe7ec!important;--teal:#426d80!important;--accent-hover:#365f73!important;--teal-soft:#e5eff4!important;--accent-wash:#edf5f8!important;--accent-line:#c8dce5!important;--forest:#294c60!important;--hero-start:#203949!important;--hero-end:#4c7389!important;--accent-solid:#426d80!important;}
+html[data-color-theme="slate"][data-app-theme="dark"]{--canvas:#10191f!important;--paper:#1a2a33!important;--ink:#e7f0f5!important;--muted:#a4b9c5!important;--line:#2d4653!important;--teal:#9bc9dc!important;--accent-hover:#43778e!important;--teal-soft:#253f4d!important;--accent-wash:#1e333e!important;--accent-line:#3d6274!important;--forest:#bbdfed!important;--hero-start:#203b4c!important;--hero-end:#365c71!important;--accent-solid:#43778e!important;}
+html[data-color-theme="sand"]{--canvas:#f7f3ed!important;--paper:#fffefa!important;--ink:#45392d!important;--muted:#7c6c58!important;--line:#e8dfd1!important;--teal:#875d2f!important;--accent-hover:#785125!important;--teal-soft:#f2e8d8!important;--accent-wash:#faf3e8!important;--accent-line:#e4cfb1!important;--forest:#5e4329!important;--hero-start:#4b3929!important;--hero-end:#8c653d!important;--accent-solid:#875d2f!important;}
+html[data-color-theme="sand"][data-app-theme="dark"]{--canvas:#1b1611!important;--paper:#2b231b!important;--ink:#f6efe4!important;--muted:#c0af96!important;--line:#46392a!important;--teal:#dfc196!important;--accent-hover:#906b3e!important;--teal-soft:#473723!important;--accent-wash:#352a1e!important;--accent-line:#6b5435!important;--forest:#ead3b2!important;--hero-start:#433021!important;--hero-end:#765233!important;--accent-solid:#906b3e!important;}
+/* Every informational surface follows the selected palette, in both modes. */
+:root[data-color-theme] body,
+:root[data-color-theme] .app { background:var(--canvas)!important; color:var(--ink); }
+:root[data-color-theme] body::before { background:var(--canvas)!important; }
+:root[data-color-theme] .topbar { background:color-mix(in srgb,var(--paper) 96%,transparent)!important; border-color:var(--line)!important; }
+:root[data-color-theme] :is(.modal-head,.modal-foot) { background:var(--paper)!important; color:var(--ink)!important; border-color:var(--line)!important; }
+:root[data-color-theme] .modal::backdrop { background:rgba(15,23,42,.55); }
+:root[data-color-theme] .settings-status { background:var(--accent-wash)!important; color:var(--muted)!important; }
+:root[data-color-theme] .settings-status.on { background:var(--teal-soft)!important; color:var(--teal)!important; }
+:root[data-color-theme] .icon-choice:not(.selected) { background:var(--accent-wash)!important; }
+:root[data-color-theme] .icon-choice.selected { background:var(--teal-soft)!important; box-shadow:0 0 0 3px var(--teal-soft)!important; }
+:root[data-color-theme] :is(.icon-choice .icon-check,.app-lock-icon,.toast) { background:var(--accent-solid)!important; color:white!important; }
+:root[data-color-theme] .helper { color:var(--muted)!important; }
+:root[data-color-theme] :is(.available-card,.panel,.summary-card,.tabs,dialog.modal,.settings-section,.account-card,.admin-user,.automation-import,.statement-card,.expense-item,.commitment-card,.recurring-card,.upcoming-item,.backup-menu,.outing-card,.outing-purchase,.outing-total,.outing-stat,.outing-balance-person,.reimbursement-item,.salary-dark-auto-surface,.app-lock-card,.automation-step,.automation-title-editor,.automation-visual-editor,.automation-toggle-row,.automation-setup-btn,.participant-pay-chip) {
+  background:var(--paper)!important; color:var(--ink)!important; border-color:var(--line)!important;
+}
+:root[data-color-theme] :is(.expense-category-choice,.expense-voice-button,.outing-check span) { background:var(--paper)!important; color:var(--ink)!important; border-color:var(--line)!important; }
+:root[data-color-theme] :is(.expense-quick-capture,.payment-note,.shared-expense-panel,.shared-expense-summary,.shared-split-summary-box,.admin-notification-box,.release-control-box,.pwa-note,.install-followup-note,.owner-config-status.ready,.changelog-entry.current,.reset-code-box,.outing-transfer,.outing-calc-note,.automation-connect-card) {
+  background:linear-gradient(145deg,var(--paper),var(--accent-wash))!important;
+  color:var(--ink)!important; border-color:var(--accent-line)!important;
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--paper) 85%,transparent);
+}
+:root[data-color-theme] .payment-note :is(strong,p),
+:root[data-color-theme] .shared-expense-summary :is(strong,span),
+:root[data-color-theme] .outing-calc-note { color:var(--ink)!important; }
+:root[data-color-theme] :is(.soft-btn,.balance-edit-btn,.participant-editor-toggle,.mini-btn.mark-paid,.payday-carry-icon,.outing-chip,.outing-check input:checked + span,.participant-pay-chip.paid,.salary-dark-auto-button) {
+  background:var(--teal-soft)!important; color:var(--teal)!important; border-color:var(--accent-line)!important;
+}
+:root[data-color-theme] :is(.primary-btn,.mobile-fab,.automation-review-fab,.expense-voice-mic,.payment-note-symbol,.guide-step-number,.usage-badge .badge-star) {
+  background:var(--accent-solid)!important; color:#fff!important;
+  box-shadow:0 6px 18px color-mix(in srgb,var(--accent-solid) 18%,transparent)!important;
+}
+:root[data-color-theme] .primary-btn:hover { background:var(--accent-hover)!important; }
+:root[data-color-theme] .expense-voice-button.is-listening .expense-voice-mic { background:#bb4f49!important; }
+:root[data-color-theme] .expense-voice-mic svg { fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+:root[data-color-theme] .expense-voice-status:not(.is-error):not(.is-listening) { background:var(--teal-soft)!important; color:var(--teal)!important; }
+:root[data-color-theme] .expense-voice-bars i { background:var(--muted); }
+:root[data-color-theme] .expense-category-choice.is-selected {
+  background:var(--teal-soft)!important; border-color:var(--teal)!important;
+  box-shadow:0 5px 14px color-mix(in srgb,var(--accent-solid) 10%,transparent)!important;
+}
+:root[data-color-theme] .expense-category-choice:hover { border-color:var(--teal)!important; }
+:root[data-color-theme] .expense-category-choice.is-selected .expense-category-icon,
+:root[data-color-theme] :is([data-expense-category="مشتريات"],[data-expense-category="رياضة"],[data-expense-category="منزل"]) .expense-category-icon {
+  background:var(--teal-soft)!important; color:var(--teal)!important;
+}
+:root[data-color-theme] :is(.quick-form,.deposit-form,.form-panel) { border-color:var(--line)!important; background:var(--paper)!important; }
+:root[data-color-theme] .field :is(input,textarea,select),
+:root[data-color-theme] :is(.automation-visual-editor select,.automation-title-editor input,.app-lock-pin,.automation-secret-row input) {
+  color:var(--ink)!important; background:var(--paper)!important; border-color:var(--line)!important;
+}
+:root[data-color-theme] .field :is(input,textarea,select):focus { border-color:var(--teal)!important; box-shadow:0 0 0 3px var(--teal-soft)!important; }
+:root[data-color-theme] :is(.ghost-btn,.month-control,.month-picker-shell,.close-btn,.icon-btn,.outing-mini-chip,.participant-pay-chip.me) { background:var(--paper)!important; color:var(--ink)!important; border-color:var(--line)!important; }
+:root[data-color-theme] .ghost-btn:hover { background:var(--accent-wash)!important; }
+:root[data-color-theme] :is(.daily-box,.payday-preview,.bank-audit,.automation-code,.auth-tabs,.expense-category-empty,.empty-state,.statement-search-wrap,.outing-card > summary,.outing-payment,.reimbursement-stat,.automation-import-raw,.participant-pay-chip:not(.paid):not(.me):hover) { background:var(--accent-wash)!important; border-color:var(--line)!important; color:var(--ink)!important; }
+:root[data-color-theme] :is(.payday-result,.owner-review-note,.payday-pending-notice,.insight,.statement-audit,.statement-audit-badge) { background:var(--teal-soft)!important; color:var(--ink)!important; border-color:var(--accent-line)!important; }
+:root[data-color-theme] .donut-center,
+:root[data-color-theme] .expense-category-donut::after { background:var(--paper)!important; }
+:root[data-color-theme] .cash-legend-row { color:var(--ink)!important; background:transparent!important; }
+:root[data-color-theme] .status-chip:not(.warning):not(.danger) { color:var(--teal); background:var(--teal-soft); }
+:root[data-color-theme] :is(.salary-card:not(.salary-card-bank),.preview-classic,.guide-summary,.statement-hero) {
+  background:linear-gradient(135deg,var(--hero-start),var(--hero-end))!important; color:white;
+}
+:root[data-color-theme] .brand-mark { background:var(--accent-solid)!important; color:white!important; }
+:root[data-color-theme] :is(.summary-card:nth-child(1),.summary-card:nth-child(4),.summary-card:nth-child(6),.summary-card:nth-child(7)) { --accent:var(--teal)!important; --accent-soft:var(--teal-soft)!important; }
+:root[data-color-theme] .balance-secondary { background:transparent!important; color:var(--muted)!important; }
+:root[data-color-theme] :is(.next-salary-countdown,.guide-copy p,.automation-mini-guide li) { color:var(--muted)!important; }
+:root[data-color-theme] .app-lock-overlay { background:linear-gradient(155deg,var(--hero-start),var(--hero-end))!important; }
+:root[data-color-theme] .shared-expense-fields { border-color:var(--accent-line)!important; }
+:root[data-color-theme] .participant-circle,
+:root[data-color-theme] .outing-check span::before { background:var(--paper)!important; border-color:var(--accent-line)!important; color:var(--teal)!important; }
+:root[data-color-theme] :is(.participant-pay-chip.paid .participant-circle,.participant-pay-chip.me .participant-circle),
+:root[data-color-theme] .outing-check input:checked + span::before { background:var(--accent-solid)!important; border-color:var(--accent-solid)!important; color:white!important; }
+:root[data-color-theme][data-app-theme="dark"] #outingsView .section-heading { background:var(--paper)!important; border-color:var(--line)!important; }
+:root[data-color-theme] button:focus-visible,
+:root[data-color-theme] a:focus-visible,
+:root[data-color-theme] summary:focus-visible { outline-color:var(--teal); }
+
+.app-color-theme-grid { border:0; padding:0; margin:16px 0 12px; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; min-width:0; }
+.app-color-theme-choice { position:relative; min-width:0; margin:0; cursor:pointer; }
+.app-color-theme-choice .theme-option { display:grid; gap:9px; padding:10px; border:1px solid var(--line); border-radius:15px; background:var(--paper); min-height:116px; color:var(--ink); }
+.app-color-theme-choice input:checked + .theme-option { border-color:var(--teal); box-shadow:0 0 0 2px var(--teal-soft); }
+.app-color-theme-choice input:focus-visible + .theme-option { outline:3px solid var(--teal); outline-offset:3px; }
+.theme-mini-preview { display:block; position:relative; height:58px; border-radius:10px; background:var(--preview-canvas); padding:8px; overflow:hidden; border:1px solid #00000008; }
+.theme-mini-header { display:block; height:7px; width:42%; border-radius:4px; background:var(--preview-accent); margin-bottom:7px; }
+.theme-mini-cards { display:grid; gap:5px; grid-template-columns:1fr 1fr; height:26px; }
+.theme-mini-cards i { display:block; border-radius:6px; background:var(--preview-paper); border:1px solid #00000008; }
+.theme-mini-cards i:last-child { background:var(--preview-soft); }
+.theme-choice-copy { display:flex; align-items:center; justify-content:space-between; gap:5px; font-size:11px; font-weight:650; line-height:1.5; }
+.theme-choice-check { display:grid; place-items:center; width:18px; height:18px; flex:0 0 auto; border:1px solid var(--line); border-radius:50%; font-size:11px; color:transparent; }
+.app-color-theme-choice input:checked + .theme-option .theme-choice-check { color:white; background:var(--accent-solid); border-color:var(--accent-solid); }
+@media(max-width:620px) { .app-color-theme-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; } .theme-choice-copy { font-size:11px; } }
+
 </style>
 </head>
 <body>
@@ -4905,7 +5011,7 @@ html[data-app-theme=dark] .insight{background:#263451!important;color:#ced8f5!im
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.10.0" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.10.1" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
         <span class="version-badge">الإصدار <b id="appVersion">3.8.2</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
@@ -5354,6 +5460,12 @@ html[data-app-theme=dark] .insight{background:#263451!important;color:#ced8f5!im
   <dialog class="modal" id="settingsDialog">
     <div class="modal-head"><h2>الإعدادات</h2><button class="close-btn" type="button" data-close-dialog="settingsDialog" aria-label="إغلاق">×</button></div>
     <div class="modal-body">
+      <section class="settings-section" id="appColorThemeSection">
+        <div class="settings-section-head"><div><h3>لون الخلفية والمظهر</h3><p>اختر ألوانًا متناسقة للخلفية والمربعات والأزرار، مع مظهر مناسب للوضع الليلي.</p></div></div>
+        <fieldset class="app-color-theme-grid" id="appColorThemeGrid"><legend class="sr-only">لون الخلفية</legend><label class="app-color-theme-choice"><input class="sr-only" type="radio" name="appColorTheme" value="blue"><span class="theme-option"><span class="theme-mini-preview" aria-hidden="true" style="--preview-canvas:#f3f5fa;--preview-paper:#fff;--preview-accent:#4562d5;--preview-soft:#edf0ff"><i class="theme-mini-header"></i><span class="theme-mini-cards"><i></i><i></i></span></span><span class="theme-choice-copy"><span>الأزرق الهادئ</span><i class="theme-choice-check" aria-hidden="true">✓</i></span></span></label><label class="app-color-theme-choice"><input class="sr-only" type="radio" name="appColorTheme" value="green"><span class="theme-option"><span class="theme-mini-preview" aria-hidden="true" style="--preview-canvas:#f3efe7;--preview-paper:#fffdf9;--preview-accent:#14756c;--preview-soft:#dff2ed"><i class="theme-mini-header"></i><span class="theme-mini-cards"><i></i><i></i></span></span><span class="theme-choice-copy"><span>الأخضر الكلاسيكي</span><i class="theme-choice-check" aria-hidden="true">✓</i></span></span></label><label class="app-color-theme-choice"><input class="sr-only" type="radio" name="appColorTheme" value="burgundy"><span class="theme-option"><span class="theme-mini-preview" aria-hidden="true" style="--preview-canvas:#f8f1f4;--preview-paper:#fffdfd;--preview-accent:#9d3c5a;--preview-soft:#f6e7ed"><i class="theme-mini-header"></i><span class="theme-mini-cards"><i></i><i></i></span></span><span class="theme-choice-copy"><span>العنابي البرقندي</span><i class="theme-choice-check" aria-hidden="true">✓</i></span></span></label><label class="app-color-theme-choice"><input class="sr-only" type="radio" name="appColorTheme" value="violet"><span class="theme-option"><span class="theme-mini-preview" aria-hidden="true" style="--preview-canvas:#f6f3fb;--preview-paper:#fffefe;--preview-accent:#7851ad;--preview-soft:#efe8f8"><i class="theme-mini-header"></i><span class="theme-mini-cards"><i></i><i></i></span></span><span class="theme-choice-copy"><span>البنفسجي الليلكي</span><i class="theme-choice-check" aria-hidden="true">✓</i></span></span></label><label class="app-color-theme-choice"><input class="sr-only" type="radio" name="appColorTheme" value="slate"><span class="theme-option"><span class="theme-mini-preview" aria-hidden="true" style="--preview-canvas:#f1f5f7;--preview-paper:#fff;--preview-accent:#426d80;--preview-soft:#e5eff4"><i class="theme-mini-header"></i><span class="theme-mini-cards"><i></i><i></i></span></span><span class="theme-choice-copy"><span>الأزرق الرمادي</span><i class="theme-choice-check" aria-hidden="true">✓</i></span></span></label><label class="app-color-theme-choice"><input class="sr-only" type="radio" name="appColorTheme" value="sand"><span class="theme-option"><span class="theme-mini-preview" aria-hidden="true" style="--preview-canvas:#f7f3ed;--preview-paper:#fffefa;--preview-accent:#875d2f;--preview-soft:#f2e8d8"><i class="theme-mini-header"></i><span class="theme-mini-cards"><i></i><i></i></span></span><span class="theme-choice-copy"><span>الرملي الدافئ</span><i class="theme-choice-check" aria-hidden="true">✓</i></span></span></label></fieldset>
+        <div class="settings-status">يُطبق اختيارك مباشرة ويُحفظ تلقائيًا على هذا الجهاز.</div>
+      </section>
+
       <section class="settings-section">
         <div class="settings-section-head"><div><h3>أيقونة التطبيق</h3><p>اختر الشكل الذي تفضله لهذا الجهاز، ثم اضغط «اعتماد الأيقونة».</p></div></div>
         <div class="icon-choice-grid" id="iconChoiceGrid">
@@ -5539,7 +5651,8 @@ html[data-app-theme=dark] .insight{background:#263451!important;color:#ced8f5!im
     </div>
     <div class="modal-body">
       <div class="changelog-list">
-        <section class="changelog-entry current"><div class="changelog-version"><strong>الإصدار 3.10.0</strong><time>24 أكتوبر 2026</time></div><ul><li>حساب الرصيد بالفلس ومراجعته من سجل الحركات، مع حماية تعديلات الأجهزة من التعارض.</li><li>قرار واضح قبل إضافة الراتب، ومعاينة خصم الأقساط والسلف مرة واحدة.</li><li>مطابقة البنك دون تسوية تلقائية، ورسم تفاعلي لحركة الرصيد، وتوزيع يعتمد على الشهر الفعلي.</li><li>تجربة مرئية أخف وأوضح في الوضعين، مع حجز الالتزامات غير المدفوعة قبل حساب حد الصرف.</li></ul></section>
+        <section class="changelog-entry current"><div class="changelog-version"><strong>الإصدار 3.10.1</strong><time>24 أكتوبر 2026</time></div><ul><li>توحيد مربعات الإضافة والإرشادات والأزرار مع ألوان التطبيق المختارة.</li><li>إضافة ستة ألوان متناسقة للخلفية والمظهر في الإعدادات، مع حفظ تلقائي ومعاينات مباشرة ووضع ليلي متناسق.</li></ul></section>
+        <section class="changelog-entry"><div class="changelog-version"><strong>الإصدار 3.10.0</strong><time>24 أكتوبر 2026</time></div><ul><li>حساب الرصيد بالفلس ومراجعته من سجل الحركات، مع حماية تعديلات الأجهزة من التعارض.</li><li>قرار واضح قبل إضافة الراتب، ومعاينة خصم الأقساط والسلف مرة واحدة.</li><li>مطابقة البنك دون تسوية تلقائية، ورسم تفاعلي لحركة الرصيد، وتوزيع يعتمد على الشهر الفعلي.</li><li>تجربة مرئية أخف وأوضح في الوضعين، مع حجز الالتزامات غير المدفوعة قبل حساب حد الصرف.</li></ul></section>
         <section class="changelog-entry">
           <div class="changelog-version">
             <strong>الإصدار 3.9.4</strong>
@@ -5947,6 +6060,23 @@ return {cents,money,transactionTotals,ensureLedger,balances,audit,paydayPreview,
 })();
       /* FINANCE_CORE_END */
 
+/* COLOR_THEMES_START */
+// Personal appearance preferences never change financial or account data.
+const COLOR_THEME_KEY = 'monthlySalaryManager.colorTheme.v1';
+const COLOR_THEMES = [
+  {id:'blue', label:'الأزرق الهادئ', light:['#f3f5fa','#ffffff','#24334b','#64718a','#e4e9f2','#4562d5','#354db1','#edf0ff','#f0f3ff','#d4ddf5','#263b80','#283966','#4562b8'], dark:['#101725','#192236','#e8edf9','#a4b1cb','#2b3853','#a4b7ff','#4b66d0','#273452','#1d2942','#3d4d73','#b7c5ff','#202e53','#3d53a1']},
+  {id:'green', label:'الأخضر الكلاسيكي', light:['#f3efe7','#fffdf9','#173331','#60706a','#e4e2da','#14756c','#0f665e','#dff2ed','#edf7f4','#c9e2da','#123f3b','#123f3b','#0f5c55'], dark:['#0d1715','#182923','#edf5f2','#a2b5ac','#2d4038','#8bd5c5','#298477','#1c3934','#182f29','#3c5c50','#b5e6da','#123c35','#1f5b4b']},
+  {id:'burgundy', label:'العنابي البرقندي', light:['#f8f1f4','#fffdfd','#402d38','#7d6471','#eadde3','#9d3c5a','#812b46','#f6e7ed','#fbf0f4','#e8c7d3','#64283f','#4c1e31','#913752'], dark:['#1b1218','#2b1d26','#f8edf3','#c6a8b8','#48303e','#eba9c0','#ae4d6b','#472a39','#36222e','#674252','#f1bfd1','#4b2032','#7b304b']},
+  {id:'violet', label:'البنفسجي الليلكي', light:['#f6f3fb','#fffefe','#382e4c','#786985','#e7e0f0','#7851ad','#603c92','#efe8f8','#f6f0fc','#d9c9ed','#533579','#352552','#7752af'], dark:['#161222','#251e34','#f0eafa','#b8a9cd','#3d3152','#c5acf2','#8863bd','#3c2e54','#2f2542','#594573','#d5c0f8','#33234e','#62418e']},
+  {id:'slate', label:'الأزرق الرمادي', light:['#f1f5f7','#ffffff','#2a3e49','#60717b','#dfe7ec','#426d80','#365f73','#e5eff4','#edf5f8','#c8dce5','#294c60','#203949','#4c7389'], dark:['#10191f','#1a2a33','#e7f0f5','#a4b9c5','#2d4653','#9bc9dc','#43778e','#253f4d','#1e333e','#3d6274','#bbdfed','#203b4c','#365c71']},
+  {id:'sand', label:'الرملي الدافئ', light:['#f7f3ed','#fffefa','#45392d','#7c6c58','#e8dfd1','#875d2f','#785125','#f2e8d8','#faf3e8','#e4cfb1','#5e4329','#4b3929','#8c653d'], dark:['#1b1611','#2b231b','#f6efe4','#c0af96','#46392a','#dfc196','#906b3e','#473723','#352a1e','#6b5435','#ead3b2','#433021','#765233']}
+];
+const THEME_VARIABLES = ['canvas','paper','ink','muted','line','teal','accent-hover','teal-soft','accent-wash','accent-line','forest','hero-start','hero-end'];
+function normalizeColorTheme(value) {
+  return COLOR_THEMES.some(theme => theme.id === value) ? value : 'blue';
+}
+
+/* COLOR_THEMES_END */
       var LANGUAGE_KEY = "monthlySalaryManager.language";
       var currentLanguage = localStorage.getItem(LANGUAGE_KEY) === "en" ? "en" : "ar";
       var APP_ICON_KEY = "monthlySalaryManager.iconChoice.v1";
@@ -6247,6 +6377,17 @@ return {cents,money,transactionTotals,ensureLedger,balances,audit,paydayPreview,
       EN_TRANSLATIONS["الراتب بانتظار تأكيدك"] = "Salary awaits your confirmation";
       EN_TRANSLATIONS["مراجعة الراتب"] = "Review salary";
       EN_TRANSLATIONS["مراجعة واعتماد من مدار"] = "Review and approve in Madar";
+      EN_TRANSLATIONS["لون الخلفية والمظهر"] = "Background and appearance";
+      EN_TRANSLATIONS["اختر ألوانًا متناسقة للخلفية والمربعات والأزرار، مع مظهر مناسب للوضع الليلي."] = "Choose coordinated colors for backgrounds, cards and buttons, with matching dark mode.";
+      EN_TRANSLATIONS["لون الخلفية"] = "Background color";
+      EN_TRANSLATIONS["يُطبق اختيارك مباشرة ويُحفظ تلقائيًا على هذا الجهاز."] = "Your choice applies immediately and is saved automatically on this device.";
+      EN_TRANSLATIONS["تم حفظ ألوان التطبيق"] = "App colors saved";
+      EN_TRANSLATIONS["الأزرق الهادئ"] = "Calm blue";
+      EN_TRANSLATIONS["الأخضر الكلاسيكي"] = "Classic green";
+      EN_TRANSLATIONS["العنابي البرقندي"] = "Burgundy";
+      EN_TRANSLATIONS["البنفسجي الليلكي"] = "Lilac violet";
+      EN_TRANSLATIONS["الأزرق الرمادي"] = "Blue gray";
+      EN_TRANSLATIONS["الرملي الدافئ"] = "Warm sand";
       var AR_TRANSLATIONS = Object.create(null);
       Object.keys(EN_TRANSLATIONS).forEach(function(ar) {
         var en = EN_TRANSLATIONS[ar];
@@ -6423,8 +6564,8 @@ return {cents,money,transactionTotals,ensureLedger,balances,audit,paydayPreview,
       }
 
 
-      var APP_VERSION = "3.10.0";
-      var APP_RELEASE_ID = "3.10.0-balance-experience-r1";
+      var APP_VERSION = "3.10.1";
+      var APP_RELEASE_ID = "3.10.1-color-themes-r1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";
@@ -6687,13 +6828,36 @@ return {cents,money,transactionTotals,ensureLedger,balances,audit,paydayPreview,
         return '<svg viewBox="0 0 24 24"><path d="M20.2 15.4A8.5 8.5 0 0 1 8.6 3.8 8.7 8.7 0 1 0 20.2 15.4Z"/></svg>'
       }
       function getAppTheme394(){try{return localStorage.getItem(APP_THEME_KEY_394)==="dark"?"dark":"light"}catch(_){return"light"}}
+      function getAppColorTheme() {
+        try { return normalizeColorTheme(localStorage.getItem(COLOR_THEME_KEY)); }
+        catch (_) { return "blue"; }
+      }
+      function updateAppThemeMeta() {
+        var active = normalizeColorTheme(document.documentElement.getAttribute("data-color-theme") || getAppColorTheme());
+        var selected = COLOR_THEMES.find(function(theme) {return theme.id === active;}) || COLOR_THEMES[0];
+        var mode = document.documentElement.getAttribute("data-app-theme") === "dark" ? "dark" : "light";
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", selected[mode][0]);
+      }
+      function syncAppColorChoices() {
+        var selected = normalizeColorTheme(document.documentElement.getAttribute("data-color-theme") || getAppColorTheme());
+        $all('input[name="appColorTheme"]').forEach(function(input) {input.checked = input.value === selected;});
+      }
+      function applyAppColorTheme(value, persist) {
+        var selected = normalizeColorTheme(value);
+        document.documentElement.setAttribute("data-color-theme", selected);
+        if (persist !== false) try {localStorage.setItem(COLOR_THEME_KEY, selected);} catch (_) {}
+        syncAppColorChoices();
+        updateAppThemeMeta();
+        return selected;
+      }
       function applyAppTheme394(mode,persist){
         mode=mode==="dark"?"dark":"light";
         if(mode==="dark")document.documentElement.setAttribute("data-app-theme","dark");else document.documentElement.removeAttribute("data-app-theme");
         if(persist!==false)try{localStorage.setItem(APP_THEME_KEY_394,mode)}catch(_){}
         var icon=$("#themeToggleIcon"),button=$("#themeToggleButton");if(icon)icon.innerHTML=themeIconSvg(mode);
         if(button){var label=mode==="dark"?"العودة للوضع النهاري":"تفعيل الوضع الليلي";button.title=label;button.setAttribute("aria-label",label)}
-        var meta=document.querySelector('meta[name="theme-color"]');if(meta)meta.setAttribute("content",mode==="dark"?"#0d1514":"#123f3b")
+        updateAppThemeMeta();
       }
 
       function bankCardEmvSvg(){
@@ -6774,7 +6938,7 @@ return {cents,money,transactionTotals,ensureLedger,balances,audit,paydayPreview,
         var hardware=document.querySelector(".bank-card-hardware");
         if(hardware) hardware.innerHTML=salaryCardHardwareHTML394();
       }
-      function initAppearance394(){applyAppTheme394(getAppTheme394(),false);applySalaryCardStyle394(getSalaryCardStyle394(),false)}
+      function initAppearance394(){applyAppColorTheme(getAppColorTheme(),false);applyAppTheme394(getAppTheme394(),false);applySalaryCardStyle394(getSalaryCardStyle394(),false)}
 
       function $(selector) {
         return document.querySelector(selector);
@@ -9004,7 +9168,7 @@ return {cents,money,transactionTotals,ensureLedger,balances,audit,paydayPreview,
         var reversals = monthTransactionTotal(defaultMonth, 'expense_reversal', 'in');
         var gross = Math.max(0, -monthTransactionTotal(defaultMonth, 'expense') - reversals);
         var items = [
-          {label:'الأقساط والسلف', value:metrics.commitmentsTotal, color:'#4562d5', view:'commitmentsView'},
+          {label:'الأقساط والسلف', value:metrics.commitmentsTotal, color:'var(--accent-solid)', view:'commitmentsView'},
           {label:'المدفوعات الثابتة', value:metrics.recurringTotal, color:'#8b62c8', view:'recurringView'},
           {label:'ادخار هذا الشهر', value:metrics.savingsMoved, color:'#219eac', view:'savingsView'},
           {label:'المصروفات اليومية', value:gross, color:'#e5905b', view:'expensesView'}
@@ -12980,6 +13144,7 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
           prepareIconSettings();
           refreshAppLockSettings();
           syncSalaryCardStyleChoices394();
+          syncAppColorChoices();
           $("#settingsDialog").showModal();
           refreshGeneralPushStatus();
           refreshAutomationStatus(true);
@@ -12987,6 +13152,12 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
         $("#iconChoiceGrid").addEventListener("click", function (event) {
           var button = event.target.closest("[data-icon-choice]");
           if (button) selectPendingIcon(button.dataset.iconChoice);
+        });
+
+        $("#appColorThemeGrid").addEventListener("change", function (event) {
+          if (event.target.name !== "appColorTheme") return;
+          applyAppColorTheme(event.target.value, true);
+          showToast("تم حفظ ألوان التطبيق");
         });
 
         $("#salaryCardStyleGrid").addEventListener("click", function (event) {
@@ -13573,7 +13744,7 @@ existing.title=title;existing.date=date;existing.participants=participants;exist
       function sweep(){
         scheduled=false;
         var dark=isDark();
-        if(themeMeta)themeMeta.setAttribute("content",dark?"#0b2b26":"#123f3b");
+        if(themeMeta)themeMeta.setAttribute("content",getComputedStyle(document.documentElement).getPropertyValue("--canvas").trim());
         if(!dark){
           document.querySelectorAll("."+SURFACE_CLASS+",."+BUTTON_CLASS+",."+DANGER_CLASS).forEach(function(el){
             el.classList.remove(SURFACE_CLASS,BUTTON_CLASS,DANGER_CLASS);

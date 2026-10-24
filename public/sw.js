@@ -1,4 +1,4 @@
-const CACHE = "salary-manager-v3.10.1-color-themes-r1";
+const CACHE = "salary-manager-v3.10.2-month-position-r1";
 const SCOPE = self.registration.scope;
 const SHELL_KEY = new URL("__salary_manager_app_shell__", SCOPE).href;
 const STATIC_CORE = [

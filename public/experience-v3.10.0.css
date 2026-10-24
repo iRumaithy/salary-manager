@@ -47,9 +47,11 @@ html[data-app-theme=dark] .cash-legend-row{color:#e8edf9;background:transparent!
 
 .payday-pending-notice{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;margin:0 0 16px;background:var(--teal-soft);border-radius:16px;font-size:12px;color:var(--ink)}.payday-pending-notice[hidden]{display:none}.payday-pending-notice .soft-btn{font-size:11px}
 
+html[dir] .month-summary-row{width:100%!important;min-width:0!important;margin:16px 0 0!important;order:initial!important;grid-area:auto!important}
+html[dir] .month-summary-row .month-picker-shell{width:100%!important;min-width:0!important;min-height:34px!important}
 .tabs{max-width:100%;min-width:0;overflow-x:auto;scrollbar-width:none}.tab{flex:0 0 auto;min-width:110px}.container{min-width:0}
 @media(max-width:700px){
- html[dir] .topbar-inner{display:grid!important;grid-template-columns:minmax(0,1fr) repeat(4,34px)!important;grid-template-areas:"brand brand account account account" "month lang theme refresh data"!important;gap:7px!important;width:calc(100% - 26px)!important;padding:11px 0!important;min-height:0!important}
+ html[dir] .topbar-inner{display:grid!important;grid-template-columns:minmax(0,1fr) repeat(4,34px)!important;grid-template-areas:"brand brand account account account" ". lang theme refresh data"!important;gap:7px!important;width:calc(100% - 26px)!important;padding:11px 0!important;min-height:0!important}
  html[dir] .topbar-inner .brand{grid-area:brand!important;display:flex!important;gap:8px!important;margin:0!important;max-width:100%!important;min-width:0!important}
  html[dir] .topbar-inner .brand-mark{width:34px!important;height:34px!important;min-width:34px!important;border-radius:11px!important}
  html[dir] .topbar-inner .brand-copy{max-width:100%!important;min-width:0!important;display:grid!important;gap:2px!important}
@@ -61,7 +63,6 @@ html[data-app-theme=dark] .cash-legend-row{color:#e8edf9;background:transparent!
  html[dir] .topbar-inner #accountButton{grid-area:account!important;width:auto!important;min-width:112px!important;justify-self:end!important;max-width:132px!important;gap:6px!important;padding-inline:10px!important;flex-basis:auto!important}
  html[dir] .topbar-inner #accountButton .action-label{display:inline!important;max-width:100px!important;font-size:11px!important;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
  html[dir] .topbar-inner #languageToggleButton{grid-area:lang!important}html[dir] .topbar-inner #themeToggleButton{grid-area:theme!important}html[dir] .topbar-inner #refreshPageButton{grid-area:refresh!important}html[dir] .topbar-inner #backupButton{grid-area:data!important}
- html[dir] .topbar-inner .month-control{grid-area:month!important;width:100%!important;min-width:0!important;margin:0!important;order:initial!important}
  html[dir] .topbar-inner .month-picker-shell{width:100%!important;min-height:34px!important}.month-display-text{font-size:12px!important}
  .hero{align-items:start;gap:12px;padding-top:14px}.salary-card:not(.salary-card-bank){min-height:0!important;height:auto!important;padding:22px!important}.salary-card:not(.salary-card-bank) .hero-kicker{margin-bottom:14px}.salary-card:not(.salary-card-bank) .salary-payday-chip{margin-top:14px}
  .available-card{padding:22px!important}.tabs{top:111px!important;margin-inline:0!important;width:100%!important;max-width:100%!important}.tab{min-width:100px;min-height:40px;font-size:11px;padding:8px 12px}

@@ -45,7 +45,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.10.1-color-themes-r1";
+      var v = "3.10.2-month-position-r1";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -4199,9 +4199,11 @@ html[data-app-theme=dark] .cash-legend-row{color:#e8edf9;background:transparent!
 
 .payday-pending-notice{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;margin:0 0 16px;background:var(--teal-soft);border-radius:16px;font-size:12px;color:var(--ink)}.payday-pending-notice[hidden]{display:none}.payday-pending-notice .soft-btn{font-size:11px}
 
+html[dir] .month-summary-row{width:100%!important;min-width:0!important;margin:16px 0 0!important;order:initial!important;grid-area:auto!important}
+html[dir] .month-summary-row .month-picker-shell{width:100%!important;min-width:0!important;min-height:34px!important}
 .tabs{max-width:100%;min-width:0;overflow-x:auto;scrollbar-width:none}.tab{flex:0 0 auto;min-width:110px}.container{min-width:0}
 @media(max-width:700px){
- html[dir] .topbar-inner{display:grid!important;grid-template-columns:minmax(0,1fr) repeat(4,34px)!important;grid-template-areas:"brand brand account account account" "month lang theme refresh data"!important;gap:7px!important;width:calc(100% - 26px)!important;padding:11px 0!important;min-height:0!important}
+ html[dir] .topbar-inner{display:grid!important;grid-template-columns:minmax(0,1fr) repeat(4,34px)!important;grid-template-areas:"brand brand account account account" ". lang theme refresh data"!important;gap:7px!important;width:calc(100% - 26px)!important;padding:11px 0!important;min-height:0!important}
  html[dir] .topbar-inner .brand{grid-area:brand!important;display:flex!important;gap:8px!important;margin:0!important;max-width:100%!important;min-width:0!important}
  html[dir] .topbar-inner .brand-mark{width:34px!important;height:34px!important;min-width:34px!important;border-radius:11px!important}
  html[dir] .topbar-inner .brand-copy{max-width:100%!important;min-width:0!important;display:grid!important;gap:2px!important}
@@ -4213,7 +4215,6 @@ html[data-app-theme=dark] .cash-legend-row{color:#e8edf9;background:transparent!
  html[dir] .topbar-inner #accountButton{grid-area:account!important;width:auto!important;min-width:112px!important;justify-self:end!important;max-width:132px!important;gap:6px!important;padding-inline:10px!important;flex-basis:auto!important}
  html[dir] .topbar-inner #accountButton .action-label{display:inline!important;max-width:100px!important;font-size:11px!important;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
  html[dir] .topbar-inner #languageToggleButton{grid-area:lang!important}html[dir] .topbar-inner #themeToggleButton{grid-area:theme!important}html[dir] .topbar-inner #refreshPageButton{grid-area:refresh!important}html[dir] .topbar-inner #backupButton{grid-area:data!important}
- html[dir] .topbar-inner .month-control{grid-area:month!important;width:100%!important;min-width:0!important;margin:0!important;order:initial!important}
  html[dir] .topbar-inner .month-picker-shell{width:100%!important;min-height:34px!important}.month-display-text{font-size:12px!important}
  .hero{align-items:start;gap:12px;padding-top:14px}.salary-card:not(.salary-card-bank){min-height:0!important;height:auto!important;padding:22px!important}.salary-card:not(.salary-card-bank) .hero-kicker{margin-bottom:14px}.salary-card:not(.salary-card-bank) .salary-payday-chip{margin-top:14px}
  .available-card{padding:22px!important}.tabs{top:111px!important;margin-inline:0!important;width:100%!important;max-width:100%!important}.tab{min-width:100px;min-height:40px;font-size:11px;padding:8px 12px}
@@ -4352,12 +4353,6 @@ html[data-color-theme="sand"][data-app-theme="dark"]{--canvas:#1b1611!important;
           </div>
         </div>
 
-        <div class="month-control month-control-static" aria-label="الشهر الحالي">
-          <div class="month-picker-shell month-picker-static">
-            <span class="month-display-text" id="monthDisplayText">أغسطس 2026</span>
-          </div>
-        </div>
-
         <div class="top-actions">
           <button class="ghost-btn language-toggle" id="languageToggleButton" type="button" title="Switch interface language" aria-label="Switch interface language">
             <span class="language-short" id="languageToggleShort" aria-hidden="true">EN</span>
@@ -4391,6 +4386,12 @@ html[data-color-theme="sand"][data-app-theme="dark"]{--canvas:#1b1611!important;
     </div>
 
     <main class="container">
+      <div class="month-control month-control-static month-summary-row" aria-label="الشهر الحالي">
+        <div class="month-picker-shell month-picker-static">
+          <span class="month-display-text" id="monthDisplayText">أغسطس 2026</span>
+        </div>
+      </div>
+
       <section class="hero" aria-labelledby="monthSummaryTitle">
         <article class="salary-card">
           <p class="hero-kicker"><span class="live-dot" aria-hidden="true"></span><span id="monthSummaryTitle">ملخص الشهر الحالي</span></p>
@@ -5011,7 +5012,7 @@ html[data-color-theme="sand"][data-app-theme="dark"]{--canvas:#1b1611!important;
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.10.1" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.10.2" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
         <span class="version-badge">الإصدار <b id="appVersion">3.8.2</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
@@ -5651,7 +5652,8 @@ html[data-color-theme="sand"][data-app-theme="dark"]{--canvas:#1b1611!important;
     </div>
     <div class="modal-body">
       <div class="changelog-list">
-        <section class="changelog-entry current"><div class="changelog-version"><strong>الإصدار 3.10.1</strong><time>24 أكتوبر 2026</time></div><ul><li>توحيد مربعات الإضافة والإرشادات والأزرار مع ألوان التطبيق المختارة.</li><li>إضافة ستة ألوان متناسقة للخلفية والمظهر في الإعدادات، مع حفظ تلقائي ومعاينات مباشرة ووضع ليلي متناسق.</li></ul></section>
+        <section class="changelog-entry current"><div class="changelog-version"><strong>الإصدار 3.10.2</strong><time>24 أكتوبر 2026</time></div><ul><li>نقل الشهر الحالي من الشريط العلوي إلى صف مستقل فوق بطاقة الراتب، لتوفير مساحة مريحة للأزرار.</li></ul></section>
+        <section class="changelog-entry"><div class="changelog-version"><strong>الإصدار 3.10.1</strong><time>24 أكتوبر 2026</time></div><ul><li>توحيد مربعات الإضافة والإرشادات والأزرار مع ألوان التطبيق المختارة.</li><li>إضافة ستة ألوان متناسقة للخلفية والمظهر في الإعدادات، مع حفظ تلقائي ومعاينات مباشرة ووضع ليلي متناسق.</li></ul></section>
         <section class="changelog-entry"><div class="changelog-version"><strong>الإصدار 3.10.0</strong><time>24 أكتوبر 2026</time></div><ul><li>حساب الرصيد بالفلس ومراجعته من سجل الحركات، مع حماية تعديلات الأجهزة من التعارض.</li><li>قرار واضح قبل إضافة الراتب، ومعاينة خصم الأقساط والسلف مرة واحدة.</li><li>مطابقة البنك دون تسوية تلقائية، ورسم تفاعلي لحركة الرصيد، وتوزيع يعتمد على الشهر الفعلي.</li><li>تجربة مرئية أخف وأوضح في الوضعين، مع حجز الالتزامات غير المدفوعة قبل حساب حد الصرف.</li></ul></section>
         <section class="changelog-entry">
           <div class="changelog-version">
@@ -6564,8 +6566,8 @@ function normalizeColorTheme(value) {
       }
 
 
-      var APP_VERSION = "3.10.1";
-      var APP_RELEASE_ID = "3.10.1-color-themes-r1";
+      var APP_VERSION = "3.10.2";
+      var APP_RELEASE_ID = "3.10.2-month-position-r1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";

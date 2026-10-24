@@ -45,7 +45,7 @@
         if (choices.indexOf(requested) !== -1) localStorage.setItem("monthlySalaryManager.iconChoice.v1", choice);
       } catch (_) {}
       window.__salaryInitialIconChoice = choice;
-      var v = "3.10.2-month-position-r1";
+      var v = "3.10.3-currency-alignment-r1";
       document.write('<link id="manifestLink" rel="manifest" href="./manifests/' + choice + '.webmanifest?v=' + v + '">');
       document.write('<link id="appleTouchIconLink" rel="apple-touch-icon" href="./icons/choice/' + choice + '-180.png?v=' + v + '">');
       document.write('<link id="faviconLink" rel="icon" type="image/png" href="./icons/choice/' + choice + '-192.png?v=' + v + '">');
@@ -897,7 +897,7 @@
       font-size: 21px;
     }
 
-    .donut-center span {
+    .donut-center > div > span {
       display: block;
       margin-top: 2px;
       color: var(--muted);
@@ -3422,7 +3422,7 @@
       text-align:center; padding:38px;
     }
     .expense-category-donut-center strong { display:block; color:var(--forest); font-size:15px; white-space:nowrap; }
-    .expense-category-donut-center span { display:block; margin-top:5px; color:var(--muted); font-size:8px; line-height:1.45; }
+    .expense-category-donut-center > div > span { display:block; margin-top:5px; color:var(--muted); font-size:8px; line-height:1.45; }
     .expense-category-legend { display:grid; gap:8px; }
     .expense-category-row {
       display:grid; grid-template-columns:36px minmax(0,1fr) auto; gap:9px; align-items:center;
@@ -3437,8 +3437,8 @@
     .expense-category-row-copy strong { display:block; font-size:10px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .expense-category-row-copy span { display:block; margin-top:3px; font-size:8px; color:var(--muted); }
     .expense-category-row-amount { text-align:end; }
-    .expense-category-row-amount strong { display:block; font-size:10px; color:var(--ink); white-space:nowrap; }
-    .expense-category-row-amount span { display:block; margin-top:3px; font-size:8px; font-weight:900; color:var(--cat-color); }
+    .expense-category-row-amount strong { display:block; font-size:10px; color:var(--cat-color,var(--ink)); white-space:nowrap; }
+    .expense-category-row-amount > span { display:block; margin-top:3px; font-size:8px; font-weight:900; color:var(--cat-color); }
     .expense-category-empty {
       padding:18px; border:1px dashed #d8ddd9; border-radius:16px; color:var(--muted);
       text-align:center; font-size:10px; line-height:1.7; background:#fffefa;
@@ -4179,7 +4179,7 @@ body{background:var(--canvas);font-family:system-ui,-apple-system,"Segoe UI",Tah
 .chart-data{margin:14px 0 0;font-size:11px;color:var(--muted)}.chart-data summary{cursor:pointer;padding:8px 0}.chart-data>div{overflow:auto;max-height:240px}.chart-data table{width:100%;border-collapse:collapse;white-space:nowrap}.chart-data th,.chart-data td{padding:10px;border-bottom:1px solid var(--line);text-align:start}.chart-data th{font-weight:600}
 .cash-legend-row{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;text-align:start;border:0;background:transparent;font:inherit;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;color:var(--ink);font-size:11px}
 .cash-legend-row>span:nth-child(2){display:grid;gap:4px}.cash-legend-row small{color:var(--muted);font-size:10px}.cash-legend-row strong{font-size:13px;white-space:nowrap;font-weight:650}.cash-legend-row:hover{color:var(--teal)}
-.donut{width:180px;height:180px}.donut-center{inset:15px;background:var(--paper)}.donut-center strong{font-size:19px!important;line-height:1.5}.donut-center span{font-size:10px}
+.donut{width:180px;height:180px}.donut-center{inset:15px;background:var(--paper)}.donut-center strong{font-size:19px!important;line-height:1.5}.donut-center > div > span{font-size:10px}
 .payday-preview,.payday-result,.bank-audit{display:grid;gap:12px;border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0;text-align:start;background:var(--canvas)}
 .payday-preview>div,.payday-result>div,.bank-audit>div,.bank-recent>div{display:flex;justify-content:space-between;align-items:center;gap:14px;font-size:12px}.payday-result{background:var(--teal-soft);border-color:transparent}.payday-result strong{color:var(--teal);white-space:nowrap}.payday-carry-amount{color:var(--ink);font-variant-numeric:tabular-nums}
 .bank-recent>div{padding:10px 0;border-bottom:1px solid var(--line)}.bank-recent>div>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bank-recent strong{white-space:nowrap}
@@ -5012,7 +5012,7 @@ html[data-color-theme="sand"][data-app-theme="dark"]{--canvas:#1b1611!important;
       </section>
     </main>
 
-    <footer class="app-footer" id="appVersionFooter" data-version="3.10.2" aria-label="معلومات الإصدار والحفظ">
+    <footer class="app-footer" id="appVersionFooter" data-version="3.10.3" aria-label="معلومات الإصدار والحفظ">
       <div class="version-area">
         <span class="version-badge">الإصدار <b id="appVersion">3.8.2</b></span>
         <button class="changelog-btn" id="changelogButton" type="button">سجل التحديثات</button>
@@ -5652,7 +5652,8 @@ html[data-color-theme="sand"][data-app-theme="dark"]{--canvas:#1b1611!important;
     </div>
     <div class="modal-body">
       <div class="changelog-list">
-        <section class="changelog-entry current"><div class="changelog-version"><strong>الإصدار 3.10.2</strong><time>24 أكتوبر 2026</time></div><ul><li>نقل الشهر الحالي من الشريط العلوي إلى صف مستقل فوق بطاقة الراتب، لتوفير مساحة مريحة للأزرار.</li></ul></section>
+        <section class="changelog-entry current"><div class="changelog-version"><strong>الإصدار 3.10.3</strong><time>24 أكتوبر 2026</time></div><ul><li>تصحيح محاذاة شعار الدرهم بجانب المبلغ في وسط الرسوم الدائرية ومبالغ تصنيفات المصروفات، مع بقاء النسبة في سطر مستقل.</li></ul></section>
+        <section class="changelog-entry"><div class="changelog-version"><strong>الإصدار 3.10.2</strong><time>24 أكتوبر 2026</time></div><ul><li>نقل الشهر الحالي من الشريط العلوي إلى صف مستقل فوق بطاقة الراتب، لتوفير مساحة مريحة للأزرار.</li></ul></section>
         <section class="changelog-entry"><div class="changelog-version"><strong>الإصدار 3.10.1</strong><time>24 أكتوبر 2026</time></div><ul><li>توحيد مربعات الإضافة والإرشادات والأزرار مع ألوان التطبيق المختارة.</li><li>إضافة ستة ألوان متناسقة للخلفية والمظهر في الإعدادات، مع حفظ تلقائي ومعاينات مباشرة ووضع ليلي متناسق.</li></ul></section>
         <section class="changelog-entry"><div class="changelog-version"><strong>الإصدار 3.10.0</strong><time>24 أكتوبر 2026</time></div><ul><li>حساب الرصيد بالفلس ومراجعته من سجل الحركات، مع حماية تعديلات الأجهزة من التعارض.</li><li>قرار واضح قبل إضافة الراتب، ومعاينة خصم الأقساط والسلف مرة واحدة.</li><li>مطابقة البنك دون تسوية تلقائية، ورسم تفاعلي لحركة الرصيد، وتوزيع يعتمد على الشهر الفعلي.</li><li>تجربة مرئية أخف وأوضح في الوضعين، مع حجز الالتزامات غير المدفوعة قبل حساب حد الصرف.</li></ul></section>
         <section class="changelog-entry">
@@ -6566,8 +6567,8 @@ function normalizeColorTheme(value) {
       }
 
 
-      var APP_VERSION = "3.10.2";
-      var APP_RELEASE_ID = "3.10.2-month-position-r1";
+      var APP_VERSION = "3.10.3";
+      var APP_RELEASE_ID = "3.10.3-currency-alignment-r1";
       var STORAGE_KEY = "monthlySalaryManager.v1";
       var AUTH_TOKEN_KEY = "monthlySalaryManager.authToken";
       var AUTH_USER_KEY = "monthlySalaryManager.authUser";

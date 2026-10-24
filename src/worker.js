@@ -2,9 +2,9 @@ import * as Finance from "../public/finance-core-v3.10.0.js";
 import { DurableObject } from "cloudflare:workers";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 
-const VERSION = "3.10.2";
-const RELEASE_ID = "3.10.2-month-position-r1";
-const UPDATE_SIGNAL_VERSION = "3.10.2";
+const VERSION = "3.10.3";
+const RELEASE_ID = "3.10.3-currency-alignment-r1";
+const UPDATE_SIGNAL_VERSION = "3.10.3";
 const PREVIOUS_PUBLISHED_VERSION = "3.9.3";
 const PREVIOUS_RELEASE_ID = "3.9.3-autoapprove-sync-race-r7";
 const ACCIDENTAL_PREPUBLISH_RELEASE_IDS = new Set([
